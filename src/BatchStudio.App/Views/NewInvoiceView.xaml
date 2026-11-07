@@ -164,7 +164,7 @@
                                   HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="32" SelectionUnit="Cell">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="{StaticResource Inv.Code}" Binding="{Binding Code}" Width="110" />
-                                <DataGridTextColumn Header="{StaticResource Inv.Desc}" Binding="{Binding Description}" Width="*" />
+                                <DataGridTextColumn Header="{StaticResource Inv.Desc}" Binding="{Binding Description}" Width="*" MinWidth="220" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Qty}" Binding="{Binding Quantity}" Width="70" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Price}" Binding="{Binding UnitPrice, StringFormat=N2}" Width="110" />
                                 <DataGridTextColumn Header="{StaticResource Inv.LineAmount}" Binding="{Binding Amount, Mode=OneWay, StringFormat=N2}" Width="130" IsReadOnly="True" />
