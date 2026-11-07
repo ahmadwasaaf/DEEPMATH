@@ -191,6 +191,15 @@ public static class InvoiceHistoryBook
             ws.Cell(r, col).Value = above.Length > 0 ? above : def;
         }
 
+        // the print area follows the last record (as V28 UpdateHistoryPrintArea did)
+        var pa = ws.PageSetup.PrintAreas.FirstOrDefault()?.RangeAddress;
+        if (pa != null && pa.LastAddress.RowNumber < r)
+        {
+            int r1 = pa.FirstAddress.RowNumber, c1 = pa.FirstAddress.ColumnNumber, c2 = pa.LastAddress.ColumnNumber;
+            ws.PageSetup.PrintAreas.Clear();
+            ws.PageSetup.PrintAreas.Add(r1, c1, r, c2);
+        }
+
         // V28: C3 shows the number of invoices ("84 Invoice")
         if (l.IsV28)
         {

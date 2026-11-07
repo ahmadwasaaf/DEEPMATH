@@ -158,6 +158,8 @@ public class RealHistoryTests
             Assert.Equal("INV-85", last.No);
             Assert.Equal("Mad-1000001", last.InvoiceNo);
             Assert.Equal(before[^1].Row + 1, last.Row);
+            using (var wb = new XLWorkbook(path))
+                Assert.Equal(last.Row, InvoiceHistoryBook.Sheet(wb).PageSetup.PrintAreas.First().RangeAddress.LastAddress.RowNumber);
 
             var outDir = Environment.GetEnvironmentVariable("BS_SAMPLE_OUT");
             if (!string.IsNullOrEmpty(outDir)) File.Copy(path, Path.Combine(outDir, "History_after_append.xlsx"), true);
