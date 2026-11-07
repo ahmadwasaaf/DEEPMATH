@@ -130,3 +130,38 @@ public class HistoryLayoutTests
         finally { try { Directory.Delete(root, true); } catch { } }
     }
 }
+
+public class RealHistoryTests
+{
+    [Fact]
+    public void Real_V28_history_sheet_reads_and_appends()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "bs-rh-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var path = DataSets.InvoiceHistory.FullPath(root);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "History_V28.xlsx"), path);
+            var before = InvoiceHistoryBook.Read(path);
+            Assert.Equal(84, before.Count);
+            Assert.All(before, r => Assert.StartsWith("Mad-", r.InvoiceNo));
+            Assert.Contains(before, r => r.PartyType == "SUPPLIERS");
+
+            InvoiceHistoryBook.Append(root, path, new HistoryRecord
+            {
+                Name = "أركان التجريبية", Amount = 115000m, Date = new DateTime(2026, 11, 7), InvoiceNo = "Mad-1000001",
+                PartyType = "CLIENTS", RecordId = "R", FilePath = @"C:\Madar Database\BATCH STUDIO\CLIENTS\x\Mad-1000001.xlsx", Template = "Madar",
+            });
+            var after = InvoiceHistoryBook.Read(path);
+            Assert.Equal(85, after.Count);
+            var last = after[^1];
+            Assert.Equal("INV-85", last.No);
+            Assert.Equal("Mad-1000001", last.InvoiceNo);
+            Assert.Equal(before[^1].Row + 1, last.Row);
+
+            var outDir = Environment.GetEnvironmentVariable("BS_SAMPLE_OUT");
+            if (!string.IsNullOrEmpty(outDir)) File.Copy(path, Path.Combine(outDir, "History_after_append.xlsx"), true);
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+}
