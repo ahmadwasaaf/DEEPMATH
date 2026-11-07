@@ -74,6 +74,23 @@ jobs:
           name: screenshots
           path: shots/*.png
 
+      - name: Publish screenshots to branch
+        if: github.event_name == 'push' && hashFiles('shots/*.png') != ''
+        shell: pwsh
+        run: |
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          $tmp = Join-Path $env:RUNNER_TEMP 'shots-branch'
+          New-Item -ItemType Directory -Force $tmp | Out-Null
+          Copy-Item shots\*.png $tmp
+          git checkout --orphan screenshots
+          git rm -rf --quiet .
+          Copy-Item "$tmp\*.png" .
+          git add *.png
+          git commit -m "screenshots for $env:GITHUB_SHA" --quiet
+          git push -f origin screenshots --quiet
+          git checkout --quiet $env:GITHUB_SHA
+
       - name: Build installer
         if: hashFiles('installer/BatchStudio.iss') != '' && hashFiles('src/BatchStudio.App/BatchStudio.App.csproj') != ''
         shell: pwsh
