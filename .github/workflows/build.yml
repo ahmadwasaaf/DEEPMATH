@@ -49,8 +49,8 @@ jobs:
             $s = @{ Language = $lang; Theme = $theme; AutoSave = $true; KeepBackups = 30; Entities = @(); ActiveEntity = $null }
             if ($withEntity) { $s.Entities = @(@{ Name = 'Demo'; DatabasePath = $db; LastOpenedUtc = '2026-01-01T00:00:00Z' }); $s.ActiveEntity = 'Demo' }
             $s | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $cfg 'settings.json') -Encoding utf8
-            $args = @(); if ($page) { $args = @('--page', $page) }
-            $p = if ($args.Count) { Start-Process publish\BatchStudio.exe -ArgumentList $args -PassThru } else { Start-Process publish\BatchStudio.exe -PassThru }
+            $argv = @(); if ($page) { $argv = @("--page", $page) }
+            $p = if ($argv.Count) { Start-Process publish\BatchStudio.exe -ArgumentList $argv -PassThru } else { Start-Process publish\BatchStudio.exe -PassThru }
             Start-Sleep -Seconds 14
             Shot $name
             $alive = -not $p.HasExited
