@@ -1,4 +1,6 @@
 using BatchStudio.Core.Data;
+using BatchStudio.Core.Templates;
+using BatchStudio.Core.Invoices;
 using ClosedXML.Excel;
 
 namespace BatchStudio.Core.Tests;
@@ -24,24 +26,22 @@ public class DemoDatabase
         cli.Rows.Add(["CLI-002", "الجيلاني للخدمات اللوجستية", "Auto Parts | قطع غيار السيارات", ""]);
         ExcelTableStore.Save(DataSets.Clients.FullPath(root), "Clients", cli);
 
-        // INVOICE-like template
-        using var wb = new XLWorkbook();
-        var ws = wb.Worksheets.Add("INVOICE");
-        ws.Cell("B3").Value = "ARVIND ENTERPRISES"; ws.Cell("B3").Style.Font.FontSize = 20;
-        ws.Cell("B4").Value = "अरविंद एंटरप्राइजेज"; ws.Cell("B4").Style.Font.FontSize = 14;
-        ws.Cell("E3").Value = "INVOICE"; ws.Cell("E3").Style.Font.FontSize = 40;
-        ws.Cell("E5").Value = "INVOICE NO: "; ws.Cell("F5").Value = "Mad-5212411";
-        ws.Cell("E7").Value = "ISSUE DATE: "; ws.Cell("F7").Value = new DateTime(2026, 11, 7);
-        string[] h = ["Code", "DESCRIPTION", "QTY", "Price", "TOTAL AMOUNT"];
-        for (int i = 0; i < h.Length; i++) ws.Cell(11, 2 + i).Value = h[i];
-        for (int r = 13; r <= 26; r++) ws.Cell(r, 6).FormulaA1 = $"D{r}*E{r}";
-        ws.Cell("E28").Value = "TOTAL VALUE"; ws.Cell("F28").FormulaA1 = "SUM(F13:F26)";
-        ws.Cell("B28").Value = "(Thirty Thousand US Dollars Only)";
-        ws.Cell("B31").Value = "PAYMENT & BANKING INSTRUCTIONS";
-        ws.Cell("B33").Value = "PAYMENT & BANKING INSTRUCTIONS\nBENEFICIARY BANK: TEST BANK";
-        ws.Cell("B35").Value = "Company Address:\nTest street 1";
-        ws.Range("B33:F33").Merge(); ws.Range("B35:F35").Merge();
-        ws.PageSetup.PrintAreas.Add("B1:F35");
-        wb.SaveAs(Path.Combine(DatabaseLayout.Templates(root), "INVOICE.xlsx"));
+        // the real V28 history sheet (sanitized) and the three V28 templates, linked
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "History_V28.xlsx"), DataSets.InvoiceHistory.FullPath(root), true);
+        foreach (var t in new[] { "INVOICE", "INV1", "Madar" })
+        {
+            var dst = TemplateRegistry.Import(root, Path.Combine(AppContext.BaseDirectory, "Fixtures", t + ".xlsx"), overwrite: true);
+            var map = TemplateDetector.DetectFile(dst);
+            foreach (var f in map.Fields.Values) f.Confirmed = f.Cell != null;
+            map.Save(dst);
+        }
+        // a few archived invoices so some history rows show "File available"
+        foreach (var r in InvoiceHistoryBook.Read(DataSets.InvoiceHistory.FullPath(root)).Take(5))
+        {
+            var f = InvoiceHistoryBook.ResolvePath(root, r.FilePath);
+            var local = Path.Combine(root, "BATCH STUDIO", r.PartyType, "Party", r.InvoiceNo + ".xlsx");
+            Directory.CreateDirectory(Path.GetDirectoryName(local)!);
+            File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "INVOICE.xlsx"), local, true);
+        }
     }
 }

@@ -29,6 +29,7 @@ public sealed partial class MainViewModel : ObservableObject
     public SettingsViewModel SettingsPage { get; }
     public EntitySetupViewModel Setup { get; }
     public NewInvoiceViewModel NewInvoice { get; }
+    public HistoryViewModel History { get; }
 
     [ObservableProperty] private EntityProfile? _activeEntity;
     [ObservableProperty] private object? _currentPage;
@@ -48,11 +49,13 @@ public sealed partial class MainViewModel : ObservableObject
         SettingsPage = new SettingsViewModel(this);
         Setup = new EntitySetupViewModel(this);
         NewInvoice = new NewInvoiceViewModel(this);
+        History = new HistoryViewModel(this);
         foreach (var e in settings.Entities) Entities.Add(e);
         SettingsPage.Refresh();
 
         Nav.Add(new NavItem { Key = "Nav.Home", Glyph = "", Page = () => Home });
         Nav.Add(new NavItem { Key = "Nav.NewInvoice", Glyph = "\uE710", Page = () => NewInvoice });
+        Nav.Add(new NavItem { Key = "Nav.History", Glyph = "\uE81C", Page = () => History });
         Nav.Add(new NavItem { Key = "Nav.Suppliers", Glyph = "", Page = () => Page("suppliers") });
         Nav.Add(new NavItem { Key = "Nav.Clients", Glyph = "", Page = () => Page("clients") });
         Nav.Add(new NavItem { Key = "Nav.Items", Glyph = "", Page = () => Page("items") });
@@ -77,6 +80,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (CurrentPage is HomeViewModel h) h.Refresh();
         if (CurrentPage is SettingsViewModel sp) sp.Refresh();
         if (CurrentPage is NewInvoiceViewModel ni) ni.Refresh();
+        if (CurrentPage is HistoryViewModel hv) hv.Reload();
     }
 
     partial void OnActiveEntityChanged(EntityProfile? oldValue, EntityProfile? newValue)
@@ -135,6 +139,11 @@ public sealed partial class MainViewModel : ObservableObject
                 p.OnExternalChange();
                 return;
             }
+        if (Root != null && string.Equals(full, Path.GetFullPath(DataSets.InvoiceHistory.FullPath(Root)), StringComparison.OrdinalIgnoreCase))
+        {
+            if (CurrentPage == History) History.Reload();
+            return;
+        }
         if (Root != null && full.StartsWith(Path.GetFullPath(DatabaseLayout.Templates(Root)), StringComparison.OrdinalIgnoreCase))
         {
             Templates.Refresh();
@@ -159,7 +168,11 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Called after an invoice was archived (history file changed by the program).</summary>
-    public void OnHistoryChanged() => Home.Refresh();
+    public void OnHistoryChanged()
+    {
+        Home.Refresh();
+        History.Reload();
+    }
 
     public void AddEntity(EntityProfile entity)
     {

@@ -14,6 +14,7 @@
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}"><views:SettingsView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:EntitySetupViewModel}"><views:EntitySetupView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:NewInvoiceViewModel}"><views:NewInvoiceView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:HistoryViewModel}"><views:HistoryView /></DataTemplate>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </Window.Resources>
 
@@ -46,7 +47,7 @@
                     </Button>
                 </StackPanel>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="v0.2.1 · phase 2" Style="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" />
+                <TextBlock DockPanel.Dock="Bottom" Text="v0.3.0 · phase 2" Style="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" />
 
                 <ListBox ItemsSource="{Binding Nav}" SelectedItem="{Binding SelectedNav}"
                          Background="Transparent" BorderThickness="0"

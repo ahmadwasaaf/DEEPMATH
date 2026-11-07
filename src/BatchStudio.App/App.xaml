@@ -12,6 +12,7 @@
             </ResourceDictionary.MergedDictionaries>
             <svc:InverseBoolConverter x:Key="InverseBool" />
             <svc:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+            <svc:EqualsConverter x:Key="Equals" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
