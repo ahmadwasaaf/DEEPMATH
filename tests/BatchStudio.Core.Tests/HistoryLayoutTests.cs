@@ -171,3 +171,110 @@ public class RealHistoryTests
         finally { try { Directory.Delete(root, true); } catch { } }
     }
 }
+
+public class HistoryActionsTests
+{
+    [Theory]
+    [InlineData("This Week", "2026-11-08", "2026-11-07", "2026-11-13")]   // Sunday -> week from Saturday
+    [InlineData("This Week", "2026-11-07", "2026-11-07", "2026-11-13")]   // Saturday itself
+    [InlineData("This Month", "2026-11-08", "2026-11-01", "2026-11-30")]
+    [InlineData("Last Month", "2026-01-15", "2025-12-01", "2025-12-31")]
+    [InlineData("This Year", "2026-11-08", "2026-01-01", "2026-12-31")]
+    public void Period_windows(string period, string today, string from, string to)
+    {
+        var w = HistoryPeriods.Window(period, DateTime.Parse(today), DayOfWeek.Saturday)!.Value;
+        Assert.Equal(DateTime.Parse(from), w.From);
+        Assert.Equal(DateTime.Parse(to), w.To);
+    }
+
+    [Fact]
+    public void Report_names() 
+    {
+        Assert.Equal("Today's Report", HistoryPeriods.ReportName("Today"));
+        Assert.Equal("Custom Range Report", HistoryPeriods.ReportName("Custom Range"));
+    }
+
+    [Fact]
+    public void Query_matches_tab_period_and_arabic_text()
+    {
+        var r = new HistoryRecord { Name = "مؤسسة أفاق النموذج", InvoiceNo = "Mad-1", PartyType = "CLIENTS", Amount = 1500m, Date = new DateTime(2026, 11, 3) };
+        Assert.True(new HistoryQuery { Text = "افاق", Today = new DateTime(2026, 11, 8) }.Matches(r));
+        Assert.True(new HistoryQuery { Text = "1,500.00" }.Matches(r));
+        Assert.False(new HistoryQuery { Tab = "SUPPLIERS" }.Matches(r));
+        Assert.True(new HistoryQuery { Period = "This Month", Today = new DateTime(2026, 11, 8) }.Matches(r));
+        Assert.False(new HistoryQuery { Period = "This Week", Today = new DateTime(2026, 11, 8) }.Matches(r));
+        Assert.True(new HistoryQuery { Period = "Custom Range", From = new DateTime(2026, 11, 1), To = new DateTime(2026, 11, 3) }.Matches(r));
+    }
+
+    private static (string Root, string Path) RealCopy()
+    {
+        var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "bs-ha-" + Guid.NewGuid().ToString("N"));
+        var path = DataSets.InvoiceHistory.FullPath(root);
+        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
+        File.Copy(System.IO.Path.Combine(AppContext.BaseDirectory, "Fixtures", "History_V28.xlsx"), path);
+        return (root, path);
+    }
+
+    [Fact]
+    public void Remove_deletes_row_and_file_and_renumbers()
+    {
+        var (root, path) = RealCopy();
+        try
+        {
+            var recs = InvoiceHistoryBook.Read(path);
+            var victim = recs[1];
+            var file = System.IO.Path.Combine(root, "BATCH STUDIO", victim.PartyType, "Party", victim.InvoiceNo + ".xlsx");
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(file)!);
+            File.WriteAllText(file, "x");
+
+            InvoiceHistoryBook.Remove(root, path, victim.InvoiceNo, deleteFile: true);
+            Assert.False(File.Exists(file));
+            var after = InvoiceHistoryBook.Read(path);
+            Assert.Equal(recs.Count - 1, after.Count);
+            Assert.DoesNotContain(after, r => r.InvoiceNo == victim.InvoiceNo);
+            Assert.Equal("INV-2", after[1].No);
+            Assert.Equal(recs[2].InvoiceNo, after[1].InvoiceNo);
+            using var wb = new ClosedXML.Excel.XLWorkbook(path);
+            var ws = InvoiceHistoryBook.Sheet(wb);
+            Assert.Equal((double)after.Count, ws.Cell("C3").GetDouble());
+            Assert.Equal(after[^1].Row, ws.PageSetup.PrintAreas.First().RangeAddress.LastAddress.RowNumber);
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+
+    [Fact]
+    public void Statuses_relink_and_report()
+    {
+        var (root, path) = RealCopy();
+        try
+        {
+            Assert.True(InvoiceHistoryBook.UpdateStatuses(root, path) > 0);       // no files exist -> all missing
+            var recs = InvoiceHistoryBook.Read(path);
+            Assert.All(recs, r => Assert.Equal("File missing", r.Status));
+
+            var moved = System.IO.Path.Combine(root, "moved.xlsx");
+            File.WriteAllText(moved, "x");
+            InvoiceHistoryBook.Relink(root, path, recs[0].InvoiceNo, moved);
+            var r0 = InvoiceHistoryBook.Read(path)[0];
+            Assert.Equal(moved, r0.FilePath);
+            Assert.Equal("File available", r0.Status);
+
+            var report = System.IO.Path.Combine(root, "report.xlsx");
+            var q = new HistoryQuery { Tab = "SUPPLIERS" };
+            InvoiceHistoryBook.BuildReport(path, q.Matches, "All Time", report);
+            using var wb = new ClosedXML.Excel.XLWorkbook(report);
+            var ws = InvoiceHistoryBook.Sheet(wb);
+            int shown = recs.Count(q.Matches);
+            Assert.Equal((double)shown, ws.Cell("C3").GetDouble());
+            Assert.Equal(shown, recs.Count(r => !ws.Row(r.Row).IsHidden));
+
+            var outDir = Environment.GetEnvironmentVariable("BS_SAMPLE_OUT");
+            if (!string.IsNullOrEmpty(outDir))
+            {
+                Directory.CreateDirectory(outDir);
+                File.Copy(report, System.IO.Path.Combine(outDir, "Report_suppliers.xlsx"), true);
+            }
+        }
+        finally { try { Directory.Delete(root, true); } catch { } }
+    }
+}

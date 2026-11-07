@@ -219,6 +219,166 @@ public static class InvoiceHistoryBook
         }
     }
 
+    // ------------------------------------------------------------------ editing (remove / relink / status)
+    private static void Modify(string root, string path, Action<IXLWorksheet, HistoryLayout, List<HistoryRecord>> change, int keepBackups = 30)
+    {
+        ExcelTableStore.EnsureWritable(path);
+        using var wb = PackageRepair.OpenWorkbook(path);
+        var ws = Sheet(wb);
+        var l = Detect(ws);
+        change(ws, l, Read(ws, l));
+        BackupService.Backup(root, DataSets.InvoiceHistory, keepBackups);
+        var tmp = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, $".~history.{Guid.NewGuid():N}.tmp.xlsx");
+        wb.SaveAs(tmp);
+        try { File.Replace(tmp, path, null); }
+        catch (IOException ex)
+        {
+            try { File.Delete(tmp); } catch { }
+            throw new FileLockedException(path, ex);
+        }
+    }
+
+    private static HistoryRecord Find(List<HistoryRecord> recs, string invoiceNo) =>
+        recs.FirstOrDefault(r => string.Equals(r.InvoiceNo, invoiceNo, StringComparison.OrdinalIgnoreCase))
+        ?? throw new InvalidOperationException($"Invoice {invoiceNo} is no longer in INVOICE HISTORY.");
+
+    /// <summary>Week start chosen on the V28 sheet (H5), if any.</summary>
+    public static string? ReadWeekStart(string path)
+    {
+        try
+        {
+            using var wb = PackageRepair.OpenWorkbook(path);
+            var ws = Sheet(wb);
+            var t = ExcelTableStore.CellText(ws.Cell("H5")).Trim();
+            return Enum.GetNames<DayOfWeek>().Any(d => d.Equals(t, StringComparison.OrdinalIgnoreCase)) ? t : null;
+        }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// Removes an invoice: deletes its history row and, when <paramref name="deleteFile"/> is set, the archived
+    /// file too (only inside this Database's BATCH STUDIO folder, like V28 "Remove"). Remaining rows are renumbered.
+    /// </summary>
+    public static void Remove(string root, string path, string invoiceNo, bool deleteFile, int keepBackups = 30)
+    {
+        if (deleteFile)
+        {
+            var rec = Find(Read(path), invoiceNo);
+            var file = ResolvePath(root, rec.FilePath);
+            var archive = Path.GetFullPath(Path.Combine(root, DatabaseLayout.ArchiveFolder)) + Path.DirectorySeparatorChar;
+            if (!File.Exists(file)) throw new FileNotFoundException("The archived file is missing; remove the record only.", file);
+            if (!Path.GetFullPath(file).StartsWith(archive, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The invoice file is outside this Database's BATCH STUDIO folder; it was not deleted.");
+            ExcelTableStore.EnsureWritable(path);
+            File.Delete(file);
+            var dir = Path.GetDirectoryName(file)!;
+            try
+            {
+                // remove the empty party folder, never SUPPLIERS / CLIENTS themselves
+                if (!Directory.EnumerateFileSystemEntries(dir).Any() &&
+                    !string.Equals(Path.GetFileName(Path.GetDirectoryName(dir)), DatabaseLayout.ArchiveFolder, StringComparison.OrdinalIgnoreCase))
+                    Directory.Delete(dir);
+            }
+            catch { }
+        }
+        Modify(root, path, (ws, l, recs) =>
+        {
+            var rec = Find(recs, invoiceNo);
+            ws.Row(rec.Row).Delete();
+            // renumber INV-1..n in sheet order (V28 ArchiveReindexHistory)
+            int n = 0;
+            foreach (var r in recs.Where(x => x.Row != rec.Row))
+            {
+                int row = r.Row > rec.Row ? r.Row - 1 : r.Row;
+                n++;
+                if (l.ColNo > 0) ws.Cell(row, l.ColNo).Value = $"INV-{n}";
+            }
+            if (l.IsV28 && ws.Cell("C3").Value.IsNumber) ws.Cell("C3").Value = n;
+            // print area ends at the last remaining record
+            var pa = ws.PageSetup.PrintAreas.FirstOrDefault()?.RangeAddress;
+            if (pa != null)
+            {
+                int lastRow = recs.Where(x => x.Row != rec.Row).Select(x => x.Row > rec.Row ? x.Row - 1 : x.Row).DefaultIfEmpty(l.FirstDataRow).Max();
+                int r1 = pa.FirstAddress.RowNumber, c1 = pa.FirstAddress.ColumnNumber, c2 = pa.LastAddress.ColumnNumber;
+                ws.PageSetup.PrintAreas.Clear();
+                ws.PageSetup.PrintAreas.Add(r1, c1, Math.Max(r1, lastRow), c2);
+            }
+        }, keepBackups);
+    }
+
+    /// <summary>Points a record at a moved invoice file (V28 "Reassign file").</summary>
+    public static void Relink(string root, string path, string invoiceNo, string newFile, int keepBackups = 30) =>
+        Modify(root, path, (ws, l, recs) =>
+        {
+            var rec = Find(recs, invoiceNo);
+            if (l.ColPath > 0) ws.Cell(rec.Row, l.ColPath).Value = newFile;
+            SetStatus(ws, l, rec.Row, true);
+        }, keepBackups);
+
+    /// <summary>Writes "File available" / "File missing" (green / red) where it changed. Returns how many rows changed.</summary>
+    public static int UpdateStatuses(string root, string path, int keepBackups = 30)
+    {
+        int changed = 0;
+        var recs = Read(path);
+        bool any = recs.Any(r => (File.Exists(ResolvePath(root, r.FilePath)) ? "File available" : "File missing") != r.Status);
+        if (!any) return 0;
+        Modify(root, path, (ws, l, rs) =>
+        {
+            foreach (var r in rs)
+            {
+                bool ok = File.Exists(ResolvePath(root, r.FilePath));
+                if (SetStatus(ws, l, r.Row, ok)) changed++;
+            }
+        }, keepBackups);
+        return changed;
+    }
+
+    private static bool SetStatus(IXLWorksheet ws, HistoryLayout l, int row, bool available)
+    {
+        if (l.ColStatus == 0) return false;
+        var c = ws.Cell(row, l.ColStatus);
+        var text = available ? "File available" : "File missing";
+        if (c.GetString() == text) return false;
+        c.Value = text;
+        c.Style.Font.FontColor = available ? XLColor.FromArgb(0, 128, 0) : XLColor.FromArgb(210, 0, 0);
+        return true;
+    }
+
+    /// <summary>
+    /// Copy of the history sheet showing only <paramref name="include"/> rows (others hidden), with the period name in
+    /// the filter cell, the visible count / total and the print area set - ready for PDF export with the sheet's own look.
+    /// </summary>
+    public static void BuildReport(string path, Func<HistoryRecord, bool> include, string periodLabel, string outputPath)
+    {
+        using var wb = PackageRepair.OpenWorkbook(path);
+        var ws = Sheet(wb);
+        var l = Detect(ws);
+        var recs = Read(ws, l);
+        var shown = recs.Where(include).ToList();
+        var shownRows = shown.Select(r => r.Row).ToHashSet();
+        foreach (var r in recs)
+        {
+            if (shownRows.Contains(r.Row)) ws.Row(r.Row).Unhide();
+            else ws.Row(r.Row).Hide();
+        }
+        if (l.IsV28)
+        {
+            if (ws.Cell("C3").Value.IsNumber || ws.Cell("C3").IsEmpty()) ws.Cell("C3").Value = shown.Count;
+            ws.Cell("E5").Value = periodLabel;
+            var total = ws.Cell("D7");
+            if (!total.HasFormula && (total.Value.IsNumber || total.IsEmpty()))
+                total.Value = (double)shown.Sum(x => x.Amount ?? 0);
+        }
+        int last = recs.Count > 0 ? recs.Max(r => r.Row) : l.FirstDataRow;
+        var pa = ws.PageSetup.PrintAreas.FirstOrDefault()?.RangeAddress;
+        int r1 = pa?.FirstAddress.RowNumber ?? 1, c1 = pa?.FirstAddress.ColumnNumber ?? 1;
+        int c2 = pa?.LastAddress.ColumnNumber ?? Math.Max(l.ColStatus, l.ColInvoice);
+        ws.PageSetup.PrintAreas.Clear();
+        ws.PageSetup.PrintAreas.Add(r1, c1, last, c2);
+        wb.SaveAs(outputPath);
+        PackageRepair.StripControls(outputPath);
+    }
+
     /// <summary>
     /// Resolves a stored invoice path. Old V28 rows hold absolute paths of the previous archive location
     /// (e.g. D:\...\BATCH STUDIO\CLIENTS\x\Mad-1.xlsx); when that file is gone, the same path is looked up
