@@ -162,7 +162,11 @@ public class RealHistoryTests
                 Assert.Equal(last.Row, InvoiceHistoryBook.Sheet(wb).PageSetup.PrintAreas.First().RangeAddress.LastAddress.RowNumber);
 
             var outDir = Environment.GetEnvironmentVariable("BS_SAMPLE_OUT");
-            if (!string.IsNullOrEmpty(outDir)) File.Copy(path, Path.Combine(outDir, "History_after_append.xlsx"), true);
+            if (!string.IsNullOrEmpty(outDir))
+            {
+                Directory.CreateDirectory(outDir);
+                File.Copy(path, Path.Combine(outDir, "History_after_append.xlsx"), true);
+            }
         }
         finally { try { Directory.Delete(root, true); } catch { } }
     }
