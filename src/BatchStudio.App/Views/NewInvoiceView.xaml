@@ -88,7 +88,7 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <TextBlock Style="{StaticResource FieldLabel}">
+                                <TextBlock>
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock" BasedOn="{StaticResource FieldLabel}">
                                             <Setter Property="Text" Value="{DynamicResource Inv.Amount}" />

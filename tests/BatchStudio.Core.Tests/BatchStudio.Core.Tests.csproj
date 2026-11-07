@@ -14,4 +14,7 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Fixtures\*.xlsx" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
