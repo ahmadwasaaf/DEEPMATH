@@ -92,11 +92,16 @@ public static class ExcelTableStore
     public static void Save(string path, string sheetName, TableData table)
     {
         EnsureWritable(path);
+        // ClosedXML keeps reading the source stream until SaveAs, so load the file into memory
+        // (the stream must stay open while the workbook is used).
+        using var source = new MemoryStream();
         XLWorkbook wb;
         if (File.Exists(path))
         {
-            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            wb = new XLWorkbook(fs);
+            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                fs.CopyTo(source);
+            source.Position = 0;
+            wb = new XLWorkbook(source);
         }
         else wb = new XLWorkbook();
 

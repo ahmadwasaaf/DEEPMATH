@@ -1,0 +1,141 @@
+<UserControl x:Class="BatchStudio.App.Views.TemplatesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE8A5;" FontSize="22" Margin="0,0,12,0" />
+                <TextBlock Text="{DynamicResource Nav.Templates}" Style="{StaticResource PageTitle}" />
+            </StackPanel>
+            <TextBlock Text="{DynamicResource Tpl.Intro}" Style="{StaticResource Muted}" MaxWidth="900" HorizontalAlignment="Left" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+            <Button Command="{Binding AddTemplateCommand}" Margin="0,0,8,0" Style="{DynamicResource AccentButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="13" Margin="0,0,8,0" />
+                    <TextBlock Text="{DynamicResource Tpl.AddFile}" />
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding DetectCommand}" Margin="0,0,8,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="13" Margin="0,0,8,0" />
+                    <TextBlock Text="{DynamicResource Tpl.Detect}" />
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding SaveMapCommand}" Margin="0,0,8,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE71B;" FontSize="13" Margin="0,0,8,0" />
+                    <TextBlock Text="{DynamicResource Tpl.SaveMap}" />
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding OpenTemplateCommand}" Margin="0,0,8,0" ToolTip="{DynamicResource Common.OpenInExcel}">
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" FontSize="13" />
+            </Button>
+            <Button Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" ToolTip="{DynamicResource Common.OpenFolder}">
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="13" />
+            </Button>
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Margin="8,0,0,0" Style="{StaticResource Muted}" />
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="230" />
+                <ColumnDefinition Width="14" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- template list -->
+            <Border Style="{StaticResource Card}" Padding="6">
+                <Grid>
+                    <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="6,6">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                        <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="{StaticResource WarnBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsLinked}" Value="True">
+                                                            <Setter Property="Fill" Value="{StaticResource GoodBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Muted}" FontSize="12" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Text="{DynamicResource Tpl.Empty}" Style="{StaticResource Muted}" Margin="10"
+                               Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
+                </Grid>
+            </Border>
+
+            <!-- review -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="14">
+                <DockPanel>
+                    <ProgressBar DockPanel.Dock="Top" IsIndeterminate="True" Height="3" Margin="0,0,0,8"
+                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding ItemsInfo}" Style="{StaticResource Muted}" Margin="0,0,0,10" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
+
+                    <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding Warnings}" Margin="0,10,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource WarnBrush}" BorderThickness="3,0,0,0" Padding="10,6" Margin="0,0,0,6"
+                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" FlowDirection="LeftToRight" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <DataGrid ItemsSource="{Binding Fields}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="38" SelectionUnit="Cell">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{StaticResource Tpl.Field}" Binding="{Binding FieldName, Mode=OneWay}" IsReadOnly="True" Width="230" />
+                            <DataGridTextColumn Header="{StaticResource Tpl.Cell}" Binding="{Binding Cell, UpdateSourceTrigger=PropertyChanged}" Width="80" />
+                            <DataGridTemplateColumn Header="{StaticResource Tpl.Confidence}" Width="110" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0">
+                                            <Ellipse Width="9" Height="9" Margin="0,0,6,0">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill" Value="{StaticResource BadBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Level}" Value="High"><Setter Property="Fill" Value="{StaticResource GoodBrush}" /></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Level}" Value="Medium"><Setter Property="Fill" Value="{StaticResource WarnBrush}" /></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Level}" Value="None"><Setter Property="Fill" Value="Gray" /></DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <TextBlock Text="{Binding ConfidenceText}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="{StaticResource Tpl.Method}" Binding="{Binding Method, Mode=OneWay}" IsReadOnly="True" Width="220" />
+                            <DataGridTextColumn Header="{StaticResource Tpl.Sample}" Binding="{Binding Sample, Mode=OneWay}" IsReadOnly="True" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

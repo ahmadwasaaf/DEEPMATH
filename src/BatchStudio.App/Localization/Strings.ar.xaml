@@ -1,0 +1,97 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <sys:String x:Key="App.Title">باتش ستوديو</sys:String>
+    <sys:String x:Key="Nav.Home">الرئيسية</sys:String>
+    <sys:String x:Key="Nav.Suppliers">الموردين</sys:String>
+    <sys:String x:Key="Nav.Clients">العملاء</sys:String>
+    <sys:String x:Key="Nav.Items">الأصناف</sys:String>
+    <sys:String x:Key="Nav.Categories">التصنيفات</sys:String>
+    <sys:String x:Key="Nav.Templates">القوالب</sys:String>
+    <sys:String x:Key="Nav.Settings">الإعدادات</sys:String>
+    <sys:String x:Key="Entity.Label">الكيان</sys:String>
+    <sys:String x:Key="Entity.Add">إضافة كيان</sys:String>
+
+    <sys:String x:Key="Common.Save">حفظ</sys:String>
+    <sys:String x:Key="Common.Add">إضافة</sys:String>
+    <sys:String x:Key="Common.Delete">حذف</sys:String>
+    <sys:String x:Key="Common.Reload">إعادة تحميل</sys:String>
+    <sys:String x:Key="Common.Search">بحث…</sys:String>
+    <sys:String x:Key="Common.OpenInExcel">فتح في Excel</sys:String>
+    <sys:String x:Key="Common.OpenFolder">فتح المجلد</sys:String>
+    <sys:String x:Key="Common.Browse">استعراض…</sys:String>
+    <sys:String x:Key="Common.Rows">سجل</sys:String>
+    <sys:String x:Key="Common.Details">التفاصيل</sys:String>
+    <sys:String x:Key="Common.Cancel">إلغاء</sys:String>
+
+    <sys:String x:Key="Status.Synced">متزامن مع Excel</sys:String>
+    <sys:String x:Key="Status.Unsaved">تغييرات غير محفوظة</sys:String>
+    <sys:String x:Key="Status.Saving">جارٍ الحفظ…</sys:String>
+    <sys:String x:Key="Status.Locked">في الانتظار: الملف مفتوح في Excel، وسيُحفظ تلقائيًا عند إغلاقه.</sys:String>
+    <sys:String x:Key="Status.Reloaded">تم التحديث من Excel</sys:String>
+    <sys:String x:Key="Status.Merged">تم دمج تغييرات Excel مع تعديلاتك</sys:String>
+    <sys:String x:Key="Status.Error">خطأ</sys:String>
+
+    <sys:String x:Key="Conflict.Title">تعارض في المزامنة</sys:String>
+    <sys:String x:Key="Conflict.Message">هذه السجلات تم تعديلها في البرنامج وفي Excel معًا:&#x0a;&#x0a;{0}&#x0a;&#x0a;نعم = الاحتفاظ بنسخة البرنامج&#x0a;لا = استخدام نسخة Excel</sys:String>
+    <sys:String x:Key="Validate.MissingId">يوجد صفوف بدون رقم تعريف. املأ العمود الأول قبل الحفظ.</sys:String>
+    <sys:String x:Key="Close.Pending">بعض التغييرات لم تُحفظ بعد لأن ملفًا مفتوح في Excel. هل تريد الإغلاق؟</sys:String>
+
+    <sys:String x:Key="Home.Welcome">مرحبًا</sys:String>
+    <sys:String x:Key="Home.Database">مجلد قاعدة البيانات</sys:String>
+    <sys:String x:Key="Home.Missing">عناصر ناقصة في مجلد قاعدة البيانات (اضغط إصلاح لإنشائها):</sys:String>
+    <sys:String x:Key="Home.Repair">إصلاح الهيكل</sys:String>
+    <sys:String x:Key="Home.TemplatesLinked">قوالب مربوطة</sys:String>
+
+    <sys:String x:Key="Setup.Title">إعداد كيان</sys:String>
+    <sys:String x:Key="Setup.Intro">لكل كيان (شركة) مجلد قاعدة بيانات خاص به. أنشئ مجلدًا جديدًا أو افتح مجلدًا موجودًا.</sys:String>
+    <sys:String x:Key="Setup.New">إنشاء قاعدة بيانات جديدة</sys:String>
+    <sys:String x:Key="Setup.Open">فتح مجلد قاعدة بيانات موجود</sys:String>
+    <sys:String x:Key="Setup.Name">اسم الكيان</sys:String>
+    <sys:String x:Key="Setup.Location">المكان</sys:String>
+    <sys:String x:Key="Setup.WillCreate">سيتم إنشاء:</sys:String>
+    <sys:String x:Key="Setup.Create">إنشاء</sys:String>
+    <sys:String x:Key="Setup.OpenButton">فتح مجلد…</sys:String>
+
+    <sys:String x:Key="Tpl.Intro">ضع ملفات القوالب (.xlsx) في مجلد Templates ثم اربطها من هنا. البرنامج يكتشف الخلايا المتغيرة تلقائيًا؛ راجعها ثم احفظ.</sys:String>
+    <sys:String x:Key="Tpl.AddFile">إضافة قالب…</sys:String>
+    <sys:String x:Key="Tpl.Detect">اكتشاف الخلايا</sys:String>
+    <sys:String x:Key="Tpl.SaveMap">حفظ الربط</sys:String>
+    <sys:String x:Key="Tpl.Field">الحقل</sys:String>
+    <sys:String x:Key="Tpl.Cell">الخلية</sys:String>
+    <sys:String x:Key="Tpl.Confidence">الثقة</sys:String>
+    <sys:String x:Key="Tpl.Method">طريقة الاكتشاف</sys:String>
+    <sys:String x:Key="Tpl.Sample">القيمة الحالية</sys:String>
+    <sys:String x:Key="Tpl.Warnings">ملاحظات</sys:String>
+    <sys:String x:Key="Tpl.Items">جدول الأصناف</sys:String>
+    <sys:String x:Key="Tpl.Status.NotLinked">غير مربوط</sys:String>
+    <sys:String x:Key="Tpl.Status.Linked">مربوط</sys:String>
+    <sys:String x:Key="Tpl.Status.Changed">تغيّر - أعد الاكتشاف</sys:String>
+    <sys:String x:Key="Tpl.Saved">تم حفظ الربط.</sys:String>
+    <sys:String x:Key="Tpl.Empty">لا توجد قوالب بعد. انسخ INVOICE.xlsx و INV1.xlsx و Madar.xlsx إلى مجلد Templates أو اضغط "إضافة قالب".</sys:String>
+
+    <sys:String x:Key="Field.party_name">اسم العميل / المورد</sys:String>
+    <sys:String x:Key="Field.party_native_name">الاسم الأصلي (صيني، هندي…)</sys:String>
+    <sys:String x:Key="Field.issue_date">التاريخ</sys:String>
+    <sys:String x:Key="Field.invoice_no">رقم الفاتورة</sys:String>
+    <sys:String x:Key="Field.total">إجمالي الفاتورة (InvoiceTarget)</sys:String>
+    <sys:String x:Key="Field.bank">بيانات الدفع والبنك</sys:String>
+    <sys:String x:Key="Field.address">عنوان الشركة</sys:String>
+    <sys:String x:Key="Field.amount_words">المبلغ بالحروف</sys:String>
+    <sys:String x:Key="Field.buyer_block">المشتري / المرسل إليه</sys:String>
+    <sys:String x:Key="Field.vat_no">الرقم الضريبي</sys:String>
+    <sys:String x:Key="Field.vat_amount">قيمة الضريبة</sys:String>
+
+    <sys:String x:Key="Set.Appearance">المظهر</sys:String>
+    <sys:String x:Key="Set.Language">اللغة</sys:String>
+    <sys:String x:Key="Set.Theme">الثيم</sys:String>
+    <sys:String x:Key="Set.Dark">داكن</sys:String>
+    <sys:String x:Key="Set.Light">فاتح</sys:String>
+    <sys:String x:Key="Set.Sync">المزامنة</sys:String>
+    <sys:String x:Key="Set.AutoSave">حفظ التغييرات في Excel تلقائيًا</sys:String>
+    <sys:String x:Key="Set.Backups">عدد النسخ الاحتياطية لكل ملف</sys:String>
+    <sys:String x:Key="Set.Entities">الكيانات</sys:String>
+    <sys:String x:Key="Set.RemoveEntity">إزالة من القائمة</sys:String>
+    <sys:String x:Key="Set.RemoveNote">إزالة الكيان تحذفه من القائمة فقط، ولا تحذف مجلد قاعدة البيانات.</sys:String>
+    <sys:String x:Key="Set.About">باتش ستوديو - المرحلة الأولى</sys:String>
+</ResourceDictionary>

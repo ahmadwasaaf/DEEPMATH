@@ -1,0 +1,194 @@
+using System.Collections.ObjectModel;
+using System.Windows;
+using BatchStudio.App.Services;
+using BatchStudio.Core.Data;
+using BatchStudio.Core.Entities;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+namespace BatchStudio.App.ViewModels;
+
+public sealed partial class NavItem : ObservableObject
+{
+    public required string Key { get; init; }       // localization key
+    public required string Glyph { get; init; }     // Segoe Fluent Icons glyph
+    public required Func<object?> Page { get; init; }
+    public string Title => Loc.T(Key);
+    public void Refresh() => OnPropertyChanged(nameof(Title));
+}
+
+public sealed partial class MainViewModel : ObservableObject
+{
+    public AppSettings Settings { get; }
+    public ObservableCollection<EntityProfile> Entities { get; } = [];
+    public ObservableCollection<NavItem> Nav { get; } = [];
+    public List<DataSetViewModel> DataPages { get; } = [];
+
+    public HomeViewModel Home { get; }
+    public TemplatesViewModel Templates { get; }
+    public SettingsViewModel SettingsPage { get; }
+    public EntitySetupViewModel Setup { get; }
+
+    [ObservableProperty] private EntityProfile? _activeEntity;
+    [ObservableProperty] private object? _currentPage;
+    [ObservableProperty] private NavItem? _selectedNav;
+    [ObservableProperty] private bool _hasEntity;
+
+    private DatabaseWatcher? _watcher;
+    private bool _switching;
+
+    public string? Root => ActiveEntity?.DatabasePath;
+
+    public MainViewModel(AppSettings settings)
+    {
+        Settings = settings;
+        Home = new HomeViewModel(this);
+        Templates = new TemplatesViewModel(this);
+        SettingsPage = new SettingsViewModel(this);
+        Setup = new EntitySetupViewModel(this);
+        foreach (var e in settings.Entities) Entities.Add(e);
+
+        Nav.Add(new NavItem { Key = "Nav.Home", Glyph = "", Page = () => Home });
+        Nav.Add(new NavItem { Key = "Nav.Suppliers", Glyph = "", Page = () => Page("suppliers") });
+        Nav.Add(new NavItem { Key = "Nav.Clients", Glyph = "", Page = () => Page("clients") });
+        Nav.Add(new NavItem { Key = "Nav.Items", Glyph = "", Page = () => Page("items") });
+        Nav.Add(new NavItem { Key = "Nav.Categories", Glyph = "", Page = () => Page("categories") });
+        Nav.Add(new NavItem { Key = "Nav.Templates", Glyph = "", Page = () => Templates });
+        Nav.Add(new NavItem { Key = "Nav.Settings", Glyph = "", Page = () => SettingsPage });
+        LanguageService.Changed += () => { foreach (var n in Nav) n.Refresh(); };
+
+        var active = settings.Active;
+        if (active != null && Directory.Exists(active.DatabasePath)) ActiveEntity = active;
+        else ShowSetup();
+    }
+
+    private DataSetViewModel? Page(string key) => DataPages.FirstOrDefault(p => p.Session.Definition.Key == key);
+
+    partial void OnSelectedNavChanged(NavItem? value)
+    {
+        if (value == null) return;
+        if (!HasEntity && value.Key != "Nav.Settings") { ShowSetup(); return; }
+        CurrentPage = value.Page();
+        if (CurrentPage is TemplatesViewModel t) t.Refresh();
+        if (CurrentPage is HomeViewModel h) h.Refresh();
+    }
+
+    partial void OnActiveEntityChanged(EntityProfile? oldValue, EntityProfile? newValue)
+    {
+        if (_switching || newValue == null) return;
+        OpenEntity(newValue);
+    }
+
+    public void OpenEntity(EntityProfile entity)
+    {
+        foreach (var p in DataPages) { p.FlushPending(); p.Stop(); }
+        _watcher?.Dispose();
+        _watcher = null;
+        DataPages.Clear();
+
+        try
+        {
+            DatabaseLayout.EnsureStructure(entity.DatabasePath, entity.Name);
+        }
+        catch (Exception ex)
+        {
+            Dialogs.Error(ex.Message);
+            ShowSetup();
+            return;
+        }
+
+        var root = entity.DatabasePath;
+        DataPages.Add(new DataSetViewModel(this, new DataSetSession(root, DataSets.Suppliers), "Nav.Suppliers", ""));
+        DataPages.Add(new DataSetViewModel(this, new DataSetSession(root, DataSets.Clients), "Nav.Clients", ""));
+        DataPages.Add(new DataSetViewModel(this, new DataSetSession(root, DataSets.Items), "Nav.Items", ""));
+        DataPages.Add(new DataSetViewModel(this, new DataSetSession(root, DataSets.Categories), "Nav.Categories", ""));
+        foreach (var p in DataPages) p.Load();
+
+        _watcher = new DatabaseWatcher(root);
+        _watcher.FileChanged += path => Application.Current.Dispatcher.InvokeAsync(() => OnFileChanged(path));
+
+        entity.LastOpenedUtc = DateTime.UtcNow;
+        Settings.ActiveEntity = entity.Name;
+        SaveSettings();
+        HasEntity = true;
+        _switching = true;
+        ActiveEntity = entity;
+        _switching = false;
+        Home.Refresh();
+        SelectedNav = Nav[0];
+        CurrentPage = Home;
+    }
+
+    private void OnFileChanged(string path)
+    {
+        var full = Path.GetFullPath(path);
+        foreach (var p in DataPages)
+            if (string.Equals(Path.GetFullPath(p.Session.FilePath), full, StringComparison.OrdinalIgnoreCase))
+            {
+                p.OnExternalChange();
+                return;
+            }
+        if (Root != null && full.StartsWith(Path.GetFullPath(DatabaseLayout.Templates(Root)), StringComparison.OrdinalIgnoreCase))
+            Templates.Refresh();
+    }
+
+    public void AddEntity(EntityProfile entity)
+    {
+        var existing = Settings.Entities.FirstOrDefault(e => string.Equals(e.DatabasePath, entity.DatabasePath, StringComparison.OrdinalIgnoreCase));
+        if (existing == null)
+        {
+            // keep names unique in the switcher
+            var name = entity.Name;
+            for (int i = 2; Settings.Entities.Any(e => string.Equals(e.Name, entity.Name, StringComparison.OrdinalIgnoreCase)); i++)
+                entity.Name = $"{name} ({i})";
+            Settings.Entities.Add(entity);
+            Entities.Add(entity);
+            existing = entity;
+        }
+        OpenEntity(existing);
+    }
+
+    public void RemoveEntity(EntityProfile entity)
+    {
+        Settings.Entities.Remove(entity);
+        Entities.Remove(entity);
+        if (ActiveEntity == entity)
+        {
+            _watcher?.Dispose();
+            _watcher = null;
+            DataPages.Clear();
+            HasEntity = false;
+            _switching = true;
+            ActiveEntity = null;
+            _switching = false;
+            var next = Settings.Entities.FirstOrDefault(e => Directory.Exists(e.DatabasePath));
+            if (next != null) OpenEntity(next); else ShowSetup();
+        }
+        SaveSettings();
+    }
+
+    [RelayCommand]
+    public void ShowSetup()
+    {
+        SelectedNav = null;
+        Setup.Reset();
+        CurrentPage = Setup;
+    }
+
+    public void SaveSettings()
+    {
+        try { SettingsStore.Save(Settings); }
+        catch (Exception ex) { Dialogs.Error(ex.Message); }
+    }
+
+    /// <summary>Returns false if the user cancels closing.</summary>
+    public bool OnClosing()
+    {
+        bool allSaved = DataPages.All(p => p.FlushPending());
+        if (!allSaved && !Dialogs.Confirm(Loc.T("Close.Pending"))) return false;
+        foreach (var p in DataPages) p.Stop();
+        _watcher?.Dispose();
+        SaveSettings();
+        return true;
+    }
+}

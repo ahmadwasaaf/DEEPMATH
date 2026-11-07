@@ -1,0 +1,97 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <sys:String x:Key="App.Title">BATCH STUDIO</sys:String>
+    <sys:String x:Key="Nav.Home">Home</sys:String>
+    <sys:String x:Key="Nav.Suppliers">Suppliers</sys:String>
+    <sys:String x:Key="Nav.Clients">Clients</sys:String>
+    <sys:String x:Key="Nav.Items">Items</sys:String>
+    <sys:String x:Key="Nav.Categories">Categories</sys:String>
+    <sys:String x:Key="Nav.Templates">Templates</sys:String>
+    <sys:String x:Key="Nav.Settings">Settings</sys:String>
+    <sys:String x:Key="Entity.Label">Entity</sys:String>
+    <sys:String x:Key="Entity.Add">Add entity</sys:String>
+
+    <sys:String x:Key="Common.Save">Save</sys:String>
+    <sys:String x:Key="Common.Add">Add</sys:String>
+    <sys:String x:Key="Common.Delete">Delete</sys:String>
+    <sys:String x:Key="Common.Reload">Reload</sys:String>
+    <sys:String x:Key="Common.Search">Search…</sys:String>
+    <sys:String x:Key="Common.OpenInExcel">Open in Excel</sys:String>
+    <sys:String x:Key="Common.OpenFolder">Open folder</sys:String>
+    <sys:String x:Key="Common.Browse">Browse…</sys:String>
+    <sys:String x:Key="Common.Rows">records</sys:String>
+    <sys:String x:Key="Common.Details">Details</sys:String>
+    <sys:String x:Key="Common.Cancel">Cancel</sys:String>
+
+    <sys:String x:Key="Status.Synced">Synced with Excel</sys:String>
+    <sys:String x:Key="Status.Unsaved">Unsaved changes</sys:String>
+    <sys:String x:Key="Status.Saving">Saving…</sys:String>
+    <sys:String x:Key="Status.Locked">Waiting: the file is open in Excel. It will be saved when Excel closes it.</sys:String>
+    <sys:String x:Key="Status.Reloaded">Updated from Excel</sys:String>
+    <sys:String x:Key="Status.Merged">Excel changes merged with your edits</sys:String>
+    <sys:String x:Key="Status.Error">Error</sys:String>
+
+    <sys:String x:Key="Conflict.Title">Sync conflict</sys:String>
+    <sys:String x:Key="Conflict.Message">These records were changed both here and in Excel:&#x0a;&#x0a;{0}&#x0a;&#x0a;Yes = keep the program's version&#x0a;No = use the Excel version</sys:String>
+    <sys:String x:Key="Validate.MissingId">Some rows have no ID. Fill the first column before saving.</sys:String>
+    <sys:String x:Key="Close.Pending">Some changes could not be saved yet (a file is open in Excel). Close anyway?</sys:String>
+
+    <sys:String x:Key="Home.Welcome">Welcome</sys:String>
+    <sys:String x:Key="Home.Database">Database folder</sys:String>
+    <sys:String x:Key="Home.Missing">Missing from the Database folder (click Repair to create):</sys:String>
+    <sys:String x:Key="Home.Repair">Repair structure</sys:String>
+    <sys:String x:Key="Home.TemplatesLinked">templates linked</sys:String>
+
+    <sys:String x:Key="Setup.Title">Set up an entity</sys:String>
+    <sys:String x:Key="Setup.Intro">Each entity (company) has its own Database folder. Create a new one, or open a Database folder you already have.</sys:String>
+    <sys:String x:Key="Setup.New">Create a new Database</sys:String>
+    <sys:String x:Key="Setup.Open">Open an existing Database folder</sys:String>
+    <sys:String x:Key="Setup.Name">Entity name</sys:String>
+    <sys:String x:Key="Setup.Location">Location</sys:String>
+    <sys:String x:Key="Setup.WillCreate">Will create:</sys:String>
+    <sys:String x:Key="Setup.Create">Create</sys:String>
+    <sys:String x:Key="Setup.OpenButton">Open folder…</sys:String>
+
+    <sys:String x:Key="Tpl.Intro">Put template files (.xlsx) in the Templates folder, then link them here. The app finds the variable cells automatically; check them and save.</sys:String>
+    <sys:String x:Key="Tpl.AddFile">Add template…</sys:String>
+    <sys:String x:Key="Tpl.Detect">Detect cells</sys:String>
+    <sys:String x:Key="Tpl.SaveMap">Save link</sys:String>
+    <sys:String x:Key="Tpl.Field">Field</sys:String>
+    <sys:String x:Key="Tpl.Cell">Cell</sys:String>
+    <sys:String x:Key="Tpl.Confidence">Confidence</sys:String>
+    <sys:String x:Key="Tpl.Method">Found by</sys:String>
+    <sys:String x:Key="Tpl.Sample">Current value</sys:String>
+    <sys:String x:Key="Tpl.Warnings">Notes</sys:String>
+    <sys:String x:Key="Tpl.Items">Items table</sys:String>
+    <sys:String x:Key="Tpl.Status.NotLinked">Not linked</sys:String>
+    <sys:String x:Key="Tpl.Status.Linked">Linked</sys:String>
+    <sys:String x:Key="Tpl.Status.Changed">Changed - detect again</sys:String>
+    <sys:String x:Key="Tpl.Saved">Link saved.</sys:String>
+    <sys:String x:Key="Tpl.Empty">No templates yet. Copy INVOICE.xlsx, INV1.xlsx, Madar.xlsx… into the Templates folder or click "Add template".</sys:String>
+
+    <sys:String x:Key="Field.party_name">Client / supplier name</sys:String>
+    <sys:String x:Key="Field.party_native_name">Native name (Chinese, Hindi…)</sys:String>
+    <sys:String x:Key="Field.issue_date">Date</sys:String>
+    <sys:String x:Key="Field.invoice_no">Invoice number</sys:String>
+    <sys:String x:Key="Field.total">Invoice total (InvoiceTarget)</sys:String>
+    <sys:String x:Key="Field.bank">PAYMENT &amp; BANKING INSTRUCTIONS</sys:String>
+    <sys:String x:Key="Field.address">Company Address</sys:String>
+    <sys:String x:Key="Field.amount_words">Amount in words</sys:String>
+    <sys:String x:Key="Field.buyer_block">Buyer / consignee</sys:String>
+    <sys:String x:Key="Field.vat_no">VAT number</sys:String>
+    <sys:String x:Key="Field.vat_amount">VAT amount</sys:String>
+
+    <sys:String x:Key="Set.Appearance">Appearance</sys:String>
+    <sys:String x:Key="Set.Language">Language</sys:String>
+    <sys:String x:Key="Set.Theme">Theme</sys:String>
+    <sys:String x:Key="Set.Dark">Dark</sys:String>
+    <sys:String x:Key="Set.Light">Light</sys:String>
+    <sys:String x:Key="Set.Sync">Synchronization</sys:String>
+    <sys:String x:Key="Set.AutoSave">Save changes to Excel automatically</sys:String>
+    <sys:String x:Key="Set.Backups">Backups kept per file</sys:String>
+    <sys:String x:Key="Set.Entities">Entities</sys:String>
+    <sys:String x:Key="Set.RemoveEntity">Remove from list</sys:String>
+    <sys:String x:Key="Set.RemoveNote">Removing an entity only removes it from this list. Its Database folder is not deleted.</sys:String>
+    <sys:String x:Key="Set.About">BATCH STUDIO Desktop - phase 1</sys:String>
+</ResourceDictionary>

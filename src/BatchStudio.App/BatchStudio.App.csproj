@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>BatchStudio</AssemblyName>
+    <RootNamespace>BatchStudio.App</RootNamespace>
+    <!-- WPF0001: built-in Fluent theme (ThemeMode) is marked experimental -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BatchStudio.Core\BatchStudio.Core.csproj" />
+  </ItemGroup>
+</Project>
