@@ -112,4 +112,6 @@ public sealed class EntityInfo
     public int SchemaVersion { get; set; } = 1;
     /// <summary>Default currency for amount-in-words (USD / SAR).</summary>
     public string Currency { get; set; } = "USD";
+    /// <summary>Invoice numbers are PREFIX-1234567 (V28: "Mad").</summary>
+    public string InvoicePrefix { get; set; } = "Mad";
 }

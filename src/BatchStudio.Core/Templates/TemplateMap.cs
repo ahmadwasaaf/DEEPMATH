@@ -17,12 +17,13 @@ public static class TemplateFields
     public const string BuyerBlock = "buyer_block";
     public const string VatNo = "vat_no";
     public const string VatAmount = "vat_amount";
+    public const string Category = "category";
 
     /// <summary>The core variable cells every template should have (shown first in the review screen).</summary>
     public static IReadOnlyList<string> Core { get; } =
         [PartyName, PartyNativeName, IssueDate, InvoiceNo, Total, Bank, Address];
 
-    public static IReadOnlyList<string> Optional { get; } = [AmountWords, BuyerBlock, VatNo, VatAmount];
+    public static IReadOnlyList<string> Optional { get; } = [Category, AmountWords, BuyerBlock, VatNo, VatAmount];
 
     public static IReadOnlyList<string> All { get; } = [.. Core, .. Optional];
 }
@@ -60,6 +61,18 @@ public sealed class TemplateMap
     public Dictionary<string, FieldMapping> Fields { get; set; } = new();
     public ItemsTableMapping? Items { get; set; }
     public double? VatRate { get; set; }
+    /// <summary>"SUPPLIERS" or "CLIENTS": whose invoices this template produces (archive sub-folder).</summary>
+    public string? PartyType { get; set; }
+    /// <summary>"USD" or "SAR" for the amount in words.</summary>
+    public string? Currency { get; set; }
+
+    /// <summary>Party type to use when none was saved: templates with bank/address blocks are supplier invoices.</summary>
+    [JsonIgnore]
+    public string EffectivePartyType => PartyType ??
+        (Fields.TryGetValue(TemplateFields.Bank, out var b) && b.Cell != null ? "SUPPLIERS" : "CLIENTS");
+
+    [JsonIgnore]
+    public string EffectiveCurrency => Currency ?? (VatRate is > 0 ? "SAR" : "USD");
     public List<string> Warnings { get; set; } = [];
 
     [JsonIgnore]

@@ -108,6 +108,17 @@ public static class TemplateDetector
             };
         }
 
+        // 2b) category line just above the items header ("Water Pumps & Motors | مضخات ومواتير المياه")
+        if (headerRow is int hr)
+            for (int rr = hr - 1; rr >= Math.Max(s.Row1, hr - 3) && !f.ContainsKey(TemplateFields.Category); rr--)
+                foreach (var cell in s.Cells.Values.Where(c => c.Row == rr && c.Formula == null).OrderBy(c => c.Col))
+                    if (cell.Text.Contains('|') && !cell.Text.Contains('\n') && Regex.IsMatch(cell.Text, @"[\u0600-\u06FF]") &&
+                        Regex.IsMatch(cell.Text, "[A-Za-z]") && !IsLabel(cell.Text))
+                    {
+                        Put(TemplateFields.Category, Found(cell.Row, cell.Col, 0.85, "\"English | Arabic\" text above the items table", cell.Text));
+                        break;
+                    }
+
         // 3) labels
         foreach (var cell in s.Cells.Values.OrderBy(c => c.Row).ThenBy(c => c.Col))
         {
