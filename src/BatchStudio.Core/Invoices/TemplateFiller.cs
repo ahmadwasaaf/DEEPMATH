@@ -167,6 +167,7 @@ public static class TemplateFiller
 
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
         wb.SaveAs(outputPath);
+        PackageRepair.StripControls(outputPath);
     }
 
     private static void Set(IXLCell? cell, string value)
