@@ -139,3 +139,37 @@ public class TemplateDetectorTests
     public void Script_detection(string text, string? expected) =>
         Assert.Equal(expected, TemplateDetector.Script(text));
 }
+
+public class PackageRepairTests
+{
+    [Fact]
+    public void Template_with_dangling_package_relationship_still_loads()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"bs-{Guid.NewGuid():N}.xlsx");
+        try
+        {
+            using (var wb = new ClosedXML.Excel.XLWorkbook())
+            {
+                var ws = wb.Worksheets.Add("INVOICE");
+                ws.Cell("E5").Value = "INVOICE NO: ";
+                ws.Cell("F5").Value = "Mad-1234567";
+                wb.SaveAs(path);
+            }
+            // add a relationship to a part that does not exist (what the V28 extraction produced)
+            using (var zip = System.IO.Compression.ZipFile.Open(path, System.IO.Compression.ZipArchiveMode.Update))
+            {
+                var e = zip.GetEntry("_rels/.rels")!;
+                string xml;
+                using (var r = new StreamReader(e.Open())) xml = r.ReadToEnd();
+                e.Delete();
+                xml = xml.Replace("</Relationships>",
+                    "<Relationship Id=\"rIdX\" Type=\"http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail\" Target=\"docProps/thumbnail.emf\"/></Relationships>");
+                using var w = new StreamWriter(zip.CreateEntry("_rels/.rels").Open());
+                w.Write(xml);
+            }
+            var map = TemplateDetector.DetectFile(path);
+            Assert.Equal("F5", map.Fields[TemplateFields.InvoiceNo].Cell);
+        }
+        finally { File.Delete(path); }
+    }
+}

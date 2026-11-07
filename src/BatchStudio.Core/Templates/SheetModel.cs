@@ -91,8 +91,7 @@ public sealed class SheetModel
     /// <summary>Loads a template file. Uses the sheet named like the file, else the first visible sheet.</summary>
     public static SheetModel Load(string path, string? sheetName = null)
     {
-        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        using var wb = new XLWorkbook(fs);
+        using var wb = PackageRepair.OpenWorkbook(path);
         IXLWorksheet? ws = null;
         if (sheetName != null) wb.Worksheets.TryGetWorksheet(sheetName, out ws);
         if (ws == null) wb.Worksheets.TryGetWorksheet(Path.GetFileNameWithoutExtension(path), out ws);

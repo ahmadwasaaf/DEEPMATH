@@ -52,6 +52,15 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
     }
 
     [RelayCommand]
+    private void ChangeFolder()
+    {
+        var e = main.ActiveEntity;
+        if (e == null) return;
+        var folder = Dialogs.PickFolder(Path.GetDirectoryName(e.DatabasePath));
+        if (folder != null) main.ChangeEntityPath(e, folder);
+    }
+
+    [RelayCommand]
     private void OpenDatabase()
     {
         if (main.Root != null) Shell.ShowInFolder(main.Root);
@@ -229,10 +238,39 @@ public sealed partial class TemplatesViewModel(MainViewModel main) : ObservableO
 }
 
 // ====================================================================== Settings
+public sealed partial class EntityRowViewModel : ObservableObject
+{
+    public required EntityProfile Entity { get; init; }
+    [ObservableProperty] private string _name = "";
+    public string DatabasePath => Entity.DatabasePath;
+    public bool Exists => Directory.Exists(Entity.DatabasePath);
+}
+
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly MainViewModel _main;
-    public ObservableCollection<EntityProfile> Entities => _main.Entities;
+    public ObservableCollection<EntityRowViewModel> Entities { get; } = [];
+
+    public void Refresh()
+    {
+        Entities.Clear();
+        foreach (var e in _main.Settings.Entities) Entities.Add(new EntityRowViewModel { Entity = e, Name = e.Name });
+    }
+
+    [RelayCommand]
+    private void ChangePath(EntityRowViewModel? row)
+    {
+        if (row == null) return;
+        var start = Directory.Exists(row.Entity.DatabasePath) ? Path.GetDirectoryName(row.Entity.DatabasePath) : null;
+        var folder = Dialogs.PickFolder(start);
+        if (folder != null) _main.ChangeEntityPath(row.Entity, folder);
+    }
+
+    [RelayCommand]
+    private void Rename(EntityRowViewModel? row)
+    {
+        if (row != null) _main.RenameEntity(row.Entity, row.Name);
+    }
 
     [ObservableProperty] private bool _isArabic;
     [ObservableProperty] private bool _isLight;
@@ -276,10 +314,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RemoveEntity(EntityProfile? e)
+    private void RemoveEntity(EntityRowViewModel? row)
     {
+        var e = row?.Entity;
         if (e != null && Dialogs.Confirm($"{Loc.T("Set.RemoveEntity")}: {e.Name}?\n\n{Loc.T("Set.RemoveNote")}"))
             _main.RemoveEntity(e);
+        Refresh();
     }
 
     [RelayCommand]

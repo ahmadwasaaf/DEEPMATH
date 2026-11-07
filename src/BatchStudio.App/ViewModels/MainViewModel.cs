@@ -47,6 +47,7 @@ public sealed partial class MainViewModel : ObservableObject
         SettingsPage = new SettingsViewModel(this);
         Setup = new EntitySetupViewModel(this);
         foreach (var e in settings.Entities) Entities.Add(e);
+        SettingsPage.Refresh();
 
         Nav.Add(new NavItem { Key = "Nav.Home", Glyph = "", Page = () => Home });
         Nav.Add(new NavItem { Key = "Nav.Suppliers", Glyph = "", Page = () => Page("suppliers") });
@@ -71,6 +72,7 @@ public sealed partial class MainViewModel : ObservableObject
         CurrentPage = value.Page();
         if (CurrentPage is TemplatesViewModel t) t.Refresh();
         if (CurrentPage is HomeViewModel h) h.Refresh();
+        if (CurrentPage is SettingsViewModel sp) sp.Refresh();
     }
 
     partial void OnActiveEntityChanged(EntityProfile? oldValue, EntityProfile? newValue)
@@ -144,8 +146,67 @@ public sealed partial class MainViewModel : ObservableObject
             Settings.Entities.Add(entity);
             Entities.Add(entity);
             existing = entity;
+            SettingsPage.Refresh();
         }
         OpenEntity(existing);
+    }
+
+    /// <summary>Points an entity at another Database folder (e.g. after moving it or to a OneDrive copy).</summary>
+    public void ChangeEntityPath(EntityProfile entity, string newPath)
+    {
+        if (string.Equals(Path.GetFullPath(entity.DatabasePath), Path.GetFullPath(newPath), StringComparison.OrdinalIgnoreCase)) return;
+        var other = Settings.Entities.FirstOrDefault(e => e != entity &&
+            string.Equals(Path.GetFullPath(e.DatabasePath), Path.GetFullPath(newPath), StringComparison.OrdinalIgnoreCase));
+        if (other != null)
+        {
+            Dialogs.Error(Loc.F("Entity.PathInUse", other.Name));
+            return;
+        }
+        var missing = DatabaseLayout.Validate(newPath);
+        if (missing.Count > 0 && !Dialogs.Confirm(Loc.F("Entity.PathMissing", string.Join("\n", missing.Take(10).Select(m => "• " + m)))))
+            return;
+        bool wasActive = ActiveEntity == entity;
+        if (wasActive) foreach (var p in DataPages) p.FlushPending();
+        entity.DatabasePath = newPath;
+        SaveSettings();
+        RefreshEntityList();
+        if (wasActive) OpenEntity(entity);
+    }
+
+    public void RenameEntity(EntityProfile entity, string newName)
+    {
+        newName = newName.Trim();
+        if (newName.Length == 0 || newName == entity.Name) return;
+        if (Settings.Entities.Any(e => e != entity && string.Equals(e.Name, newName, StringComparison.OrdinalIgnoreCase)))
+        {
+            Dialogs.Error(Loc.F("Entity.NameInUse", newName));
+            return;
+        }
+        bool wasActive = ActiveEntity == entity;
+        entity.Name = newName;
+        if (wasActive) Settings.ActiveEntity = newName;
+        try
+        {
+            var info = DatabaseLayout.ReadEntityInfo(entity.DatabasePath) ?? new EntityInfo { CreatedUtc = DateTime.UtcNow };
+            info.Name = newName;
+            DatabaseLayout.WriteEntityInfo(entity.DatabasePath, info);
+        }
+        catch { /* folder may be read-only; the name is still kept in settings */ }
+        SaveSettings();
+        RefreshEntityList();
+        if (wasActive) Home.Refresh();
+    }
+
+    /// <summary>Re-binds the entity switcher so renamed / moved entities show up.</summary>
+    private void RefreshEntityList()
+    {
+        var active = ActiveEntity;
+        _switching = true;
+        Entities.Clear();
+        foreach (var e in Settings.Entities) Entities.Add(e);
+        ActiveEntity = active;
+        _switching = false;
+        SettingsPage.Refresh();
     }
 
     public void RemoveEntity(EntityProfile entity)

@@ -16,8 +16,7 @@ public static class ExcelTableStore
     public static TableData Load(string path, string sheetName, int keyColumn = 0)
     {
         // FileShare.ReadWrite lets us read while the file is open in Excel.
-        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        using var wb = new XLWorkbook(fs);
+        using var wb = PackageRepair.OpenWorkbook(path);
         var ws = wb.Worksheets.TryGetWorksheet(sheetName, out var named) ? named : wb.Worksheet(1);
         return Read(ws, keyColumn);
     }
