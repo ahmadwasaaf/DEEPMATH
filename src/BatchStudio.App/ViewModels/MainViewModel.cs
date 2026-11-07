@@ -28,6 +28,7 @@ public sealed partial class MainViewModel : ObservableObject
     public TemplatesViewModel Templates { get; }
     public SettingsViewModel SettingsPage { get; }
     public EntitySetupViewModel Setup { get; }
+    public NewInvoiceViewModel NewInvoice { get; }
 
     [ObservableProperty] private EntityProfile? _activeEntity;
     [ObservableProperty] private object? _currentPage;
@@ -46,15 +47,17 @@ public sealed partial class MainViewModel : ObservableObject
         Templates = new TemplatesViewModel(this);
         SettingsPage = new SettingsViewModel(this);
         Setup = new EntitySetupViewModel(this);
+        NewInvoice = new NewInvoiceViewModel(this);
         foreach (var e in settings.Entities) Entities.Add(e);
         SettingsPage.Refresh();
 
         Nav.Add(new NavItem { Key = "Nav.Home", Glyph = "", Page = () => Home });
+        Nav.Add(new NavItem { Key = "Nav.NewInvoice", Glyph = "\uE710", Page = () => NewInvoice });
         Nav.Add(new NavItem { Key = "Nav.Suppliers", Glyph = "", Page = () => Page("suppliers") });
         Nav.Add(new NavItem { Key = "Nav.Clients", Glyph = "", Page = () => Page("clients") });
         Nav.Add(new NavItem { Key = "Nav.Items", Glyph = "", Page = () => Page("items") });
         Nav.Add(new NavItem { Key = "Nav.Categories", Glyph = "", Page = () => Page("categories") });
-        Nav.Add(new NavItem { Key = "Nav.Templates", Glyph = "", Page = () => Templates });
+        Nav.Add(new NavItem { Key = "Nav.Templates", Glyph = "\uE8F1", Page = () => Templates });
         Nav.Add(new NavItem { Key = "Nav.Settings", Glyph = "", Page = () => SettingsPage });
         LanguageService.Changed += () => { foreach (var n in Nav) n.Refresh(); };
 
@@ -73,6 +76,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (CurrentPage is TemplatesViewModel t) t.Refresh();
         if (CurrentPage is HomeViewModel h) h.Refresh();
         if (CurrentPage is SettingsViewModel sp) sp.Refresh();
+        if (CurrentPage is NewInvoiceViewModel ni) ni.Refresh();
     }
 
     partial void OnActiveEntityChanged(EntityProfile? oldValue, EntityProfile? newValue)
@@ -133,6 +137,9 @@ public sealed partial class MainViewModel : ObservableObject
         if (Root != null && full.StartsWith(Path.GetFullPath(DatabaseLayout.Templates(Root)), StringComparison.OrdinalIgnoreCase))
             Templates.Refresh();
     }
+
+    /// <summary>Called after an invoice was archived (history file changed by the program).</summary>
+    public void OnHistoryChanged() => Home.Refresh();
 
     public void AddEntity(EntityProfile entity)
     {

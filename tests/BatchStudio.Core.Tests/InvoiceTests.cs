@@ -16,6 +16,8 @@ public class InvoiceTests
         Assert.Equal("(مائتان وخمسة وخمسون ألف ريال سعودي فقط) Total Amount Including VAT\n(Two Hundred Fifty-Five Thousand Saudi Riyals Only)",
             AmountWords.Format(255000m, InvoiceCurrency.SAR));
         Assert.Contains("and Fifty Cents Only", AmountWords.Format(1234.50m, InvoiceCurrency.USD));
+        Assert.StartsWith("(خمسة عشر دولارًا أمريكيًا", AmountWords.Format(15m, InvoiceCurrency.USD));
+        Assert.StartsWith("(خمسة دولارات أمريكية", AmountWords.Format(5m, InvoiceCurrency.USD));
         Assert.Contains("One Thousand Two Hundred Thirty-Four US Dollars", AmountWords.Format(1234.50m, InvoiceCurrency.USD));
     }
 
@@ -44,7 +46,7 @@ public class InvoiceTests
     [InlineData(255000, 11)]
     [InlineData(115000, 7)]
     [InlineData(1000, 2)]
-    [InlineData(57.5, 1)]
+    [InlineData(575, 1)]
     [InlineData(333333.33, 20)]
     public void Allocation_is_exact_with_line_vat(double target, int count)
     {

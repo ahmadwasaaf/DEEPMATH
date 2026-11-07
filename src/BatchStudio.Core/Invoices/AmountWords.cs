@@ -39,7 +39,14 @@ public static class AmountWords
         string[] forms = usd
             ? (major ? ["دولار أمريكي", "دولاران أمريكيان", "دولارات أمريكية", "دولارًا أمريكيًا"] : ["سنت", "سنتان", "سنتات", "سنتًا"])
             : (major ? ["ريال سعودي", "ريالان سعوديان", "ريالات سعودية", "ريالًا سعوديًا"] : ["هللة", "هللتان", "هللات", "هللة"]);
-        return n == 1 ? forms[0] : n == 2 ? forms[1] : n is >= 3 and <= 10 ? forms[2] : forms[3];
+        // 1 / 2 -> singular / dual; last two digits 3-10 -> plural; 11-99 -> accusative (دولارًا);
+        // round hundreds / thousands (and 101, 102 …) -> genitive singular (ثلاثون ألف دولار)
+        if (n == 1) return forms[0];
+        if (n == 2) return forms[1];
+        long r = n % 100;
+        if (r is >= 3 and <= 10) return forms[2];
+        if (r >= 11) return forms[3];
+        return forms[0];
     }
 
     private static readonly string[] ArSingular = ["", "ألف", "مليون", "مليار", "تريليون"];

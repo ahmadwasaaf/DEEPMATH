@@ -28,7 +28,8 @@ public partial class App : Application
         var i = Array.IndexOf(e.Args, "--page");
         if (i >= 0 && i + 1 < e.Args.Length && vm.HasEntity)
         {
-            var key = "Nav." + char.ToUpperInvariant(e.Args[i + 1][0]) + e.Args[i + 1][1..].ToLowerInvariant();
+            var arg = e.Args[i + 1].ToLowerInvariant();
+            var key = arg == "newinvoice" ? "Nav.NewInvoice" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
             var nav = vm.Nav.FirstOrDefault(n => n.Key == key);
             if (nav != null) vm.SelectedNav = nav;
         }
