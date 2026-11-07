@@ -197,6 +197,15 @@ public static class TemplateDetector
             Put(TemplateFields.VatAmount, Found(cell.Row, cell.Col, 0.9, $"formula with {pm.Groups[1].Value}%", cell.Formula));
             map.VatRate = double.Parse(pm.Groups[1].Value, CultureInfo.InvariantCulture) / 100.0;
         }
+        // grand total = SUM(...) just below the VAT cell that references it (Madar: G30 = SUM(G28,G29))
+        if (f.TryGetValue(TemplateFields.VatAmount, out var vat) && vat.Cell != null && TryParseRef(vat.Cell, out var vr, out var vc))
+            for (int rr = vr + 1; rr <= vr + 3; rr++)
+                if (s.Cells.TryGetValue((rr, vc), out var tc) && tc.Formula != null &&
+                    Regex.IsMatch(tc.Formula, @"\b" + vat.Cell + @"\b", O))
+                {
+                    Put(TemplateFields.Total, Found(rr, vc, 0.9, "sum below the VAT amount", tc.Formula));
+                    break;
+                }
 
         // 6) party name from layout: largest Latin text above the items table
         int topLimit = (headerRow ?? s.Row2) - 1;

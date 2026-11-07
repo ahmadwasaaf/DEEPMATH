@@ -117,6 +117,21 @@ public class TemplateDetectorTests
         Assert.Equal("E", m.Items.Columns["unit"]);
     }
 
+    [Fact]
+    public void Madar_total_found_from_vat_sum_when_words_are_plain_text()
+    {
+        var s = new SheetModel { Name = "Madar", Row1 = 1, Col1 = 2, Row2 = 43, Col2 = 8 };
+        s.Add(14, 2, "Item Code"); s.Add(14, 3, "Descriptions"); s.Add(14, 4, "QTY"); s.Add(14, 7, "TOTAL AMOUNT");
+        for (int r = 16; r <= 26; r++) s.Add(r, 7, $"=D{r}*F{r}", formula: $"=D{r}*F{r}");
+        s.Add(28, 7, "=ROUND(SUM(G16:G26),2)", formula: "=ROUND(SUM(G16:G26),2)");
+        s.Add(29, 7, "=SUMPRODUCT(ROUND(G16:G26*15%,2))", formula: "=SUMPRODUCT(ROUND(G16:G26*15%,2))");
+        s.Add(30, 2, "(مائتان وخمسة وخمسون ألف ريال سعودي فقط) Total Amount");
+        s.Add(30, 7, "=SUM(G28,G29)", formula: "=SUM(G28,G29)");
+        var m = TemplateDetector.Detect(s);
+        Assert.Equal("G30", m.Fields[TemplateFields.Total].Cell);
+        Assert.Equal("B30", m.Fields[TemplateFields.AmountWords].Cell);
+    }
+
     [Theory]
     [InlineData("अरविंद एंटरप्राइजेज", "Hindi")]
     [InlineData("查司進出口有限公司", "Chinese")]

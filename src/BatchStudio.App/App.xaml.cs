@@ -20,8 +20,18 @@ public partial class App : Application
         var window = new MainWindow();
         MainWindow = window;
         window.FlowDirection = LanguageService.CurrentFlow;
-        window.DataContext = new MainViewModel(settings);
+        var vm = new MainViewModel(settings);
+        window.DataContext = vm;
         window.Show();
+
+        // --page <suppliers|clients|items|categories|templates|settings>  (used by the screenshot smoke test)
+        var i = Array.IndexOf(e.Args, "--page");
+        if (i >= 0 && i + 1 < e.Args.Length && vm.HasEntity)
+        {
+            var key = "Nav." + char.ToUpperInvariant(e.Args[i + 1][0]) + e.Args[i + 1][1..].ToLowerInvariant();
+            var nav = vm.Nav.FirstOrDefault(n => n.Key == key);
+            if (nav != null) vm.SelectedNav = nav;
+        }
     }
 
     private static void OnUnhandled(object sender, DispatcherUnhandledExceptionEventArgs e)
