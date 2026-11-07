@@ -161,10 +161,11 @@ public class InvoiceTests
             Assert.DoesNotContain(ws.CellsUsed(), c => c.HasFormula);
             Assert.Equal(35 + shift, ws.PageSetup.PrintAreas.First().RangeAddress.LastAddress.RowNumber);
 
-            var hist = ExcelTableStore.Load(DataSets.InvoiceHistory.FullPath(root), "Invoice History");
-            var row = Assert.Single(hist.Rows);
-            Assert.Equal("INV-1", row[0]);
-            Assert.Equal(@"BATCH STUDIO\SUPPLIERS\ARVIND ENTERPRISES\Mad-7654321.xlsx".Replace('\\', Path.DirectorySeparatorChar), row[8]);
+            var rec = Assert.Single(InvoiceHistoryBook.Read(DataSets.InvoiceHistory.FullPath(root)));
+            Assert.Equal("INV-1", rec.No);
+            Assert.Equal(path, rec.FilePath);
+            Assert.Equal("SUPPLIERS", rec.PartyType);
+            Assert.Equal(30000m, rec.Amount);
 
             // same number again is refused
             Assert.Throws<InvalidOperationException>(() => InvoiceService.Archive(root, draft));

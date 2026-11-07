@@ -100,12 +100,6 @@ public static class InvoiceService
         throw new InvalidOperationException("Could not find a free invoice number.");
     }
 
-    public static HashSet<string> ExistingInvoiceNumbers(TableData history)
-    {
-        int c = Col(history, "Invoice No", "INVOICE NO");
-        return new HashSet<string>(history.Rows.Select(r => Get(r, c)).Where(v => v != null)!, StringComparer.OrdinalIgnoreCase);
-    }
-
     // --------------------------------------------------------------- archive
     public static string SafeName(string s)
     {
@@ -122,9 +116,9 @@ public static class InvoiceService
                      SafeName(d.PartyName), SafeName(d.InvoiceNo) + ".xlsx");
 
     /// <summary>
-    /// Writes the invoice file and adds its INVOICE HISTORY row. Nothing is overwritten:
-    /// an existing file or invoice number is an error. The history file is checked first so
-    /// we never create an invoice file without its history record.
+    /// Writes the invoice file and adds its INVOICE HISTORY row (in the sheet's own layout). Nothing is
+    /// overwritten: an existing file or invoice number is an error. The history file is checked first so
+    /// an invoice file is never created without its history record.
     /// </summary>
     public static string Archive(string root, InvoiceDraft d, int keepBackups = 30)
     {
@@ -133,13 +127,10 @@ public static class InvoiceService
         var historyPath = DataSets.InvoiceHistory.FullPath(root);
         if (!File.Exists(historyPath)) DatabaseLayout.CreateEmptyTable(historyPath, DataSets.InvoiceHistory);
         ExcelTableStore.EnsureWritable(historyPath);
-
-        var history = ExcelTableStore.Load(historyPath, DataSets.InvoiceHistory.SheetName);
-        if (ExistingInvoiceNumbers(history).Contains(d.InvoiceNo))
+        if (InvoiceHistoryBook.InvoiceNumbers(historyPath).Contains(d.InvoiceNo))
             throw new InvalidOperationException($"Invoice number {d.InvoiceNo} already exists in INVOICE HISTORY.");
 
-        var rel = ArchiveRelativePath(d);
-        var full = Path.Combine(root, rel);
+        var full = Path.Combine(root, ArchiveRelativePath(d));
         if (File.Exists(full)) throw new InvalidOperationException($"An archived invoice already exists:\n{full}");
 
         var tmp = Path.Combine(Path.GetTempPath(), $"BS_{Guid.NewGuid():N}.xlsx");
@@ -156,7 +147,18 @@ public static class InvoiceService
 
         try
         {
-            AppendHistory(root, history, d, rel, keepBackups);
+            InvoiceHistoryBook.Append(root, historyPath, new HistoryRecord
+            {
+                Name = d.PartyName,
+                Amount = d.Total,
+                Date = d.Date,
+                InvoiceNo = d.InvoiceNo,
+                Status = "File available",
+                PartyType = d.PartyType,
+                RecordId = $"{DateTime.Now:yyyyMMddHHmmss}-{Random.Shared.Next(0, 1_000_000):000000}",
+                FilePath = full,                       // absolute, like the V28 archive
+                Template = Path.GetFileNameWithoutExtension(d.TemplatePath),
+            }, keepBackups);
         }
         catch
         {
@@ -167,42 +169,6 @@ public static class InvoiceService
         return full;
     }
 
-    private static void AppendHistory(string root, TableData history, InvoiceDraft d, string relPath, int keepBackups)
-    {
-        foreach (var h in DataSets.InvoiceHistory.DefaultHeaders)
-            if (!history.Headers.Contains(h, StringComparer.OrdinalIgnoreCase))
-            {
-                history.Headers.Add(h);
-                history.Kinds.Add(ColumnKind.Text);
-                for (int i = 0; i < history.Rows.Count; i++)
-                    history.Rows[i] = [.. history.Rows[i], ""];
-            }
-        int Idx(string h) => history.Headers.FindIndex(x => string.Equals(x, h, StringComparison.OrdinalIgnoreCase));
-        int maxNo = history.Rows.Select(r => r[Idx("#")])
-            .Select(v => v.StartsWith("INV-", StringComparison.OrdinalIgnoreCase) && int.TryParse(v[4..], out var n) ? n : 0)
-            .DefaultIfEmpty(0).Max();
-        var row = Enumerable.Repeat("", history.Headers.Count).ToArray();
-        row[Idx("#")] = $"INV-{maxNo + 1}";
-        row[Idx("Name")] = d.PartyName;
-        row[Idx("Amount")] = d.Total.ToString(CultureInfo.InvariantCulture);
-        row[Idx("Date")] = d.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-        row[Idx("Invoice No")] = d.InvoiceNo;
-        row[Idx("Status")] = "File available";
-        row[Idx("Party Type")] = d.PartyType;
-        row[Idx("Record ID")] = $"{DateTime.Now:yyyyMMddHHmmss}-{Random.Shared.Next(0, 1_000_000):000000}";
-        row[Idx("File Path")] = relPath;
-        row[Idx("Template")] = Path.GetFileNameWithoutExtension(d.TemplatePath);
-        history.Rows.Add(row);
-        int a = Idx("Amount"), dt = Idx("Date");
-        while (history.Kinds.Count < history.Headers.Count) history.Kinds.Add(ColumnKind.Text);
-        history.Kinds[a] = ColumnKind.Number;
-        history.Kinds[dt] = ColumnKind.Date;
-
-        BackupService.Backup(root, DataSets.InvoiceHistory, keepBackups);
-        ExcelTableStore.Save(DataSets.InvoiceHistory.FullPath(root), DataSets.InvoiceHistory.SheetName, history);
-    }
-
     /// <summary>Resolves a history "File Path" (relative to the Database folder, or an old absolute path).</summary>
-    public static string ResolveArchivePath(string root, string stored) =>
-        Path.IsPathRooted(stored) ? stored : Path.Combine(root, stored);
+    public static string ResolveArchivePath(string root, string stored) => InvoiceHistoryBook.ResolvePath(root, stored);
 }

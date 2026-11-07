@@ -123,6 +123,7 @@ public sealed partial class MainViewModel : ObservableObject
         Home.Refresh();
         SelectedNav = Nav[0];
         CurrentPage = Home;
+        RefreshLists();
     }
 
     private void OnFileChanged(string path)
@@ -135,7 +136,26 @@ public sealed partial class MainViewModel : ObservableObject
                 return;
             }
         if (Root != null && full.StartsWith(Path.GetFullPath(DatabaseLayout.Templates(Root)), StringComparison.OrdinalIgnoreCase))
+        {
             Templates.Refresh();
+            RefreshLists();
+        }
+    }
+
+    /// <summary>Refreshes the Category / DEFAULT TEMPLATE dropdown lists inside Suppliers.xlsx and Clients.xlsx.</summary>
+    public void RefreshLists()
+    {
+        if (Root == null) return;
+        if (DataPages.Any(p => p.Session.Definition.Key is "suppliers" or "clients" && p.IsDirty)) return;
+        var cat = Page("categories")?.Session.Current;
+        if (cat == null) return;
+        try
+        {
+            var cats = BatchStudio.Core.Invoices.InvoiceService.Categories(cat).Select(c => c.Text).ToList();
+            var tpls = BatchStudio.Core.Templates.TemplateRegistry.Scan(Root).Select(t => t.Name).ToList();
+            ListsSync.Update(Root, cats, tpls);
+        }
+        catch { /* lists are a convenience; never block the app */ }
     }
 
     /// <summary>Called after an invoice was archived (history file changed by the program).</summary>

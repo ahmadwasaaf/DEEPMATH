@@ -180,9 +180,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         if (main.Root == null) return;
         try
         {
-            var hist = ExcelTableStore.Load(DataSets.InvoiceHistory.FullPath(Root), DataSets.InvoiceHistory.SheetName);
             var prefix = DatabaseLayout.ReadEntityInfo(Root)?.InvoicePrefix ?? "Mad";
-            InvoiceNo = InvoiceService.NewInvoiceNumber(prefix, InvoiceService.ExistingInvoiceNumbers(hist));
+            InvoiceNo = InvoiceService.NewInvoiceNumber(prefix, InvoiceHistoryBook.InvoiceNumbers(DataSets.InvoiceHistory.FullPath(Root)));
         }
         catch
         {

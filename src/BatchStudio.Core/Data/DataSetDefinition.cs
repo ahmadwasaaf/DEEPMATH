@@ -34,7 +34,7 @@ public static class DataSets
         ["Category ID", "Category (English | Arabic)", "Status"]);
 
     public static readonly DataSetDefinition InvoiceHistory = new(
-        "history", "INVOICE HISTORY", "Invoice History.xlsx", "Invoice History", "INV",
+        "history", "INVOICE HISTORY", "Invoice History.xlsx", "INVOICE HISTORY", "INV",
         ["#", "Name", "Amount", "Date", "Invoice No", "Status", "Party Type", "Record ID", "File Path", "Template"]);
 
     /// <summary>Data sets edited on the master-data pages (phase 1).</summary>

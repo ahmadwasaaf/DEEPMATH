@@ -46,7 +46,7 @@
                     </Button>
                 </StackPanel>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="v0.2.0 · phase 2" Style="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" />
+                <TextBlock DockPanel.Dock="Bottom" Text="v0.2.1 · phase 2" Style="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" />
 
                 <ListBox ItemsSource="{Binding Nav}" SelectedItem="{Binding SelectedNav}"
                          Background="Transparent" BorderThickness="0"

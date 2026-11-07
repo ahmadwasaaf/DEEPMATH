@@ -202,6 +202,7 @@ public sealed partial class TemplatesViewModel(MainViewModel main) : ObservableO
             _map.Save(Selected.Entry.Path);
             Status = Loc.T("Tpl.Saved");
             Refresh();
+            main.RefreshLists();
         }
         catch (Exception ex)
         {

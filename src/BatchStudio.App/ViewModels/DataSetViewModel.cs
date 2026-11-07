@@ -214,6 +214,7 @@ public sealed partial class DataSetViewModel : ObservableObject
             IsWaitingForExcel = false;
             Table?.AcceptChanges();
             Status = Loc.T("Status.Synced") + $"  ·  {DateTime.Now:HH:mm:ss}";
+            if (Session.Definition.Key == "categories") _main.RefreshLists();
         }
         catch (FileLockedException)
         {
@@ -278,6 +279,7 @@ public sealed partial class DataSetViewModel : ObservableObject
                     break;
             }
             _main.Home.Refresh();
+            if (Session.Definition.Key == "categories") _main.RefreshLists();
         }
         catch (IOException)
         {
