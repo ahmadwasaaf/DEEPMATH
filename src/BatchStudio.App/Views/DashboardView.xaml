@@ -115,23 +115,19 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="{StaticResource Col.Rank}" Binding="{Binding RankText}" Width="Auto" MinWidth="70" />
                         <DataGridTextColumn Header="{StaticResource Col.Company}" Binding="{Binding Name}" Width="*" MinWidth="180" />
-                        <DataGridTemplateColumn Header="{StaticResource Col.Amount}" Width="200" SortMemberPath="Amount">
+                        <DataGridTemplateColumn Header="{StaticResource Col.Amount}" Width="170" SortMemberPath="Amount">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="6,0" VerticalAlignment="Center">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="90" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Amount, StringFormat=N2}" FlowDirection="LeftToRight" />
-                                        <ProgressBar Grid.Column="1" Value="{Binding Bar, Mode=OneWay}" Maximum="1" Height="6" Margin="8,0,0,0" VerticalAlignment="Center" />
-                                    </Grid>
+                                    <StackPanel Margin="6,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Amount, StringFormat=N2}" />
+                                        <ProgressBar Value="{Binding Bar, Mode=OneWay}" Minimum="0" Maximum="1" Height="4" MinHeight="4" Margin="0,4,0,0" />
+                                    </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="{StaticResource Col.InvCount}" Binding="{Binding Count}" Width="Auto" MinWidth="80" />
                         <DataGridTextColumn Header="{StaticResource Col.Type}" Binding="{Binding Type}" Width="Auto" MinWidth="90" />
-                        <DataGridTextColumn Header="{StaticResource Col.Category}" Binding="{Binding Category}" Width="Auto" MinWidth="160" />
+                        <DataGridTextColumn Header="{StaticResource Col.Category}" Binding="{Binding Category}" Width="Auto" MinWidth="120" />
                         <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="Auto">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
