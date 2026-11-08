@@ -18,6 +18,7 @@ namespace BatchStudio.Core.Data;
 public static class DatabaseLayout
 {
     public const string TemplatesFolder = "Templates";
+    public const string DashboardFolder = "Dashboard";
     public const string ArchiveFolder = "BATCH STUDIO";
     public const string ArchiveSuppliers = "SUPPLIERS";
     public const string ArchiveClients = "CLIENTS";
@@ -58,6 +59,7 @@ public static class DatabaseLayout
             if (!File.Exists(path)) CreateEmptyTable(path, d);
         }
         Directory.CreateDirectory(Templates(root));
+        Directory.CreateDirectory(Path.Combine(root, DashboardFolder));
         Directory.CreateDirectory(ArchiveSuppliersPath(root));
         Directory.CreateDirectory(ArchiveClientsPath(root));
 
