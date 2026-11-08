@@ -49,6 +49,8 @@ public sealed partial class DataSetViewModel : ObservableObject
     private readonly DispatcherTimer _autoSave;
     private readonly DispatcherTimer _retry;
     private bool _loading;
+    private bool _saving;
+    private int _editVersion;
 
     public DataSetSession Session { get; }
     public string TitleKey { get; }
@@ -75,7 +77,7 @@ public sealed partial class DataSetViewModel : ObservableObject
         _autoSave = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
         _autoSave.Tick += (_, _) => { _autoSave.Stop(); if (IsDirty) Save(); };
         _retry = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _retry.Tick += (_, _) => { if (!ExcelTableStore.IsLocked(Session.FilePath)) { _retry.Stop(); Save(); } };
+        _retry.Tick += (_, _) => { _retry.Stop(); Save(); };
         LanguageService.Changed += () => OnPropertyChanged(nameof(Title));
     }
 
@@ -143,6 +145,7 @@ public sealed partial class DataSetViewModel : ObservableObject
     private void MarkDirty()
     {
         if (_loading) return;
+        _editVersion++;
         IsDirty = true;
         RowCount = Table?.Rows.Cast<DataRow>().Count(r => r.RowState != DataRowState.Deleted) ?? 0;
         if (!IsWaitingForExcel) Status = Loc.T("Status.Unsaved");
@@ -195,37 +198,65 @@ public sealed partial class DataSetViewModel : ObservableObject
         SelectedRow = null;
     }
 
+    /// <summary>Saves into the workbook in the background (Excel writes it); edits made meanwhile stay pending.</summary>
     [RelayCommand]
-    public void Save()
+    public void Save() => _ = SaveAsync();
+
+    public async Task SaveAsync()
     {
         _autoSave.Stop();
+        if (_saving) { _autoSave.Start(); return; }
         var data = ToTableData();
         if (data.Rows.Any(r => string.IsNullOrWhiteSpace(r[0])))
         {
             Status = Loc.T("Validate.MissingId");
             return;
         }
+        int version = _editVersion;
+        int keep = _main.Settings.KeepBackups;
+        _saving = true;
+        Status = Loc.T("Status.SavingWorkbook");
         try
         {
-            Status = Loc.T("Status.Saving");
             Session.SetCurrent(data);
-            Session.Save(_main.Settings.KeepBackups);
-            IsDirty = false;
+            await Task.Run(() => Session.Save(keep));
             IsWaitingForExcel = false;
-            Table?.AcceptChanges();
-            Status = Loc.T("Status.Synced") + $"  ·  {DateTime.Now:HH:mm:ss}";
-            if (Session.Definition.Key == "categories") _main.RefreshLists();
+            if (version == _editVersion)
+            {
+                IsDirty = false;
+                Table?.AcceptChanges();
+                Status = Loc.T("Status.Synced") + $"  ·  {DateTime.Now:HH:mm:ss}";
+            }
+            else _autoSave.Start();
+            _main.Home.Refresh();
         }
-        catch (FileLockedException)
+        catch (Exception ex) when (ex is FileLockedException or ExcelBusyException)
         {
             IsWaitingForExcel = true;
-            Status = Loc.T("Status.Locked");
+            Status = ex is ExcelBusyException ? ex.Message : Loc.T("Status.Locked");
             _retry.Start();
         }
         catch (Exception ex)
         {
             Status = $"{Loc.T("Status.Error")}: {ex.Message}";
         }
+        finally { _saving = false; }
+    }
+
+    /// <summary>Saves now and waits (used when closing / switching entity).</summary>
+    private void SaveNow()
+    {
+        var data = ToTableData();
+        if (data.Rows.Any(r => string.IsNullOrWhiteSpace(r[0]))) { Status = Loc.T("Validate.MissingId"); return; }
+        try
+        {
+            Session.SetCurrent(data);
+            Session.Save(_main.Settings.KeepBackups);
+            IsDirty = false;
+            IsWaitingForExcel = false;
+            Table?.AcceptChanges();
+        }
+        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
     }
 
     /// <summary>
@@ -258,14 +289,14 @@ public sealed partial class DataSetViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void OpenInExcel()
+    private async Task OpenInExcelAsync()
     {
-        if (IsDirty) Save();
-        Shell.Open(Session.FilePath);
+        if (IsDirty) await SaveAsync();
+        Shell.Open(Session.Workspace?.WorkbookPath ?? Session.FilePath);
     }
 
     [RelayCommand]
-    private void OpenFolder() => Shell.ShowInFolder(Session.FilePath);
+    private void OpenFolder() => Shell.ShowInFolder(Session.Workspace?.WorkbookPath ?? Session.FilePath);
 
     // ---------------------------------------------------------------- sync from Excel
     /// <summary>Called on the UI thread when the watcher reports a change to this data set's file.</summary>
@@ -317,7 +348,9 @@ public sealed partial class DataSetViewModel : ObservableObject
     public bool FlushPending()
     {
         if (!IsDirty) return true;
-        Save();
+        _autoSave.Stop();
+        _retry.Stop();
+        SaveNow();
         return !IsDirty;
     }
 

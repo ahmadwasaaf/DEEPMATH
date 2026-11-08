@@ -180,8 +180,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         if (main.Root == null) return;
         try
         {
-            var prefix = DatabaseLayout.ReadEntityInfo(Root)?.InvoicePrefix ?? "Mad";
-            InvoiceNo = InvoiceService.NewInvoiceNumber(prefix, InvoiceHistoryBook.InvoiceNumbers(DataSets.InvoiceHistory.FullPath(Root)));
+            var existing = InvoiceHistoryBook.InvoiceNumbers(DataSets.InvoiceHistory.FullPath(Root));
+            InvoiceNo = InvoiceService.NewInvoiceNumber(InvoiceService.DetectPrefix(existing), existing);
         }
         catch
         {
@@ -255,17 +255,21 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     }
 
     [RelayCommand]
-    private void Save()
+    private async Task SaveAsync()
     {
         if (_draft == null) { Status = Loc.T("Inv.GenerateFirst"); return; }
         if (!IsBalanced && !Dialogs.Confirm(Loc.F("Inv.Unbalanced", TotalText, _draft.Target.ToString("N2", CultureInfo.InvariantCulture))))
             return;
         _draft.InvoiceNo = InvoiceNo.Trim();
         _draft.Date = Date ?? DateTime.Today;
+        var ws = main.Workspace ?? throw new InvalidOperationException("No entity is open.");
+        var draft = _draft;
+        int keep = main.Settings.KeepBackups;
         try
         {
             IsBusy = true;
-            SavedPath = InvoiceService.Archive(Root, _draft, main.Settings.KeepBackups);
+            Status = Loc.T("Status.SavingWorkbook");
+            SavedPath = await Task.Run(() => InvoiceService.Archive(ws, draft, keep));
             Status = Loc.T("Inv.Saved");
             main.OnHistoryChanged();
         }

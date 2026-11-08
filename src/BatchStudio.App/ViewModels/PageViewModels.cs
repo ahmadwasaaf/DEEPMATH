@@ -3,6 +3,7 @@ using BatchStudio.App.Services;
 using BatchStudio.Core.Data;
 using BatchStudio.Core.Entities;
 using BatchStudio.Core.Templates;
+using BatchStudio.Core.Workbook;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -31,7 +32,8 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         var root = main.Root;
         if (root == null) return;
         EntityName = main.ActiveEntity?.Name ?? "";
-        DatabasePath = root;
+        var ws = main.Workspace!;
+        DatabasePath = ws.WorkbookPath;
         foreach (var p in main.DataPages)
             Tiles.Add(new StatTile { Title = p.Title, Value = p.RowCount.ToString("N0"), Glyph = p.Icon });
         var tpl = TemplateRegistry.Scan(root);
@@ -41,13 +43,23 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             Value = $"{tpl.Count(t => t.Status == TemplateStatus.Linked)} / {tpl.Count}",
             Glyph = "",
         });
-        foreach (var m in DatabaseLayout.Validate(root)) Missing.Add(m);
+        foreach (var d in DataSets.All)
+            if (!ws.Sheets.Contains(d.SheetName, StringComparer.OrdinalIgnoreCase)) Missing.Add(Loc.F("Home.MissingSheet", d.SheetName));
+        if (!Directory.Exists(ws.ArchiveRoot)) Missing.Add(Loc.F("Home.MissingArchive", ws.ArchiveRoot));
         HasMissing = Missing.Count > 0;
     }
 
     [RelayCommand]
     private void Repair()
     {
+        var ws = main.Workspace;
+        if (ws == null) return;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(ws.ArchiveRoot, DatabaseLayout.ArchiveSuppliers));
+            Directory.CreateDirectory(Path.Combine(ws.ArchiveRoot, DatabaseLayout.ArchiveClients));
+        }
+        catch (Exception ex) { Dialogs.Error(ex.Message); }
         if (main.ActiveEntity != null) main.OpenEntity(main.ActiveEntity);
     }
 
@@ -56,14 +68,20 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
     {
         var e = main.ActiveEntity;
         if (e == null) return;
-        var folder = Dialogs.PickFolder(Path.GetDirectoryName(e.DatabasePath));
-        if (folder != null) main.ChangeEntityPath(e, folder);
+        var file = Dialogs.PickFile(Loc.T("Setup.WorkbookFilter"), Path.GetDirectoryName(e.DatabasePath));
+        if (file != null) main.ChangeEntityPath(e, file);
     }
 
     [RelayCommand]
     private void OpenDatabase()
     {
-        if (main.Root != null) Shell.ShowInFolder(main.Root);
+        if (main.Workspace != null) Shell.ShowInFolder(main.Workspace.WorkbookPath);
+    }
+
+    [RelayCommand]
+    private void OpenWorkbook()
+    {
+        if (main.Workspace != null) Shell.Open(main.Workspace.WorkbookPath);
     }
 }
 
@@ -210,31 +228,24 @@ public sealed partial class TemplatesViewModel(MainViewModel main) : ObservableO
         }
     }
 
+    /// <summary>Templates are sheets of the workbook: a new one is added in Excel and shows up here by itself.</summary>
     [RelayCommand]
     private void AddTemplate()
     {
-        if (main.Root == null) return;
-        var file = Dialogs.PickFile("Excel (*.xlsx;*.xlsm)|*.xlsx;*.xlsm");
-        if (file == null) return;
-        try
-        {
-            var dst = TemplateRegistry.Import(main.Root, file);
-            Refresh();
-            Selected = Items.FirstOrDefault(i => string.Equals(i.Entry.Path, dst, StringComparison.OrdinalIgnoreCase));
-        }
-        catch (IOException ex) { Dialogs.Error(ex.Message); }
+        if (main.Workspace == null) return;
+        if (Dialogs.Confirm(Loc.T("Tpl.AddInWorkbook"))) Shell.Open(main.Workspace.WorkbookPath);
     }
 
     [RelayCommand]
     private void OpenTemplate()
     {
-        if (Selected != null) Shell.Open(Selected.Entry.Path);
+        if (main.Workspace != null) Shell.Open(main.Workspace.WorkbookPath);
     }
 
     [RelayCommand]
     private void OpenFolder()
     {
-        if (main.Root != null) Shell.ShowInFolder(DatabaseLayout.Templates(main.Root));
+        if (main.Workspace != null) Shell.ShowInFolder(main.Workspace.WorkbookPath);
     }
 }
 
@@ -244,7 +255,7 @@ public sealed partial class EntityRowViewModel : ObservableObject
     public required EntityProfile Entity { get; init; }
     [ObservableProperty] private string _name = "";
     public string DatabasePath => Entity.DatabasePath;
-    public bool Exists => Directory.Exists(Entity.DatabasePath);
+    public bool Exists => Workspace.FindWorkbook(Entity.DatabasePath) != null;
 }
 
 public sealed partial class SettingsViewModel : ObservableObject
@@ -262,9 +273,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     private void ChangePath(EntityRowViewModel? row)
     {
         if (row == null) return;
-        var start = Directory.Exists(row.Entity.DatabasePath) ? Path.GetDirectoryName(row.Entity.DatabasePath) : null;
-        var folder = Dialogs.PickFolder(start);
-        if (folder != null) _main.ChangeEntityPath(row.Entity, folder);
+        var start = File.Exists(row.Entity.DatabasePath) ? Path.GetDirectoryName(row.Entity.DatabasePath)
+            : Directory.Exists(row.Entity.DatabasePath) ? row.Entity.DatabasePath : null;
+        var file = Dialogs.PickFile(Loc.T("Setup.WorkbookFilter"), start);
+        if (file != null) _main.ChangeEntityPath(row.Entity, file);
     }
 
     [RelayCommand]
@@ -328,26 +340,24 @@ public sealed partial class SettingsViewModel : ObservableObject
 }
 
 // ====================================================================== Entity setup
+/// <summary>Links an entity to its BATCH STUDIO workbook (.xlsm). The workbook stays the only data file.</summary>
 public sealed partial class EntitySetupViewModel(MainViewModel main) : ObservableObject
 {
+    [ObservableProperty] private string _entityName = "";
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TargetPath))]
-    private string _entityName = "";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TargetPath))]
-    private string _location = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
+    [NotifyPropertyChangedFor(nameof(ArchivePath))]
+    private string _workbookPath = "";
     [ObservableProperty] private string _error = "";
 
-    public string TargetPath =>
-        string.IsNullOrWhiteSpace(EntityName) ? "" : Path.Combine(Location, $"{EntityName.Trim()} Database");
+    public string ArchivePath =>
+        WorkbookPath.Length == 0 ? "" : Path.Combine(Path.GetDirectoryName(WorkbookPath) ?? "", DatabaseLayout.ArchiveFolder);
 
     public bool CanCancel => main.HasEntity;
 
     public void Reset()
     {
         EntityName = "";
+        WorkbookPath = "";
         Error = "";
         OnPropertyChanged(nameof(CanCancel));
     }
@@ -355,43 +365,32 @@ public sealed partial class EntitySetupViewModel(MainViewModel main) : Observabl
     [RelayCommand]
     private void Browse()
     {
-        var f = Dialogs.PickFolder(Location);
-        if (f != null) Location = f;
+        var f = Dialogs.PickFile(Loc.T("Setup.WorkbookFilter"));
+        if (f == null) return;
+        WorkbookPath = f;
+        if (string.IsNullOrWhiteSpace(EntityName)) EntityName = SuggestName(f);
+    }
+
+    private static string SuggestName(string workbook)
+    {
+        var name = Path.GetFileName(Path.GetDirectoryName(workbook)?.TrimEnd(Path.DirectorySeparatorChar)) ?? "";
+        if (name.EndsWith(" Database", StringComparison.OrdinalIgnoreCase)) name = name[..^" Database".Length];
+        return name.Trim().Length > 0 ? name.Trim() : Path.GetFileNameWithoutExtension(workbook);
     }
 
     [RelayCommand]
-    private void Create()
+    private void Link()
     {
         Error = "";
-        var name = EntityName.Trim();
-        if (name.Length == 0 || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        var book = Workspace.FindWorkbook(WorkbookPath.Trim().Trim('"'));
+        if (book == null)
         {
-            Error = Loc.T("Setup.Name") + " ?";
+            Error = Loc.F("Entity.NoWorkbook", WorkbookPath);
             return;
         }
-        try
-        {
-            var root = TargetPath;
-            DatabaseLayout.EnsureStructure(root, name);
-            main.AddEntity(new EntityProfile { Name = name, DatabasePath = root });
-        }
-        catch (Exception ex) { Error = ex.Message; }
-    }
-
-    [RelayCommand]
-    private void OpenExisting()
-    {
-        Error = "";
-        var root = Dialogs.PickFolder(Location);
-        if (root == null) return;
-        var info = DatabaseLayout.ReadEntityInfo(root);
-        var name = info?.Name;
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            name = Path.GetFileName(root.TrimEnd(Path.DirectorySeparatorChar));
-            if (name.EndsWith(" Database", StringComparison.OrdinalIgnoreCase)) name = name[..^" Database".Length];
-        }
-        try { main.AddEntity(new EntityProfile { Name = name!, DatabasePath = root }); }
+        var name = EntityName.Trim();
+        if (name.Length == 0) name = SuggestName(book);
+        try { main.AddEntity(new EntityProfile { Name = name, DatabasePath = book }); }
         catch (Exception ex) { Error = ex.Message; }
     }
 

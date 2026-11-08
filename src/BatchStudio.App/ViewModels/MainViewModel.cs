@@ -3,6 +3,7 @@ using System.Windows;
 using BatchStudio.App.Services;
 using BatchStudio.Core.Data;
 using BatchStudio.Core.Entities;
+using BatchStudio.Core.Workbook;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -37,10 +38,15 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private NavItem? _selectedNav;
     [ObservableProperty] private bool _hasEntity;
 
-    private DatabaseWatcher? _watcher;
+    private WorkbookWatcher? _watcher;
+    private System.Windows.Threading.DispatcherTimer? _poll;
     private bool _switching;
 
-    public string? Root => ActiveEntity?.DatabasePath;
+    /// <summary>The open entity's BATCH STUDIO workbook (null when none is open).</summary>
+    public Workspace? Workspace { get; private set; }
+
+    /// <summary>Folder with the sheet copies the pages read (laid out like the old Database folder).</summary>
+    public string? Root => Workspace?.CacheRoot;
 
     public MainViewModel(AppSettings settings)
     {
@@ -68,7 +74,7 @@ public sealed partial class MainViewModel : ObservableObject
         LanguageService.Changed += () => { foreach (var n in Nav) n.Refresh(); };
 
         var active = settings.Active;
-        if (active != null && Directory.Exists(active.DatabasePath)) ActiveEntity = active;
+        if (active != null && Workspace.FindWorkbook(active.DatabasePath) != null) ActiveEntity = active;
         else ShowSetup();
     }
 
@@ -96,13 +102,16 @@ public sealed partial class MainViewModel : ObservableObject
     public void OpenEntity(EntityProfile entity)
     {
         foreach (var p in DataPages) { p.FlushPending(); p.Stop(); }
-        _watcher?.Dispose();
-        _watcher = null;
+        StopWatching();
         DataPages.Clear();
 
+        Workspace ws;
         try
         {
-            DatabaseLayout.EnsureStructure(entity.DatabasePath, entity.Name);
+            var book = Workspace.FindWorkbook(entity.DatabasePath)
+                       ?? throw new FileNotFoundException(Loc.F("Entity.NoWorkbook", entity.DatabasePath));
+            ws = Workspace.Open(book);
+            if (!string.Equals(entity.DatabasePath, book, StringComparison.OrdinalIgnoreCase)) entity.DatabasePath = book;
         }
         catch (Exception ex)
         {
@@ -110,16 +119,19 @@ public sealed partial class MainViewModel : ObservableObject
             ShowSetup();
             return;
         }
+        Workspace = ws;
 
-        var root = entity.DatabasePath;
-        DataPages.Add(new DataSetViewModel(this, new DataSetSession(root, DataSets.Suppliers), "Nav.Suppliers", ""));
-        DataPages.Add(new DataSetViewModel(this, new DataSetSession(root, DataSets.Clients), "Nav.Clients", ""));
-        DataPages.Add(new DataSetViewModel(this, new DataSetSession(root, DataSets.Items), "Nav.Items", ""));
-        DataPages.Add(new DataSetViewModel(this, new DataSetSession(root, DataSets.Categories), "Nav.Categories", ""));
+        foreach (var (def, key) in new[] { (DataSets.Suppliers, "Nav.Suppliers"), (DataSets.Clients, "Nav.Clients"), (DataSets.Items, "Nav.Items"), (DataSets.Categories, "Nav.Categories") })
+            if (File.Exists(ws.DataPath(def)))
+                DataPages.Add(new DataSetViewModel(this, new DataSetSession(ws, def), key, ""));
         foreach (var p in DataPages) p.Load();
 
-        _watcher = new DatabaseWatcher(root);
-        _watcher.FileChanged += path => Application.Current.Dispatcher.InvokeAsync(() => OnFileChanged(path));
+        _watcher = new WorkbookWatcher(ws);
+        _watcher.SheetsChanged += paths => Application.Current.Dispatcher.InvokeAsync(() => { foreach (var p in paths) OnFileChanged(p); });
+        // safety net for folders where change notifications are unreliable (OneDrive, network drives)
+        _poll = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
+        _poll.Tick += (_, _) => _watcher?.Poke();
+        _poll.Start();
 
         entity.LastOpenedUtc = DateTime.UtcNow;
         Settings.ActiveEntity = entity.Name;
@@ -131,10 +143,23 @@ public sealed partial class MainViewModel : ObservableObject
         Home.Refresh();
         SelectedNav = Nav[0];
         CurrentPage = Home;
-        RefreshLists();
         Dashboard.Reset();
         Dashboard.Refresh();
     }
+
+    private void StopWatching()
+    {
+        _poll?.Stop();
+        _poll = null;
+        _watcher?.Dispose();
+        _watcher = null;
+    }
+
+    /// <summary>
+    /// Runs a change against the workbook on a background thread (Excel writes it), then refreshes what depends on it.
+    /// </summary>
+    public Task RunWorkbookChange(Action<Workspace> change) =>
+        Task.Run(() => change(Workspace ?? throw new InvalidOperationException("No entity is open.")));
 
     private void OnFileChanged(string path)
     {
@@ -155,32 +180,23 @@ public sealed partial class MainViewModel : ObservableObject
         if (Root != null && full.StartsWith(Path.GetFullPath(DatabaseLayout.Templates(Root)), StringComparison.OrdinalIgnoreCase))
         {
             Templates.Refresh();
-            RefreshLists();
+            Home.Refresh();
+            return;
         }
+        if (Workspace != null && (string.Equals(full, Workspace.DashboardPath, StringComparison.OrdinalIgnoreCase) ||
+                                  string.Equals(full, Workspace.ReportTemplatePath, StringComparison.OrdinalIgnoreCase)))
+            Dashboard.Refresh();
     }
 
-    /// <summary>Refreshes the Category / DEFAULT TEMPLATE dropdown lists inside Suppliers.xlsx and Clients.xlsx.</summary>
-    public void RefreshLists()
-    {
-        if (Root == null) return;
-        if (DataPages.Any(p => p.Session.Definition.Key is "suppliers" or "clients" && p.IsDirty)) return;
-        var cat = Page("categories")?.Session.Current;
-        if (cat == null) return;
-        try
-        {
-            var cats = BatchStudio.Core.Invoices.InvoiceService.Categories(cat).Select(c => c.Text).ToList();
-            var tpls = BatchStudio.Core.Templates.TemplateRegistry.Scan(Root).Select(t => t.Name).ToList();
-            ListsSync.Update(Root, cats, tpls);
-        }
-        catch { /* lists are a convenience; never block the app */ }
-    }
+    /// <summary>The workbook keeps its own dropdown lists (named ranges); nothing to copy any more.</summary>
+    public void RefreshLists() { }
 
     /// <summary>Called after an invoice was archived (history file changed by the program).</summary>
     public void OnHistoryChanged()
     {
         Home.Refresh();
         History.Reload();
-        Dashboard.Refresh();   // also keeps Dashboard\Dashboard.xlsx current
+        Dashboard.Refresh();
     }
 
     public CompanyReportViewModel? BuildCompanyReport(string company, string? type, BatchStudio.Core.Reports.DashboardFilter filter, object? returnPage = null)
@@ -202,7 +218,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public void AddEntity(EntityProfile entity)
     {
-        var existing = Settings.Entities.FirstOrDefault(e => string.Equals(e.DatabasePath, entity.DatabasePath, StringComparison.OrdinalIgnoreCase));
+        var existing = Settings.Entities.FirstOrDefault(e => string.Equals(Workspace.FindWorkbook(e.DatabasePath) ?? e.DatabasePath, entity.DatabasePath, StringComparison.OrdinalIgnoreCase));
         if (existing == null)
         {
             // keep names unique in the switcher
@@ -217,23 +233,26 @@ public sealed partial class MainViewModel : ObservableObject
         OpenEntity(existing);
     }
 
-    /// <summary>Points an entity at another Database folder (e.g. after moving it or to a OneDrive copy).</summary>
+    /// <summary>Points an entity at another BATCH STUDIO workbook (e.g. after moving it or to a OneDrive copy).</summary>
     public void ChangeEntityPath(EntityProfile entity, string newPath)
     {
-        if (string.Equals(Path.GetFullPath(entity.DatabasePath), Path.GetFullPath(newPath), StringComparison.OrdinalIgnoreCase)) return;
+        var book = Workspace.FindWorkbook(newPath);
+        if (book == null)
+        {
+            Dialogs.Error(Loc.F("Entity.NoWorkbook", newPath));
+            return;
+        }
+        if (string.Equals(Path.GetFullPath(entity.DatabasePath), book, StringComparison.OrdinalIgnoreCase)) return;
         var other = Settings.Entities.FirstOrDefault(e => e != entity &&
-            string.Equals(Path.GetFullPath(e.DatabasePath), Path.GetFullPath(newPath), StringComparison.OrdinalIgnoreCase));
+            string.Equals(Workspace.FindWorkbook(e.DatabasePath) ?? e.DatabasePath, book, StringComparison.OrdinalIgnoreCase));
         if (other != null)
         {
             Dialogs.Error(Loc.F("Entity.PathInUse", other.Name));
             return;
         }
-        var missing = DatabaseLayout.Validate(newPath);
-        if (missing.Count > 0 && !Dialogs.Confirm(Loc.F("Entity.PathMissing", string.Join("\n", missing.Take(10).Select(m => "• " + m)))))
-            return;
         bool wasActive = ActiveEntity == entity;
         if (wasActive) foreach (var p in DataPages) p.FlushPending();
-        entity.DatabasePath = newPath;
+        entity.DatabasePath = book;
         SaveSettings();
         RefreshEntityList();
         if (wasActive) OpenEntity(entity);
@@ -251,13 +270,6 @@ public sealed partial class MainViewModel : ObservableObject
         bool wasActive = ActiveEntity == entity;
         entity.Name = newName;
         if (wasActive) Settings.ActiveEntity = newName;
-        try
-        {
-            var info = DatabaseLayout.ReadEntityInfo(entity.DatabasePath) ?? new EntityInfo { CreatedUtc = DateTime.UtcNow };
-            info.Name = newName;
-            DatabaseLayout.WriteEntityInfo(entity.DatabasePath, info);
-        }
-        catch { /* folder may be read-only; the name is still kept in settings */ }
         SaveSettings();
         RefreshEntityList();
         if (wasActive) Home.Refresh();
@@ -281,14 +293,14 @@ public sealed partial class MainViewModel : ObservableObject
         Entities.Remove(entity);
         if (ActiveEntity == entity)
         {
-            _watcher?.Dispose();
-            _watcher = null;
+            StopWatching();
+            Workspace = null;
             DataPages.Clear();
             HasEntity = false;
             _switching = true;
             ActiveEntity = null;
             _switching = false;
-            var next = Settings.Entities.FirstOrDefault(e => Directory.Exists(e.DatabasePath));
+            var next = Settings.Entities.FirstOrDefault(e => Workspace.FindWorkbook(e.DatabasePath) != null);
             if (next != null) OpenEntity(next); else ShowSetup();
         }
         SaveSettings();
@@ -314,7 +326,7 @@ public sealed partial class MainViewModel : ObservableObject
         bool allSaved = DataPages.All(p => p.FlushPending());
         if (!allSaved && !Dialogs.Confirm(Loc.T("Close.Pending"))) return false;
         foreach (var p in DataPages) p.Stop();
-        _watcher?.Dispose();
+        StopWatching();
         SaveSettings();
         return true;
     }

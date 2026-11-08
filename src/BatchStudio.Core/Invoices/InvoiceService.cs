@@ -1,5 +1,6 @@
 using System.Globalization;
 using BatchStudio.Core.Data;
+using BatchStudio.Core.Workbook;
 
 namespace BatchStudio.Core.Invoices;
 
@@ -110,16 +111,51 @@ public static class InvoiceService
         return s.Length == 0 ? "Unnamed" : s;
     }
 
-    /// <summary>BATCH STUDIO\&lt;SUPPLIERS|CLIENTS&gt;\&lt;party&gt;\&lt;invoice no&gt;.xlsx, relative to the Database folder.</summary>
+    /// <summary>&lt;SUPPLIERS|CLIENTS&gt;\&lt;party&gt;\&lt;invoice no&gt;.xlsx, relative to the archive (BATCH STUDIO) folder.</summary>
     public static string ArchiveRelativePath(InvoiceDraft d) =>
-        Path.Combine(DatabaseLayout.ArchiveFolder, d.PartyType == "CLIENTS" ? DatabaseLayout.ArchiveClients : DatabaseLayout.ArchiveSuppliers,
+        Path.Combine(d.PartyType == "CLIENTS" ? DatabaseLayout.ArchiveClients : DatabaseLayout.ArchiveSuppliers,
                      SafeName(d.PartyName), SafeName(d.InvoiceNo) + ".xlsx");
 
+    /// <summary>Most used invoice-number prefix in the history ("Mad" for Mad-1234567); "INV" when there is none.</summary>
+    public static string DetectPrefix(IEnumerable<string> invoiceNumbers) =>
+        invoiceNumbers.Select(n => n.Trim()).Where(n => n.Contains('-'))
+            .Select(n => n[..n.LastIndexOf('-')]).Where(p => p.Length is > 0 and <= 12)
+            .GroupBy(p => p, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count())
+            .Select(g => g.Key).FirstOrDefault() ?? "INV";
+
     /// <summary>
-    /// Writes the invoice file and adds its INVOICE HISTORY row (in the sheet's own layout). Nothing is
-    /// overwritten: an existing file or invoice number is an error. The history file is checked first so
-    /// an invoice file is never created without its history record.
+    /// Writes the invoice file into the archive and adds its INVOICE HISTORY row in the workbook. Nothing is
+    /// overwritten: an existing file or invoice number is an error. When the workbook cannot be changed the
+    /// invoice file is removed again, so archive and history stay consistent.
     /// </summary>
+    public static string Archive(Workspace ws, InvoiceDraft d, int keepBackups = 30)
+    {
+        if (string.IsNullOrWhiteSpace(d.PartyName)) throw new InvalidOperationException("Choose a supplier or client.");
+        if (string.IsNullOrWhiteSpace(d.InvoiceNo)) throw new InvalidOperationException("Invoice number is empty.");
+        ws.Refresh();
+        if (File.Exists(ws.HistoryPath) && InvoiceHistoryBook.InvoiceNumbers(ws.HistoryPath).Contains(d.InvoiceNo))
+            throw new InvalidOperationException($"Invoice number {d.InvoiceNo} already exists in INVOICE HISTORY.");
+
+        var full = Path.Combine(ws.ArchiveRoot, ArchiveRelativePath(d));
+        if (File.Exists(full)) throw new InvalidOperationException($"An archived invoice already exists:\n{full}");
+        WriteInvoiceFile(d, full);
+        try
+        {
+            ws.Change(ed =>
+            {
+                ws.SyncArchiveConfig(ed);
+                InvoiceHistoryBook.Append(ed, NewRecord(d, full));
+            }, keepBackups);
+        }
+        catch
+        {
+            try { File.Delete(full); } catch { }
+            throw;
+        }
+        return full;
+    }
+
+    /// <summary>Same as <see cref="Archive(Workspace, InvoiceDraft, int)"/> for a stand-alone Database folder (tests / old layout).</summary>
     public static string Archive(string root, InvoiceDraft d, int keepBackups = 30)
     {
         if (string.IsNullOrWhiteSpace(d.PartyName)) throw new InvalidOperationException("Choose a supplier or client.");
@@ -130,9 +166,23 @@ public static class InvoiceService
         if (InvoiceHistoryBook.InvoiceNumbers(historyPath).Contains(d.InvoiceNo))
             throw new InvalidOperationException($"Invoice number {d.InvoiceNo} already exists in INVOICE HISTORY.");
 
-        var full = Path.Combine(root, ArchiveRelativePath(d));
+        var full = Path.Combine(root, DatabaseLayout.ArchiveFolder, ArchiveRelativePath(d));
         if (File.Exists(full)) throw new InvalidOperationException($"An archived invoice already exists:\n{full}");
+        WriteInvoiceFile(d, full);
+        try
+        {
+            InvoiceHistoryBook.Append(root, historyPath, NewRecord(d, full), keepBackups);
+        }
+        catch
+        {
+            try { File.Delete(full); } catch { }
+            throw;
+        }
+        return full;
+    }
 
+    private static void WriteInvoiceFile(InvoiceDraft d, string full)
+    {
         var tmp = Path.Combine(Path.GetTempPath(), $"BS_{Guid.NewGuid():N}.xlsx");
         try
         {
@@ -144,31 +194,21 @@ public static class InvoiceService
         {
             if (File.Exists(tmp)) File.Delete(tmp);
         }
-
-        try
-        {
-            InvoiceHistoryBook.Append(root, historyPath, new HistoryRecord
-            {
-                Name = d.PartyName,
-                Amount = d.Total,
-                Date = d.Date,
-                InvoiceNo = d.InvoiceNo,
-                Status = "File available",
-                PartyType = d.PartyType,
-                RecordId = $"{DateTime.Now:yyyyMMddHHmmss}-{Random.Shared.Next(0, 1_000_000):000000}",
-                FilePath = full,                       // absolute, like the V28 archive
-                Template = Path.GetFileNameWithoutExtension(d.TemplatePath),
-            }, keepBackups);
-        }
-        catch
-        {
-            // keep archive and history consistent: no history row -> no invoice file
-            try { File.Delete(full); } catch { }
-            throw;
-        }
-        return full;
     }
 
-    /// <summary>Resolves a history "File Path" (relative to the Database folder, or an old absolute path).</summary>
-    public static string ResolveArchivePath(string root, string stored) => InvoiceHistoryBook.ResolvePath(root, stored);
+    private static HistoryRecord NewRecord(InvoiceDraft d, string full) => new()
+    {
+        Name = d.PartyName,
+        Amount = d.Total,
+        Date = d.Date,
+        InvoiceNo = d.InvoiceNo,
+        Status = "File available",
+        PartyType = d.PartyType,
+        RecordId = $"{DateTime.Now:yyyyMMddHHmmss}-{Random.Shared.Next(0, 1_000_000):000000}",
+        FilePath = full,                       // absolute, like the V28 archive
+        Template = Path.GetFileNameWithoutExtension(d.TemplatePath),
+    };
+
+    /// <summary>Resolves a history "File Path" (relative to the archive, or an old absolute path).</summary>
+    public static string ResolveArchivePath(string archiveRoot, string stored) => InvoiceHistoryBook.ResolvePath(archiveRoot, stored);
 }

@@ -12,6 +12,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandled;
+        // every change to the BATCH STUDIO workbook is written by Microsoft Excel itself
+        BatchStudio.Core.Workbook.Workspace.EditorFactory = Services.ExcelWorkbookEditor.Open;
 
         var settings = SettingsStore.Load();
         ThemeService.Apply(settings.Theme);

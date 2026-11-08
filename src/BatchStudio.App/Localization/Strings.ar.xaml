@@ -27,7 +27,7 @@
     <sys:String x:Key="Status.Synced">متزامن مع Excel</sys:String>
     <sys:String x:Key="Status.Unsaved">تغييرات غير محفوظة</sys:String>
     <sys:String x:Key="Status.Saving">جارٍ الحفظ…</sys:String>
-    <sys:String x:Key="Status.Locked">في الانتظار: الملف مفتوح في Excel، وسيُحفظ تلقائيًا عند إغلاقه.</sys:String>
+    <sys:String x:Key="Status.Locked">في انتظار Excel: الملف مقفول حاليًا، وسيُحفظ بمجرد الإمكان.</sys:String>
     <sys:String x:Key="Status.Reloaded">تم التحديث من Excel</sys:String>
     <sys:String x:Key="Status.Merged">تم دمج تغييرات Excel مع تعديلاتك</sys:String>
     <sys:String x:Key="Status.Error">خطأ</sys:String>
@@ -38,13 +38,13 @@
     <sys:String x:Key="Close.Pending">بعض التغييرات لم تُحفظ بعد لأن ملفًا مفتوح في Excel. هل تريد الإغلاق؟</sys:String>
 
     <sys:String x:Key="Home.Welcome">مرحبًا</sys:String>
-    <sys:String x:Key="Home.Database">مجلد قاعدة البيانات</sys:String>
-    <sys:String x:Key="Home.Missing">عناصر ناقصة في مجلد قاعدة البيانات (اضغط إصلاح لإنشائها):</sys:String>
-    <sys:String x:Key="Home.Repair">إصلاح الهيكل</sys:String>
+    <sys:String x:Key="Home.Database">ملف BATCH STUDIO</sys:String>
+    <sys:String x:Key="Home.Missing">يحتاج انتباه:</sys:String>
+    <sys:String x:Key="Home.Repair">إنشاء مجلدات الأرشيف</sys:String>
     <sys:String x:Key="Home.TemplatesLinked">قوالب مربوطة</sys:String>
 
-    <sys:String x:Key="Setup.Title">إعداد كيان</sys:String>
-    <sys:String x:Key="Setup.Intro">لكل كيان (شركة) مجلد قاعدة بيانات خاص به. أنشئ مجلدًا جديدًا أو افتح مجلدًا موجودًا.</sys:String>
+    <sys:String x:Key="Setup.Title">ربط كيان</sys:String>
+    <sys:String x:Key="Setup.Intro">كل كيان (شركة) هو ملف BATCH STUDIO واحد (مثل BATCH_STUDIO_V28.1.xlsm). البرنامج يقرأ ويكتب في هذا الملف مباشرة - واصل العمل عليه كالمعتاد. الفواتير تُؤرشف في مجلد BATCH STUDIO بجواره.</sys:String>
     <sys:String x:Key="Setup.New">إنشاء قاعدة بيانات جديدة</sys:String>
     <sys:String x:Key="Setup.Open">فتح مجلد قاعدة بيانات موجود</sys:String>
     <sys:String x:Key="Setup.Name">اسم الكيان</sys:String>
@@ -53,7 +53,7 @@
     <sys:String x:Key="Setup.Create">إنشاء</sys:String>
     <sys:String x:Key="Setup.OpenButton">فتح مجلد…</sys:String>
 
-    <sys:String x:Key="Tpl.Intro">ضع ملفات القوالب (.xlsx) في مجلد Templates ثم اربطها من هنا. البرنامج يكتشف الخلايا المتغيرة تلقائيًا؛ راجعها ثم احفظ.</sys:String>
+    <sys:String x:Key="Tpl.Intro">القوالب هي أوراق الفواتير داخل الملف (INVOICE و INV1 و Madar …). البرنامج يكتشف الخلايا المتغيرة تلقائيًا؛ راجعها ثم احفظ.</sys:String>
     <sys:String x:Key="Tpl.AddFile">إضافة قالب…</sys:String>
     <sys:String x:Key="Tpl.Detect">اكتشاف الخلايا</sys:String>
     <sys:String x:Key="Tpl.SaveMap">حفظ الربط</sys:String>
@@ -92,12 +92,12 @@
     <sys:String x:Key="Set.Backups">عدد النسخ الاحتياطية لكل ملف</sys:String>
     <sys:String x:Key="Set.Entities">الكيانات</sys:String>
     <sys:String x:Key="Set.RemoveEntity">إزالة من القائمة</sys:String>
-    <sys:String x:Key="Set.RemoveNote">إزالة الكيان تحذفه من القائمة فقط، ولا تحذف مجلد قاعدة البيانات.</sys:String>
+    <sys:String x:Key="Set.RemoveNote">إزالة الكيان تحذفه من القائمة فقط، ولا تلمس ملف الإكسيل.</sys:String>
     <sys:String x:Key="Set.About">باتش ستوديو - المرحلة الأولى</sys:String>
     <sys:String x:Key="Entity.PathInUse">هذا المجلد مستخدم بالفعل للكيان "{0}".</sys:String>
     <sys:String x:Key="Entity.PathMissing">هذا المجلد ليس قاعدة بيانات كاملة. الناقص:&#x0a;&#x0a;{0}&#x0a;&#x0a;هل تريد استخدامه؟ سيتم إنشاء المجلدات والملفات الناقصة فقط (لن يُستبدل أي ملف).</sys:String>
     <sys:String x:Key="Entity.NameInUse">يوجد كيان باسم "{0}" بالفعل.</sys:String>
-    <sys:String x:Key="Set.ChangeFolder">تغيير المجلد…</sys:String>
+    <sys:String x:Key="Set.ChangeFolder">تغيير الملف…</sys:String>
     <sys:String x:Key="Set.Rename">إعادة تسمية</sys:String>
     <sys:String x:Key="Set.FolderNotFound">المجلد غير موجود</sys:String>
     <sys:String x:Key="Nav.NewInvoice">فاتورة جديدة</sys:String>
@@ -138,7 +138,7 @@
     <sys:String x:Key="Inv.GenerateFirst">ولّد الأصناف أولًا.</sys:String>
     <sys:String x:Key="Inv.Unbalanced">الإجمالي ({0}) لا يساوي المبلغ المطلوب ({1}) بعد تعديلاتك. هل تريد الحفظ؟</sys:String>
     <sys:String x:Key="Inv.Saved">تم حفظ الفاتورة في الأرشيف وإضافتها إلى INVOICE HISTORY.</sys:String>
-    <sys:String x:Key="Inv.HistoryLocked">الملف "{0}" مفتوح في Excel. أغلقه ثم اضغط حفظ مرة أخرى.</sys:String>
+    <sys:String x:Key="Inv.HistoryLocked">الملف "{0}" مقفول من برنامج آخر. أغلقه هناك ثم حاول مرة أخرى.</sys:String>
     <sys:String x:Key="Inv.PdfSaved">تم تصدير PDF بجانب ملف الفاتورة.</sys:String>
     <sys:String x:Key="Inv.Edit">يمكنك تعديل الكميات والأسعار، والإجماليات تتحدث فورًا.</sys:String>
     <sys:String x:Key="Field.category">سطر التصنيف</sys:String>
@@ -199,7 +199,7 @@
     <sys:String x:Key="Dash.ExcelUpdated">تم تحديث Dashboard.xlsx</sys:String>
     <sys:String x:Key="Dash.ExcelLocked">ملف Dashboard.xlsx مفتوح في Excel، وسيتم تحديثه في المرة القادمة.</sys:String>
     <sys:String x:Key="Dash.NoExcel">الملف Dashboard\Dashboard.xlsx غير موجود في مجلد قاعدة البيانات.</sys:String>
-    <sys:String x:Key="Dash.OpenExcel">فتح Dashboard.xlsx</sys:String>
+    <sys:String x:Key="Dash.OpenExcel">فتح ملف الإكسيل</sys:String>
     <sys:String x:Key="Col.Rank">الترتيب</sys:String>
     <sys:String x:Key="Col.Company">اسم الشركة</sys:String>
     <sys:String x:Key="Col.InvCount">عدد الفواتير</sys:String>
@@ -218,6 +218,21 @@
     <sys:String x:Key="Rep.DescSaved">تم حفظ نبذة الشركة ({0} سجل).</sys:String>
     <sys:String x:Key="Rep.NotFound">الشركة غير موجودة في البيانات الأساسية؛ لم يتم الحفظ.</sys:String>
     <sys:String x:Key="Rep.Pdf">تصدير التقرير PDF</sys:String>
-    <sys:String x:Key="Rep.NoTemplate">الملف Dashboard\Supplier Report.xlsx غير موجود في مجلد قاعدة البيانات.</sys:String>
+    <sys:String x:Key="Rep.NoTemplate">الملف لا يحتوي على ورقة Supplier Report.</sys:String>
     <sys:String x:Key="Rep.InvPdf">PDF للفاتورة</sys:String>
+    <sys:String x:Key="Excel.Missing">يلزم وجود Microsoft Excel للحفظ داخل الملف.</sys:String>
+    <sys:String x:Key="Excel.Busy">Excel مشغول (خلية قيد التعديل أو نافذة مفتوحة). أنهِ ما تفعله في Excel وسيكتمل الحفظ تلقائيًا.</sys:String>
+    <sys:String x:Key="Excel.ReadOnly">الملف مفتوح للقراءة فقط في Excel. افتحه بشكل عادي ليتمكن البرنامج من الحفظ.</sys:String>
+    <sys:String x:Key="Status.SavingWorkbook">جارٍ الحفظ داخل الملف…</sys:String>
+    <sys:String x:Key="Entity.NoWorkbook">لم يتم العثور على ملف BATCH STUDIO (ملف .xlsm يحتوي ورقة INVOICE HISTORY) في:&#x0a;{0}</sys:String>
+    <sys:String x:Key="Home.MissingSheet">الورقة "{0}" غير موجودة في الملف</sys:String>
+    <sys:String x:Key="Home.MissingArchive">مجلد الأرشيف غير موجود: {0}</sys:String>
+    <sys:String x:Key="Home.OpenWorkbook">فتح الملف</sys:String>
+    <sys:String x:Key="Setup.Workbook">ملف BATCH STUDIO</sys:String>
+    <sys:String x:Key="Setup.WorkbookFilter">ملف BATCH STUDIO (*.xlsm;*.xlsx)|*.xlsm;*.xlsx</sys:String>
+    <sys:String x:Key="Setup.Link">ربط الملف</sys:String>
+    <sys:String x:Key="Setup.ArchiveAt">أرشيف الفواتير:</sys:String>
+    <sys:String x:Key="Setup.WorkbookHint">لا يتم نسخ أو تحويل أي شيء: الموردين والعملاء والأصناف والتصنيفات وسجل الفواتير والداشبورد والتقارير والقوالب تُقرأ من أوراق الملف نفسه.</sys:String>
+    <sys:String x:Key="Tpl.AddInWorkbook">القوالب موجودة داخل الملف: أضف (أو انسخ) ورقة فاتورة هناك واحفظ - ستظهر هنا تلقائيًا.&#x0a;&#x0a;هل تريد فتح الملف الآن؟</sys:String>
+    <sys:String x:Key="Dash.Updated">محدّث</sys:String>
 </ResourceDictionary>

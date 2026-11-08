@@ -7,37 +7,25 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="760" HorizontalAlignment="Left">
             <TextBlock Text="{DynamicResource Setup.Title}" Style="{StaticResource PageTitle}" />
-            <TextBlock Text="{DynamicResource Setup.Intro}" Style="{StaticResource Muted}" Margin="0,0,0,18" />
+            <TextBlock Text="{DynamicResource Setup.Intro}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,18" />
 
             <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource Setup.New}" Style="{StaticResource SectionTitle}" />
-                    <TextBlock Text="{DynamicResource Setup.Name}" Style="{StaticResource Muted}" Margin="0,4,0,4" />
-                    <TextBox Text="{Binding EntityName, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBlock Text="{DynamicResource Setup.Location}" Style="{StaticResource Muted}" Margin="0,12,0,4" />
-                    <DockPanel>
+                    <TextBlock Text="{DynamicResource Setup.Workbook}" Style="{StaticResource SectionTitle}" />
+                    <DockPanel Margin="0,6,0,0">
                         <Button DockPanel.Dock="Right" Content="{DynamicResource Common.Browse}" Command="{Binding BrowseCommand}" Margin="8,0,0,0" />
-                        <TextBox Text="{Binding Location, UpdateSourceTrigger=PropertyChanged}" FlowDirection="LeftToRight" />
+                        <TextBox Text="{Binding WorkbookPath, UpdateSourceTrigger=PropertyChanged}" FlowDirection="LeftToRight" />
                     </DockPanel>
-                    <TextBlock Margin="0,14,0,0" Style="{StaticResource Muted}">
-                        <Run Text="{DynamicResource Setup.WillCreate}" />
-                        <Run Text="{Binding TargetPath, Mode=OneWay}" FontWeight="SemiBold" />
+                    <TextBlock Text="{DynamicResource Setup.Name}" Style="{StaticResource Muted}" Margin="0,14,0,4" />
+                    <TextBox Text="{Binding EntityName, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Margin="0,14,0,0" Style="{StaticResource Muted}" TextWrapping="Wrap">
+                        <Run Text="{DynamicResource Setup.ArchiveAt}" />
+                        <Run Text="{Binding ArchivePath, Mode=OneWay}" FontWeight="SemiBold" />
                     </TextBlock>
-                    <TextBlock Margin="0,6,0,0" Style="{StaticResource Muted}" FontSize="12" FlowDirection="LeftToRight" HorizontalAlignment="Left"
-                               Text="Suppliers · Clients · Items · Categories · INVOICE HISTORY · Templates · BATCH STUDIO\SUPPLIERS · BATCH STUDIO\CLIENTS" />
-                    <Button Content="{DynamicResource Setup.Create}" Command="{Binding CreateCommand}" Margin="0,16,0,0"
+                    <TextBlock Margin="0,6,0,0" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Text="{DynamicResource Setup.WorkbookHint}" />
+                    <Button Content="{DynamicResource Setup.Link}" Command="{Binding LinkCommand}" Margin="0,16,0,0"
                             HorizontalAlignment="Left" Padding="22,7" Style="{DynamicResource AccentButtonStyle}" />
                 </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="{DynamicResource Setup.OpenButton}" Command="{Binding OpenExistingCommand}" VerticalAlignment="Center" />
-                    <StackPanel>
-                        <TextBlock Text="{DynamicResource Setup.Open}" Style="{StaticResource SectionTitle}" />
-                        <TextBlock Text="Afaq Database · Royal Blocks Database …" Style="{StaticResource Muted}" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
-                    </StackPanel>
-                </DockPanel>
             </Border>
 
             <TextBlock Text="{Binding Error}" Foreground="{StaticResource BadBrush}" TextWrapping="Wrap" Margin="0,0,0,10" />

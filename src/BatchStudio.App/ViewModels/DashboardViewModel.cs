@@ -143,16 +143,10 @@ public sealed partial class DashboardViewModel : ObservableObject
             Rows.Add(new RankItem { Row = x, Bar = max > 0 ? (double)(x.Amount / max) : 0 });
     }
 
+    /// <summary>The workbook's own Dashboard sheet keeps working in Excel; the program only shows the numbers.</summary>
     private void WriteExcel()
     {
-        if (Root == null || _result == null) return;
-        try
-        {
-            if (ReportBooks.WriteDashboard(ReportBooks.DashboardPath(Root), _result, Filter()))
-                Status = Loc.T("Dash.ExcelUpdated") + $"  ·  {DateTime.Now:HH:mm:ss}";
-        }
-        catch (FileLockedException) { Status = Loc.T("Dash.ExcelLocked"); }
-        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        if (_result != null) Status = Loc.T("Dash.Updated") + $"  ·  {DateTime.Now:HH:mm:ss}";
     }
 
     partial void OnPeriodChanged(string value)
@@ -225,8 +219,6 @@ public sealed partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private void OpenExcel()
     {
-        if (Root == null) return;
-        var p = ReportBooks.DashboardPath(Root);
-        if (File.Exists(p)) Shell.Open(p); else Status = Loc.T("Dash.NoExcel");
+        if (_main.Workspace != null) Shell.Open(_main.Workspace.WorkbookPath);
     }
 }

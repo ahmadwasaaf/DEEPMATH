@@ -1,5 +1,6 @@
 using System.Globalization;
 using BatchStudio.Core.Data;
+using BatchStudio.Core.Workbook;
 using ClosedXML.Excel;
 
 namespace BatchStudio.Core.Invoices;
@@ -53,14 +54,16 @@ public static class InvoiceHistoryBook
         wb.Worksheets.TryGetWorksheet(DataSets.InvoiceHistory.SheetName, out var ws) ? ws
         : wb.Worksheets.FirstOrDefault(w => w.Name.Contains("HISTORY", StringComparison.OrdinalIgnoreCase)) ?? wb.Worksheet(1);
 
-    public static HistoryLayout Detect(IXLWorksheet ws)
+    public static HistoryLayout Detect(IXLWorksheet ws) => Detect(new XLSource(ws));
+
+    public static HistoryLayout Detect(ICellSource ws)
     {
         for (int r = 1; r <= 40; r++)
         {
             var row = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             for (int c = 1; c <= 40; c++)
             {
-                var t = ExcelTableStore.CellText(ws.Cell(r, c)).Trim();
+                var t = ws.Text(r, c).Trim();
                 if (t.Length > 0 && !row.ContainsKey(t)) row[t] = c;
             }
             int Find(params string[] keys) => keys.Select(k => row.TryGetValue(k, out var c) ? c : 0).FirstOrDefault(c => c > 0);
@@ -101,11 +104,13 @@ public static class InvoiceHistoryBook
         return Read(ws, l);
     }
 
-    public static List<HistoryRecord> Read(IXLWorksheet ws, HistoryLayout l)
+    public static List<HistoryRecord> Read(IXLWorksheet ws, HistoryLayout l) => Read(new XLSource(ws), l);
+
+    public static List<HistoryRecord> Read(ICellSource ws, HistoryLayout l)
     {
         var list = new List<HistoryRecord>();
         int last = LastDataRow(ws, l);
-        string T(int r, int c) => c > 0 ? ExcelTableStore.CellText(ws.Cell(r, c)).Trim() : "";
+        string T(int r, int c) => c > 0 ? ws.Text(r, c).Trim() : "";
         for (int r = l.FirstDataRow; r <= last; r++)
         {
             var inv = T(r, l.ColInvoice);
@@ -116,14 +121,13 @@ public static class InvoiceHistoryBook
             DateTime? date = null;
             if (l.ColDate > 0)
             {
-                var cell = ws.Cell(r, l.ColDate);
-                try
+                switch (ws.Raw(r, l.ColDate))
                 {
-                    if (cell.Value.IsDateTime) date = cell.Value.GetDateTime();
-                    else if (cell.Value.IsNumber) date = DateTime.FromOADate(cell.Value.GetNumber());
-                    else if (DateTime.TryParse(cell.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)) date = d;
+                    case DateTime dt: date = dt; break;
+                    case double d when d > 0 && d < 2958466: date = DateTime.FromOADate(d); break;
+                    case decimal m when m > 0 && m < 2958466: date = DateTime.FromOADate((double)m); break;
+                    case string str when DateTime.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.None, out var pd): date = pd; break;
                 }
-                catch { }
             }
             list.Add(new HistoryRecord
             {
@@ -138,104 +142,71 @@ public static class InvoiceHistoryBook
     public static HashSet<string> InvoiceNumbers(string path) =>
         new(Read(path).Select(r => r.InvoiceNo).Where(s => s.Length > 0), StringComparer.OrdinalIgnoreCase);
 
-    private static int LastDataRow(IXLWorksheet ws, HistoryLayout l)
+    private static int LastDataRow(ICellSource ws, HistoryLayout l)
     {
-        int a = ws.Column(l.ColInvoice).LastCellUsed()?.Address.RowNumber ?? 0;
-        int b = l.ColName > 0 ? ws.Column(l.ColName).LastCellUsed()?.Address.RowNumber ?? 0 : 0;
+        int a = ws.LastRow(l.ColInvoice);
+        int b = l.ColName > 0 ? ws.LastRow(l.ColName) : 0;
         return Math.Max(Math.Max(a, b), l.HeaderRow);
     }
 
-    /// <summary>Adds one invoice row below the last record, formatted like the row above (V28 ArchiveCurrentInvoice).</summary>
-    public static void Append(string root, string path, HistoryRecord rec, int keepBackups = 30)
+    // ------------------------------------------------------------------ writing (into the workbook through an editor)
+    public static ISheetEditor Sheet(IWorkbookEditor ed)
     {
-        ExcelTableStore.EnsureWritable(path);
-        using var wb = PackageRepair.OpenWorkbook(path);
-        var ws = Sheet(wb);
-        var l = Detect(ws);
-        var records = Read(ws, l);
+        if (ed.HasSheet(DataSets.InvoiceHistory.SheetName)) return ed.Sheet(DataSets.InvoiceHistory.SheetName);
+        throw new InvalidOperationException("The workbook has no INVOICE HISTORY sheet.");
+    }
+
+    private static (ISheetEditor Sheet, BlockSource Src, HistoryLayout Layout, List<HistoryRecord> Records) Open(IWorkbookEditor ed)
+    {
+        var sh = Sheet(ed);
+        var src = BlockSource.ReadAll(sh, 40);
+        var l = Detect(src);
+        return (sh, src, l, Read(src, l));
+    }
+
+    /// <summary>Adds one invoice row below the last record, formatted like the row above (V28 ArchiveCurrentInvoice).</summary>
+    public static void Append(IWorkbookEditor ed, HistoryRecord rec)
+    {
+        var (ws, src, l, records) = Open(ed);
         if (records.Any(x => string.Equals(x.InvoiceNo, rec.InvoiceNo, StringComparison.OrdinalIgnoreCase)))
             throw new InvalidOperationException($"Invoice number {rec.InvoiceNo} already exists in INVOICE HISTORY.");
 
-        int r = LastDataRow(ws, l) + 1;
+        int r = LastDataRow(src, l) + 1;
         int firstCol = new[] { l.ColNo, l.ColName, l.ColAmount, l.ColDate, l.ColInvoice, l.ColStatus }.Where(c => c > 0).Min();
         int lastCol = l.LastCol;
-        if (r > l.FirstDataRow)
-        {
-            int prev = r - 1;
-            for (int c = firstCol; c <= lastCol; c++) ws.Cell(r, c).Style = ws.Cell(prev, c).Style;
-            ws.Row(r).Height = ws.Row(prev).Height;
-        }
-        ws.Row(r).Unhide();
+        if (r > l.FirstDataRow) ws.CopyRow(r - 1, r, firstCol, lastCol);
+        ws.ShowRow(r);
 
         int maxNo = records.Select(x => x.No)
             .Select(v => v.StartsWith("INV-", StringComparison.OrdinalIgnoreCase) && int.TryParse(v[4..], out var n) ? n : 0)
             .DefaultIfEmpty(0).Max();
-        void Put(int c, XLCellValue v) { if (c > 0) ws.Cell(r, c).Value = v; }
+        void Put(int c, object? v) { if (c > 0) ws.Set(r, c, v); }
         Put(l.ColNo, $"INV-{maxNo + 1}");
         Put(l.ColName, rec.Name);
-        if (rec.Amount is { } amt) Put(l.ColAmount, (double)amt);
-        if (rec.Date is { } dt && l.ColDate > 0)
+        Put(l.ColAmount, rec.Amount is { } amt ? (double)amt : null);
+        if (l.ColDate > 0)
         {
-            ws.Cell(r, l.ColDate).Value = dt;
-            ws.Cell(r, l.ColDate).Style.NumberFormat.Format = "dd/mm/yyyy";
+            Put(l.ColDate, rec.Date);
+            if (rec.Date != null) ws.SetNumberFormat(r, l.ColDate, "dd/mm/yyyy");
         }
         Put(l.ColInvoice, rec.InvoiceNo);
         Put(l.ColStatus, string.IsNullOrEmpty(rec.Status) ? "File available" : rec.Status);
+        if (l.ColStatus > 0) ws.SetFontColor(r, l.ColStatus, 0, 128, 0);
         Put(l.ColType, rec.PartyType);
         Put(l.ColRecordId, rec.RecordId);
         Put(l.ColPath, rec.FilePath);
         Put(l.ColTemplate, rec.Template);
         foreach (var (col, def) in l.Actions)
         {
-            var above = r > l.FirstDataRow ? ExcelTableStore.CellText(ws.Cell(r - 1, col)).Trim() : "";
-            ws.Cell(r, col).Value = above.Length > 0 ? above : def;
+            var above = r > l.FirstDataRow ? src.Text(r - 1, col).Trim() : "";
+            ws.Set(r, col, above.Length > 0 ? above : def);
         }
 
         // the print area follows the last record (as V28 UpdateHistoryPrintArea did)
-        var pa = ws.PageSetup.PrintAreas.FirstOrDefault()?.RangeAddress;
-        if (pa != null && pa.LastAddress.RowNumber < r)
-        {
-            int r1 = pa.FirstAddress.RowNumber, c1 = pa.FirstAddress.ColumnNumber, c2 = pa.LastAddress.ColumnNumber;
-            ws.PageSetup.PrintAreas.Clear();
-            ws.PageSetup.PrintAreas.Add(r1, c1, r, c2);
-        }
+        if (ws.GetPrintArea() is { } pa && pa.R2 < r) ws.SetPrintArea(pa.R1, pa.C1, r, pa.C2);
 
         // V28: C3 shows the number of invoices ("84 Invoice")
-        if (l.IsV28)
-        {
-            var count = ws.Cell("C3");
-            if (count.Value.IsNumber) count.Value = records.Count + 1;
-        }
-
-        BackupService.Backup(root, DataSets.InvoiceHistory, keepBackups);
-        var dir = Path.GetDirectoryName(Path.GetFullPath(path))!;
-        var tmp = Path.Combine(dir, $".~history.{Guid.NewGuid():N}.tmp.xlsx");
-        wb.SaveAs(tmp);
-        try { File.Replace(tmp, path, null); }
-        catch (IOException ex)
-        {
-            try { File.Delete(tmp); } catch { }
-            throw new FileLockedException(path, ex);
-        }
-    }
-
-    // ------------------------------------------------------------------ editing (remove / relink / status)
-    private static void Modify(string root, string path, Action<IXLWorksheet, HistoryLayout, List<HistoryRecord>> change, int keepBackups = 30)
-    {
-        ExcelTableStore.EnsureWritable(path);
-        using var wb = PackageRepair.OpenWorkbook(path);
-        var ws = Sheet(wb);
-        var l = Detect(ws);
-        change(ws, l, Read(ws, l));
-        BackupService.Backup(root, DataSets.InvoiceHistory, keepBackups);
-        var tmp = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path))!, $".~history.{Guid.NewGuid():N}.tmp.xlsx");
-        wb.SaveAs(tmp);
-        try { File.Replace(tmp, path, null); }
-        catch (IOException ex)
-        {
-            try { File.Delete(tmp); } catch { }
-            throw new FileLockedException(path, ex);
-        }
+        if (l.IsV28 && src.Raw(3, 3) is double or decimal) ws.Set(3, 3, (double)(records.Count + 1));
     }
 
     private static HistoryRecord Find(List<HistoryRecord> recs, string invoiceNo) =>
@@ -256,92 +227,125 @@ public static class InvoiceHistoryBook
     }
 
     /// <summary>
-    /// Removes an invoice: deletes its history row and, when <paramref name="deleteFile"/> is set, the archived
-    /// file too (only inside this Database's BATCH STUDIO folder, like V28 "Remove"). Remaining rows are renumbered.
+    /// Removes an invoice's history row (remaining rows are renumbered). With <paramref name="deleteFile"/> the archived
+    /// file is checked first (it must be inside the BATCH STUDIO archive, like V28 "Remove") and its path is returned:
+    /// delete it with <see cref="DeleteArchivedFile"/> once the workbook was saved.
     /// </summary>
-    public static void Remove(string root, string path, string invoiceNo, bool deleteFile, int keepBackups = 30)
+    public static string? Remove(IWorkbookEditor ed, string archiveRoot, string invoiceNo, bool deleteFile)
     {
+        var (ws, _, l, recs) = Open(ed);
+        var rec = Find(recs, invoiceNo);
+        string? file = null;
         if (deleteFile)
         {
-            var rec = Find(Read(path), invoiceNo);
-            var file = ResolvePath(root, rec.FilePath);
-            var archive = Path.GetFullPath(Path.Combine(root, DatabaseLayout.ArchiveFolder)) + Path.DirectorySeparatorChar;
+            file = ResolvePath(archiveRoot, rec.FilePath);
             if (!File.Exists(file)) throw new FileNotFoundException("The archived file is missing; remove the record only.", file);
-            if (!Path.GetFullPath(file).StartsWith(archive, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("The invoice file is outside this Database's BATCH STUDIO folder; it was not deleted.");
-            ExcelTableStore.EnsureWritable(path);
-            File.Delete(file);
-            var dir = Path.GetDirectoryName(file)!;
-            try
-            {
-                // remove the empty party folder, never SUPPLIERS / CLIENTS themselves
-                if (!Directory.EnumerateFileSystemEntries(dir).Any() &&
-                    !string.Equals(Path.GetFileName(Path.GetDirectoryName(dir)), DatabaseLayout.ArchiveFolder, StringComparison.OrdinalIgnoreCase))
-                    Directory.Delete(dir);
-            }
-            catch { }
+            if (!Path.GetFullPath(file).StartsWith(ArchivePrefix(archiveRoot), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The invoice file is outside the BATCH STUDIO archive; it was not deleted.");
         }
-        Modify(root, path, (ws, l, recs) =>
+        ws.DeleteRow(rec.Row);
+        // renumber INV-1..n in sheet order (V28 ArchiveReindexHistory), only where the number changes
+        int n = 0;
+        foreach (var r in recs.Where(x => x.Row != rec.Row))
         {
-            var rec = Find(recs, invoiceNo);
-            ws.Row(rec.Row).Delete();
-            // renumber INV-1..n in sheet order (V28 ArchiveReindexHistory)
-            int n = 0;
-            foreach (var r in recs.Where(x => x.Row != rec.Row))
-            {
-                int row = r.Row > rec.Row ? r.Row - 1 : r.Row;
-                n++;
-                if (l.ColNo > 0) ws.Cell(row, l.ColNo).Value = $"INV-{n}";
-            }
-            if (l.IsV28 && ws.Cell("C3").Value.IsNumber) ws.Cell("C3").Value = n;
-            // print area ends at the last remaining record
-            var pa = ws.PageSetup.PrintAreas.FirstOrDefault()?.RangeAddress;
-            if (pa != null)
-            {
-                int lastRow = recs.Where(x => x.Row != rec.Row).Select(x => x.Row > rec.Row ? x.Row - 1 : x.Row).DefaultIfEmpty(l.FirstDataRow).Max();
-                int r1 = pa.FirstAddress.RowNumber, c1 = pa.FirstAddress.ColumnNumber, c2 = pa.LastAddress.ColumnNumber;
-                ws.PageSetup.PrintAreas.Clear();
-                ws.PageSetup.PrintAreas.Add(r1, c1, Math.Max(r1, lastRow), c2);
-            }
-        }, keepBackups);
+            int row = r.Row > rec.Row ? r.Row - 1 : r.Row;
+            n++;
+            if (l.ColNo > 0 && r.No != $"INV-{n}") ws.Set(row, l.ColNo, $"INV-{n}");
+        }
+        if (l.IsV28 && ws.Read(3, 3, 3, 3)[0, 0] is double or decimal) ws.Set(3, 3, (double)n);
+        // print area ends at the last remaining record
+        if (ws.GetPrintArea() is { } pa)
+        {
+            int lastRow = recs.Where(x => x.Row != rec.Row).Select(x => x.Row > rec.Row ? x.Row - 1 : x.Row).DefaultIfEmpty(l.FirstDataRow).Max();
+            ws.SetPrintArea(pa.R1, pa.C1, Math.Max(pa.R1, lastRow), pa.C2);
+        }
+        return file;
+    }
+
+    private static string ArchivePrefix(string archiveRoot) =>
+        Path.GetFullPath(archiveRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+
+    /// <summary>Deletes an archived invoice file and its party folder when that became empty (never SUPPLIERS / CLIENTS).</summary>
+    public static void DeleteArchivedFile(string file, string archiveRoot)
+    {
+        var archive = ArchivePrefix(archiveRoot);
+        if (!Path.GetFullPath(file).StartsWith(archive, StringComparison.OrdinalIgnoreCase)) return;
+        File.Delete(file);
+        try
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(file))!;
+            var parent = Path.GetDirectoryName(dir)!;
+            bool isTypeFolder = string.Equals(parent.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, archive, StringComparison.OrdinalIgnoreCase);
+            bool isArchive = string.Equals(dir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, archive, StringComparison.OrdinalIgnoreCase);
+            if (!isTypeFolder && !isArchive && !Directory.EnumerateFileSystemEntries(dir).Any()) Directory.Delete(dir);
+        }
+        catch { }
     }
 
     /// <summary>Points a record at a moved invoice file (V28 "Reassign file").</summary>
-    public static void Relink(string root, string path, string invoiceNo, string newFile, int keepBackups = 30) =>
-        Modify(root, path, (ws, l, recs) =>
-        {
-            var rec = Find(recs, invoiceNo);
-            if (l.ColPath > 0) ws.Cell(rec.Row, l.ColPath).Value = newFile;
-            SetStatus(ws, l, rec.Row, true);
-        }, keepBackups);
+    public static void Relink(IWorkbookEditor ed, string invoiceNo, string newFile)
+    {
+        var (ws, _, l, recs) = Open(ed);
+        var rec = Find(recs, invoiceNo);
+        if (l.ColPath > 0) ws.Set(rec.Row, l.ColPath, newFile);
+        SetStatus(ws, l, rec, true);
+    }
+
+    /// <summary>Statuses that differ from the files on disk (cheap check before opening the workbook).</summary>
+    public static int StatusChangesNeeded(string archiveRoot, IEnumerable<HistoryRecord> recs) =>
+        recs.Count(r => (File.Exists(ResolvePath(archiveRoot, r.FilePath)) ? "File available" : "File missing") != r.Status);
 
     /// <summary>Writes "File available" / "File missing" (green / red) where it changed. Returns how many rows changed.</summary>
-    public static int UpdateStatuses(string root, string path, int keepBackups = 30)
+    public static int UpdateStatuses(IWorkbookEditor ed, string archiveRoot)
     {
+        var (ws, _, l, recs) = Open(ed);
         int changed = 0;
-        var recs = Read(path);
-        bool any = recs.Any(r => (File.Exists(ResolvePath(root, r.FilePath)) ? "File available" : "File missing") != r.Status);
-        if (!any) return 0;
-        Modify(root, path, (ws, l, rs) =>
-        {
-            foreach (var r in rs)
-            {
-                bool ok = File.Exists(ResolvePath(root, r.FilePath));
-                if (SetStatus(ws, l, r.Row, ok)) changed++;
-            }
-        }, keepBackups);
+        foreach (var r in recs)
+            if (SetStatus(ws, l, r, File.Exists(ResolvePath(archiveRoot, r.FilePath)))) changed++;
         return changed;
     }
 
-    private static bool SetStatus(IXLWorksheet ws, HistoryLayout l, int row, bool available)
+    private static bool SetStatus(ISheetEditor ws, HistoryLayout l, HistoryRecord rec, bool available)
     {
         if (l.ColStatus == 0) return false;
-        var c = ws.Cell(row, l.ColStatus);
         var text = available ? "File available" : "File missing";
-        if (c.GetString() == text) return false;
-        c.Value = text;
-        c.Style.Font.FontColor = available ? XLColor.FromArgb(0, 128, 0) : XLColor.FromArgb(210, 0, 0);
+        if (rec.Status == text) return false;
+        ws.Set(rec.Row, l.ColStatus, text);
+        if (available) ws.SetFontColor(rec.Row, l.ColStatus, 0, 128, 0);
+        else ws.SetFontColor(rec.Row, l.ColStatus, 210, 0, 0);
         return true;
+    }
+
+    // ------------------------------------------------------------------ file-based wrappers (stand-alone .xlsx)
+    private static void OnFile(string root, string path, int keepBackups, Action<IWorkbookEditor> change)
+    {
+        using var ed = ClosedXmlWorkbookEditor.Open(path);
+        change(ed);
+        BackupService.Backup(root, DataSets.InvoiceHistory, keepBackups);
+        ed.Save();
+    }
+
+    public static void Append(string root, string path, HistoryRecord rec, int keepBackups = 30) =>
+        OnFile(root, path, keepBackups, ed => Append(ed, rec));
+
+    public static void Remove(string root, string path, string invoiceNo, bool deleteFile, int keepBackups = 30)
+    {
+        var archive = Path.Combine(root, DatabaseLayout.ArchiveFolder);
+        string? file = null;
+        OnFile(root, path, keepBackups, ed => file = Remove(ed, archive, invoiceNo, deleteFile));
+        if (file != null) DeleteArchivedFile(file, archive);
+    }
+
+    public static void Relink(string root, string path, string invoiceNo, string newFile, int keepBackups = 30) =>
+        OnFile(root, path, keepBackups, ed => Relink(ed, invoiceNo, newFile));
+
+    public static int UpdateStatuses(string root, string path, int keepBackups = 30)
+    {
+        var archive = Path.Combine(root, DatabaseLayout.ArchiveFolder);
+        if (StatusChangesNeeded(archive, Read(path)) == 0) return 0;
+        int n = 0;
+        OnFile(root, path, keepBackups, ed => n = UpdateStatuses(ed, archive));
+        return n;
     }
 
     /// <summary>
@@ -380,23 +384,30 @@ public static class InvoiceHistoryBook
     }
 
     /// <summary>
-    /// Resolves a stored invoice path. Old V28 rows hold absolute paths of the previous archive location
-    /// (e.g. D:\...\BATCH STUDIO\CLIENTS\x\Mad-1.xlsx); when that file is gone, the same path is looked up
-    /// under this Database's BATCH STUDIO folder.
+    /// Resolves a stored invoice path against the archive root (the BATCH STUDIO folder). Old rows hold absolute
+    /// paths of an earlier archive location (e.g. D:\...\BATCH STUDIO\CLIENTS\x\Mad-1.xlsx); when that file is gone,
+    /// the part from CLIENTS\ / SUPPLIERS\ on is looked up under the current archive (as the V28 VBA does).
     /// </summary>
-    public static string ResolvePath(string root, string stored)
+    public static string ResolvePath(string archiveRoot, string stored)
     {
         if (string.IsNullOrWhiteSpace(stored)) return "";
-        if (!Path.IsPathRooted(stored)) return Path.Combine(root, stored);
-        if (File.Exists(stored)) return stored;
-        var marker = Path.DirectorySeparatorChar + DatabaseLayout.ArchiveFolder + Path.DirectorySeparatorChar;
-        var norm = stored.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
-        int i = norm.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-        if (i >= 0)
+        var norm = stored.Trim().Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+        if (!Path.IsPathRooted(norm))
         {
-            var local = Path.Combine(root, norm[(i + 1)..]);
+            var prefix = DatabaseLayout.ArchiveFolder + Path.DirectorySeparatorChar;
+            if (norm.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) norm = norm[prefix.Length..];
+            return Path.Combine(archiveRoot, norm);
+        }
+        if (File.Exists(norm)) return norm;
+        var sep = Path.DirectorySeparatorChar;
+        var upper = norm.ToUpperInvariant();
+        int pos = Math.Max(upper.LastIndexOf($"{sep}{DatabaseLayout.ArchiveClients}{sep}", StringComparison.Ordinal),
+                           upper.LastIndexOf($"{sep}{DatabaseLayout.ArchiveSuppliers}{sep}", StringComparison.Ordinal));
+        if (pos >= 0)
+        {
+            var local = Path.Combine(archiveRoot, norm[(pos + 1)..]);
             if (File.Exists(local)) return local;
         }
-        return stored;
+        return norm;
     }
 }

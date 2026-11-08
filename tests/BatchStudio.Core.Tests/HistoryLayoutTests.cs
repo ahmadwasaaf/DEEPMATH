@@ -96,7 +96,7 @@ public class HistoryLayoutTests
             var local = Path.Combine(root, "BATCH STUDIO", "CLIENTS", "Client 1", "Mad-6942817.xlsx");
             Directory.CreateDirectory(Path.GetDirectoryName(local)!);
             File.WriteAllText(local, "x");
-            Assert.Equal(local, InvoiceHistoryBook.ResolvePath(root, @"D:\Old\Accounting\BATCH STUDIO\CLIENTS\Client 1\Mad-6942817.xlsx"));
+            Assert.Equal(local, InvoiceHistoryBook.ResolvePath(Path.Combine(root, "BATCH STUDIO"), @"D:\Old\Accounting\BATCH STUDIO\CLIENTS\Client 1\Mad-6942817.xlsx"));
         }
         finally { try { Directory.Delete(root, true); } catch { } }
     }

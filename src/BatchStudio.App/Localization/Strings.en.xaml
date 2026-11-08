@@ -27,7 +27,7 @@
     <sys:String x:Key="Status.Synced">Synced with Excel</sys:String>
     <sys:String x:Key="Status.Unsaved">Unsaved changes</sys:String>
     <sys:String x:Key="Status.Saving">Saving…</sys:String>
-    <sys:String x:Key="Status.Locked">Waiting: the file is open in Excel. It will be saved when Excel closes it.</sys:String>
+    <sys:String x:Key="Status.Locked">Waiting for Excel: the workbook is locked. It will be saved as soon as possible.</sys:String>
     <sys:String x:Key="Status.Reloaded">Updated from Excel</sys:String>
     <sys:String x:Key="Status.Merged">Excel changes merged with your edits</sys:String>
     <sys:String x:Key="Status.Error">Error</sys:String>
@@ -38,13 +38,13 @@
     <sys:String x:Key="Close.Pending">Some changes could not be saved yet (a file is open in Excel). Close anyway?</sys:String>
 
     <sys:String x:Key="Home.Welcome">Welcome</sys:String>
-    <sys:String x:Key="Home.Database">Database folder</sys:String>
-    <sys:String x:Key="Home.Missing">Missing from the Database folder (click Repair to create):</sys:String>
-    <sys:String x:Key="Home.Repair">Repair structure</sys:String>
+    <sys:String x:Key="Home.Database">BATCH STUDIO workbook</sys:String>
+    <sys:String x:Key="Home.Missing">Needs attention:</sys:String>
+    <sys:String x:Key="Home.Repair">Create archive folders</sys:String>
     <sys:String x:Key="Home.TemplatesLinked">templates linked</sys:String>
 
-    <sys:String x:Key="Setup.Title">Set up an entity</sys:String>
-    <sys:String x:Key="Setup.Intro">Each entity (company) has its own Database folder. Create a new one, or open a Database folder you already have.</sys:String>
+    <sys:String x:Key="Setup.Title">Link an entity</sys:String>
+    <sys:String x:Key="Setup.Intro">Each entity (company) is one BATCH STUDIO workbook (e.g. BATCH_STUDIO_V28.1.xlsm). The program reads and writes that workbook directly - keep working in it as usual. Invoices are archived in the BATCH STUDIO folder next to it.</sys:String>
     <sys:String x:Key="Setup.New">Create a new Database</sys:String>
     <sys:String x:Key="Setup.Open">Open an existing Database folder</sys:String>
     <sys:String x:Key="Setup.Name">Entity name</sys:String>
@@ -53,7 +53,7 @@
     <sys:String x:Key="Setup.Create">Create</sys:String>
     <sys:String x:Key="Setup.OpenButton">Open folder…</sys:String>
 
-    <sys:String x:Key="Tpl.Intro">Put template files (.xlsx) in the Templates folder, then link them here. The app finds the variable cells automatically; check them and save.</sys:String>
+    <sys:String x:Key="Tpl.Intro">Templates are the invoice sheets of the workbook (INVOICE, INV1, Madar …). The app finds the variable cells automatically; check them and save.</sys:String>
     <sys:String x:Key="Tpl.AddFile">Add template…</sys:String>
     <sys:String x:Key="Tpl.Detect">Detect cells</sys:String>
     <sys:String x:Key="Tpl.SaveMap">Save link</sys:String>
@@ -92,12 +92,12 @@
     <sys:String x:Key="Set.Backups">Backups kept per file</sys:String>
     <sys:String x:Key="Set.Entities">Entities</sys:String>
     <sys:String x:Key="Set.RemoveEntity">Remove from list</sys:String>
-    <sys:String x:Key="Set.RemoveNote">Removing an entity only removes it from this list. Its Database folder is not deleted.</sys:String>
+    <sys:String x:Key="Set.RemoveNote">Removing an entity only removes it from this list. Its workbook is not touched.</sys:String>
     <sys:String x:Key="Set.About">BATCH STUDIO Desktop - phase 1</sys:String>
     <sys:String x:Key="Entity.PathInUse">This folder is already used by the entity "{0}".</sys:String>
     <sys:String x:Key="Entity.PathMissing">This folder is not a complete Database. Missing:&#x0a;&#x0a;{0}&#x0a;&#x0a;Use it anyway? Missing folders and files will be created (nothing is overwritten).</sys:String>
     <sys:String x:Key="Entity.NameInUse">An entity named "{0}" already exists.</sys:String>
-    <sys:String x:Key="Set.ChangeFolder">Change folder…</sys:String>
+    <sys:String x:Key="Set.ChangeFolder">Change workbook…</sys:String>
     <sys:String x:Key="Set.Rename">Rename</sys:String>
     <sys:String x:Key="Set.FolderNotFound">Folder not found</sys:String>
     <sys:String x:Key="Nav.NewInvoice">New Invoice</sys:String>
@@ -138,7 +138,7 @@
     <sys:String x:Key="Inv.GenerateFirst">Generate the items first.</sys:String>
     <sys:String x:Key="Inv.Unbalanced">The total ({0}) differs from the target ({1}) after your edits. Save anyway?</sys:String>
     <sys:String x:Key="Inv.Saved">Invoice saved to the archive and added to INVOICE HISTORY.</sys:String>
-    <sys:String x:Key="Inv.HistoryLocked">"{0}" is open in Excel. Close it and click Save again.</sys:String>
+    <sys:String x:Key="Inv.HistoryLocked">"{0}" is locked by another program. Close it there and try again.</sys:String>
     <sys:String x:Key="Inv.PdfSaved">PDF exported next to the invoice.</sys:String>
     <sys:String x:Key="Inv.Edit">You can edit quantities and prices; totals update instantly.</sys:String>
     <sys:String x:Key="Field.category">Category line</sys:String>
@@ -199,7 +199,7 @@
     <sys:String x:Key="Dash.ExcelUpdated">Dashboard.xlsx updated</sys:String>
     <sys:String x:Key="Dash.ExcelLocked">Dashboard.xlsx is open in Excel; it will be updated next time.</sys:String>
     <sys:String x:Key="Dash.NoExcel">Dashboard\Dashboard.xlsx not found in the Database folder.</sys:String>
-    <sys:String x:Key="Dash.OpenExcel">Open Dashboard.xlsx</sys:String>
+    <sys:String x:Key="Dash.OpenExcel">Open the workbook</sys:String>
     <sys:String x:Key="Col.Rank">Rank</sys:String>
     <sys:String x:Key="Col.Company">COMPANY NAME</sys:String>
     <sys:String x:Key="Col.InvCount">INV COUNT</sys:String>
@@ -218,6 +218,21 @@
     <sys:String x:Key="Rep.DescSaved">Company activities saved ({0} record(s)).</sys:String>
     <sys:String x:Key="Rep.NotFound">Company not found in master data; nothing saved.</sys:String>
     <sys:String x:Key="Rep.Pdf">Export report PDF</sys:String>
-    <sys:String x:Key="Rep.NoTemplate">Dashboard\Supplier Report.xlsx not found in the Database folder.</sys:String>
+    <sys:String x:Key="Rep.NoTemplate">The workbook has no Supplier Report sheet.</sys:String>
     <sys:String x:Key="Rep.InvPdf">Invoice PDF</sys:String>
+    <sys:String x:Key="Excel.Missing">Microsoft Excel is needed to save into the workbook.</sys:String>
+    <sys:String x:Key="Excel.Busy">Excel is busy (a cell is being edited or a dialog is open). Finish in Excel; saving continues automatically.</sys:String>
+    <sys:String x:Key="Excel.ReadOnly">The workbook is open read-only in Excel. Open it normally to let the program save.</sys:String>
+    <sys:String x:Key="Status.SavingWorkbook">Saving into the workbook…</sys:String>
+    <sys:String x:Key="Entity.NoWorkbook">No BATCH STUDIO workbook (.xlsm with an INVOICE HISTORY sheet) was found at:&#x0a;{0}</sys:String>
+    <sys:String x:Key="Home.MissingSheet">Sheet "{0}" is missing in the workbook</sys:String>
+    <sys:String x:Key="Home.MissingArchive">Archive folder not found: {0}</sys:String>
+    <sys:String x:Key="Home.OpenWorkbook">Open workbook</sys:String>
+    <sys:String x:Key="Setup.Workbook">BATCH STUDIO workbook</sys:String>
+    <sys:String x:Key="Setup.WorkbookFilter">BATCH STUDIO workbook (*.xlsm;*.xlsx)|*.xlsm;*.xlsx</sys:String>
+    <sys:String x:Key="Setup.Link">Link workbook</sys:String>
+    <sys:String x:Key="Setup.ArchiveAt">Invoices archive:</sys:String>
+    <sys:String x:Key="Setup.WorkbookHint">Nothing is copied or converted: suppliers, clients, items, categories, INVOICE HISTORY, Dashboard, reports and templates are read from the workbook's own sheets.</sys:String>
+    <sys:String x:Key="Tpl.AddInWorkbook">Templates live in the workbook: add (or copy) an invoice sheet there and save - it appears here automatically.&#x0a;&#x0a;Open the workbook now?</sys:String>
+    <sys:String x:Key="Dash.Updated">Up to date</sys:String>
 </ResourceDictionary>

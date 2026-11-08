@@ -62,6 +62,7 @@ public sealed partial class HistoryViewModel : ObservableObject
 
     private string? Root => _main.Root;
     private string HistoryPath => DataSets.InvoiceHistory.FullPath(Root!);
+    private string Archive => _main.Workspace!.ArchiveRoot;
 
     public void Reload()
     {
@@ -74,7 +75,7 @@ public sealed partial class HistoryViewModel : ObservableObject
             if (ws != null && _all.Count == 0) WeekStart = ws;
             _all = recs.Select(r =>
             {
-                var p = InvoiceHistoryBook.ResolvePath(Root, r.FilePath);
+                var p = InvoiceHistoryBook.ResolvePath(Archive, r.FilePath);
                 return new HistoryRow { Record = r, ResolvedPath = p, FileExists = p.Length > 0 && File.Exists(p) };
             }).ToList();
             MissingCount = _all.Count(r => !r.FileExists);
@@ -161,46 +162,48 @@ public sealed partial class HistoryViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Remove()
+    private async Task RemoveAsync()
     {
-        if (Selected is not { } r || Root == null) return;
-        try
+        if (Selected is not { } r || _main.Workspace is not { } ws) return;
+        bool deleteFile = r.FileExists;
+        if (deleteFile ? !Dialogs.Confirm(Loc.F("Hist.ConfirmDelete", r.InvoiceNo, r.ResolvedPath))
+                       : !Dialogs.Confirm(Loc.F("Hist.ConfirmRemoveRecord", r.InvoiceNo))) return;
+        int keep = _main.Settings.KeepBackups;
+        await WriteAsync(() =>
         {
-            if (r.FileExists)
-            {
-                if (!Dialogs.Confirm(Loc.F("Hist.ConfirmDelete", r.InvoiceNo, r.ResolvedPath))) return;
-                InvoiceHistoryBook.Remove(Root, HistoryPath, r.InvoiceNo, deleteFile: true, _main.Settings.KeepBackups);
-            }
-            else
-            {
-                if (!Dialogs.Confirm(Loc.F("Hist.ConfirmRemoveRecord", r.InvoiceNo))) return;
-                InvoiceHistoryBook.Remove(Root, HistoryPath, r.InvoiceNo, deleteFile: false, _main.Settings.KeepBackups);
-            }
-            Status = Loc.F("Hist.Removed", r.InvoiceNo);
-            Reload();
-            _main.Home.Refresh();
-        }
-        catch (FileLockedException ex) { Status = Loc.F("Inv.HistoryLocked", Path.GetFileName(ex.FilePath)); }
-        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+            var file = ws.Change(ed => InvoiceHistoryBook.Remove(ed, ws.ArchiveRoot, r.InvoiceNo, deleteFile), keep);
+            if (file != null) InvoiceHistoryBook.DeleteArchivedFile(file, ws.ArchiveRoot);
+        }, Loc.F("Hist.Removed", r.InvoiceNo));
     }
 
     [RelayCommand]
-    private void Relink()
+    private async Task RelinkAsync()
     {
-        if (Selected is not { } r || Root == null) return;
-        var file = Dialogs.PickFile("Excel (*.xlsx)|*.xlsx");
+        if (Selected is not { } r || _main.Workspace is not { } ws) return;
+        var file = Dialogs.PickFile("Excel (*.xlsx)|*.xlsx", Directory.Exists(ws.ArchiveRoot) ? ws.ArchiveRoot : null);
         if (file == null) return;
-        try
-        {
-            // the chosen file must be this invoice (V28 checked the invoice number inside it)
-            if (!FileMentions(file, r.InvoiceNo) && !Dialogs.Confirm(Loc.F("Hist.RelinkMismatch", r.InvoiceNo)))
-                return;
-            InvoiceHistoryBook.Relink(Root, HistoryPath, r.InvoiceNo, file, _main.Settings.KeepBackups);
-            Status = Loc.T("Hist.Relinked");
-            Reload();
-        }
-        catch (FileLockedException ex) { Status = Loc.F("Inv.HistoryLocked", Path.GetFileName(ex.FilePath)); }
-        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        // the chosen file must be this invoice (V28 checked the invoice number inside it)
+        if (!FileMentions(file, r.InvoiceNo) && !Dialogs.Confirm(Loc.F("Hist.RelinkMismatch", r.InvoiceNo))) return;
+        int keep = _main.Settings.KeepBackups;
+        await WriteAsync(() => ws.Change(ed => InvoiceHistoryBook.Relink(ed, r.InvoiceNo, file), keep), Loc.T("Hist.Relinked"));
+    }
+
+    /// <summary>Runs a change of the workbook (through Excel) without freezing the window.</summary>
+    private async Task WriteAsync(Action write, string done) => await WriteAsync(write, () => done);
+
+    private async Task WriteAsync(Action write, Func<string> done)
+    {
+        IsBusy = true;
+        Status = Loc.T("Status.SavingWorkbook");
+        string? error = null;
+        try { await Task.Run(write); }
+        catch (FileLockedException ex) { error = Loc.F("Inv.HistoryLocked", Path.GetFileName(ex.FilePath)); }
+        catch (Exception ex) { error = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        finally { IsBusy = false; }
+        Reload();
+        Status = error ?? done();
+        _main.Home.Refresh();
+        _main.Dashboard.Refresh();
     }
 
     private static bool FileMentions(string xlsx, string text)
@@ -221,23 +224,25 @@ public sealed partial class HistoryViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void CheckFiles()
+    private async Task CheckFilesAsync()
     {
-        if (Root == null) return;
-        try
+        if (_main.Workspace is not { } ws || Root == null) return;
+        var recs = InvoiceHistoryBook.Read(HistoryPath);
+        if (InvoiceHistoryBook.StatusChangesNeeded(ws.ArchiveRoot, recs) == 0)
         {
-            int n = InvoiceHistoryBook.UpdateStatuses(Root, HistoryPath, _main.Settings.KeepBackups);
             Reload();
-            Status = Loc.F("Hist.Checked", MissingCount, n);
+            Status = Loc.F("Hist.Checked", MissingCount, 0);
+            return;
         }
-        catch (FileLockedException ex) { Status = Loc.F("Inv.HistoryLocked", Path.GetFileName(ex.FilePath)); }
-        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        int n = 0, keep = _main.Settings.KeepBackups;
+        await WriteAsync(() => n = ws.Change(ed => InvoiceHistoryBook.UpdateStatuses(ed, ws.ArchiveRoot), keep),
+                         () => Loc.F("Hist.Checked", MissingCount, n));
     }
 
     [RelayCommand]
     private void OpenSheet()
     {
-        if (Root != null) Shell.Open(HistoryPath);
+        if (_main.Workspace != null) Shell.Open(_main.Workspace.WorkbookPath);
     }
 
     /// <summary>EXPORT PDF of the sheet: name follows the period ("This Month Report.pdf"), saved on the Desktop.</summary>

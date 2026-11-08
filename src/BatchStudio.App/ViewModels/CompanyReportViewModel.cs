@@ -92,7 +92,7 @@ public sealed partial class CompanyReportViewModel : ObservableObject
             Lines.Clear();
             int i = 0;
             foreach (var r in _report.Invoices)
-                Lines.Add(new ReportLine { Index = ++i, Record = r, ResolvedPath = InvoiceHistoryBook.ResolvePath(Root, r.FilePath) });
+                Lines.Add(new ReportLine { Index = ++i, Record = r, ResolvedPath = InvoiceHistoryBook.ResolvePath(_main.Workspace!.ArchiveRoot, r.FilePath) });
         }
         catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
         finally { _loading = false; }
@@ -117,16 +117,19 @@ public sealed partial class CompanyReportViewModel : ObservableObject
 
     /// <summary>Saves "Company's Activities" back to Suppliers / Clients (V28 SaveEditedDescription).</summary>
     [RelayCommand]
-    private void SaveDescription()
+    private async Task SaveDescriptionAsync()
     {
         var page = MasterPage;
         if (page == null) return;
         int n = page.SetWhere(name => DashboardEngine.SameCompany(name, Company),
             t => CompanyReports.DescriptionColumn(t), Description);
         if (n == 0) { Status = Loc.T("Rep.NotFound"); return; }
-        page.Save();
-        DescriptionDirty = false;
-        Status = Loc.F("Rep.DescSaved", n);
+        IsBusy = true;
+        Status = Loc.T("Status.SavingWorkbook");
+        try { await page.SaveAsync(); }
+        finally { IsBusy = false; }
+        DescriptionDirty = page.IsDirty;
+        Status = page.IsDirty ? page.Status : Loc.F("Rep.DescSaved", n);
     }
 
     [RelayCommand]

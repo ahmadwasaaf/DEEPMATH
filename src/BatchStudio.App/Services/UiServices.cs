@@ -81,9 +81,10 @@ public static class Dialogs
         return d.ShowDialog(Owner) == true ? d.FolderName : null;
     }
 
-    public static string? PickFile(string filter)
+    public static string? PickFile(string filter, string? initial = null)
     {
         var d = new Microsoft.Win32.OpenFileDialog { Filter = filter };
+        if (!string.IsNullOrEmpty(initial) && Directory.Exists(initial)) d.InitialDirectory = initial;
         return d.ShowDialog(Owner) == true ? d.FileName : null;
     }
 }

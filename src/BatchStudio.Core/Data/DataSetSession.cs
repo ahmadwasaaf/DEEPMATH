@@ -24,9 +24,20 @@ public sealed class DataSetSession
 
     private string _fingerprint = "";
 
+    /// <summary>The BATCH STUDIO workbook this data set lives in (null = a stand-alone Excel file).</summary>
+    public Workbook.Workspace? Workspace { get; }
+
     public DataSetSession(string root, DataSetDefinition definition)
     {
         Root = root;
+        Definition = definition;
+    }
+
+    /// <summary>A data set that is a sheet of the BATCH STUDIO workbook (read from its sheet copy, written into the workbook).</summary>
+    public DataSetSession(Workbook.Workspace workspace, DataSetDefinition definition)
+    {
+        Workspace = workspace;
+        Root = workspace.CacheRoot;
         Definition = definition;
     }
 
@@ -34,7 +45,11 @@ public sealed class DataSetSession
 
     public void Load()
     {
-        if (!File.Exists(FilePath)) DatabaseLayout.CreateEmptyTable(FilePath, Definition);
+        if (!File.Exists(FilePath))
+        {
+            if (Workspace != null) throw new InvalidOperationException($"The workbook has no \"{Definition.SheetName}\" sheet.");
+            DatabaseLayout.CreateEmptyTable(FilePath, Definition);
+        }
         Snapshot = ExcelTableStore.Load(FilePath, Definition.SheetName);
         Current = Snapshot.Clone();
         _fingerprint = Fingerprint(FilePath);
@@ -52,8 +67,16 @@ public sealed class DataSetSession
             throw new InvalidOperationException("Resolve the sync conflicts before saving.");
         try
         {
-            BackupService.Backup(Root, Definition, keepBackups);
-            ExcelTableStore.Save(FilePath, Definition.SheetName, Current);
+            if (Workspace != null)
+            {
+                var table = Current;
+                Workspace.Change(ed => Workbook.TableWriter.Save(ed.Sheet(Definition.SheetName), table), keepBackups);
+            }
+            else
+            {
+                BackupService.Backup(Root, Definition, keepBackups);
+                ExcelTableStore.Save(FilePath, Definition.SheetName, Current);
+            }
             SavePending = false;
         }
         catch (FileLockedException)

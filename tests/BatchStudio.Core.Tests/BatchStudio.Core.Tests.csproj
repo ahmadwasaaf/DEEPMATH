@@ -16,5 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixtures\*.xlsx" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Fixtures\*.xlsm" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
