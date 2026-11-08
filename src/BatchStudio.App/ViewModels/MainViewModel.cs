@@ -191,6 +191,29 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The workbook keeps its own dropdown lists (named ranges); nothing to copy any more.</summary>
     public void RefreshLists() { }
 
+    /// <summary>
+    /// Dropdown choices for a field, like the workbook's validations: categories (V06CategoryList /
+    /// V14_ClientCategories), templates (V11_TemplateChoices) and Status. Null = free text.
+    /// </summary>
+    public IReadOnlyList<string>? OptionsFor(string dataSet, string caption, IEnumerable<string> existing)
+    {
+        var c = caption.Trim();
+        if (c.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))
+            return Root == null ? [] : BatchStudio.Core.Templates.TemplateRegistry.Scan(Root).Select(t => t.Name).ToList();
+        if (c.Contains("Category", StringComparison.OrdinalIgnoreCase) && dataSet != "categories")
+        {
+            var cat = DataPages.FirstOrDefault(p => p.Session.Definition.Key == "categories")?.Session.Current;
+            if (cat == null) return null;
+            var cats = BatchStudio.Core.Invoices.InvoiceService.Categories(cat);
+            return c.Contains("ID", StringComparison.OrdinalIgnoreCase)
+                ? cats.Select(x => x.Id).ToList()
+                : cats.Where(x => x.Active).Select(x => x.Text).ToList();
+        }
+        if (string.Equals(c, "Status", StringComparison.OrdinalIgnoreCase))
+            return new[] { "Active", "Inactive" }.Concat(existing).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        return null;
+    }
+
     /// <summary>Called after an invoice was archived (history file changed by the program).</summary>
     public void OnHistoryChanged()
     {

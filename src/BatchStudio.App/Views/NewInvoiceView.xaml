@@ -46,11 +46,17 @@
                         <TextBlock Text="{Binding TemplateInfo}" Style="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0" />
 
                         <TextBlock Text="{DynamicResource Inv.PartyType}" Style="{StaticResource FieldLabel}" />
-                        <StackPanel Orientation="Horizontal">
-                            <RadioButton Content="{DynamicResource Nav.Suppliers}" GroupName="ptype" Margin="0,0,18,0"
-                                         IsChecked="{Binding IsClients, Converter={StaticResource InverseBool}}" />
-                            <RadioButton Content="{DynamicResource Nav.Clients}" GroupName="ptype" IsChecked="{Binding IsClients}" />
-                        </StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Command="{Binding AddPartyCommand}" Padding="9,5" VerticalAlignment="Center"
+                                    ToolTip="{DynamicResource Inv.AddParty}" Style="{DynamicResource AccentButtonStyle}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" />
+                            </Button>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <RadioButton Content="{DynamicResource Nav.Suppliers}" GroupName="ptype" Margin="0,0,18,0"
+                                             IsChecked="{Binding IsClients, Converter={StaticResource InverseBool}}" />
+                                <RadioButton Content="{DynamicResource Nav.Clients}" GroupName="ptype" IsChecked="{Binding IsClients}" />
+                            </StackPanel>
+                        </DockPanel>
 
                         <TextBlock Text="{DynamicResource Inv.Party}" Style="{StaticResource FieldLabel}" />
                         <ComboBox ItemsSource="{Binding Parties}" SelectedItem="{Binding SelectedParty}" DisplayMemberPath="Name"
@@ -142,8 +148,46 @@
                 </ScrollViewer>
             </Border>
 
+            <!-- ============ new supplier / client ============ -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16,12"
+                    Visibility="{Binding IsAddingParty, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8FA;" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding NewPartyTitle}" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                        <Button DockPanel.Dock="Right" Command="{Binding SavePartyCommand}" Padding="22,9" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" FontSize="13" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Common.Save}" />
+                            </StackPanel>
+                        </Button>
+                        <Button DockPanel.Dock="Right" Command="{Binding CancelPartyCommand}" Content="{DynamicResource Common.Cancel}" Padding="18,9" />
+                        <TextBlock Text="{Binding NewPartyError}" Foreground="{StaticResource BadBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding NewPartyFields}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,6,12">
+                                        <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4" />
+                                        <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap"
+                                                 AcceptsReturn="{Binding IsLong}" MaxHeight="220"
+                                                 VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                                 Visibility="{Binding IsText, Converter={StaticResource BoolToVis}}" />
+                                        <ComboBox ItemsSource="{Binding Options}" SelectedItem="{Binding Value}" HorizontalAlignment="Stretch"
+                                                  Visibility="{Binding IsChoice, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
             <!-- ============ preview ============ -->
-            <Grid Grid.Column="2">
+            <Grid Grid.Column="2" Visibility="{Binding IsAddingParty, Converter={StaticResource InverseBoolToVis}}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />

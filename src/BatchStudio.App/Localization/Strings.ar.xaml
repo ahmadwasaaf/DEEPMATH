@@ -235,4 +235,11 @@
     <sys:String x:Key="Setup.WorkbookHint">لا يتم نسخ أو تحويل أي شيء: الموردين والعملاء والأصناف والتصنيفات وسجل الفواتير والداشبورد والتقارير والقوالب تُقرأ من أوراق الملف نفسه.</sys:String>
     <sys:String x:Key="Tpl.AddInWorkbook">القوالب موجودة داخل الملف: أضف (أو انسخ) ورقة فاتورة هناك واحفظ - ستظهر هنا تلقائيًا.&#x0a;&#x0a;هل تريد فتح الملف الآن؟</sys:String>
     <sys:String x:Key="Dash.Updated">محدّث</sys:String>
+    <sys:String x:Key="Inv.AddParty">إضافة مورد / عميل جديد</sys:String>
+    <sys:String x:Key="Inv.NewSupplier">مورد جديد</sys:String>
+    <sys:String x:Key="Inv.NewClient">عميل جديد</sys:String>
+    <sys:String x:Key="Inv.PartyRequired">الحقلان "{0}" و "{1}" مطلوبان.</sys:String>
+    <sys:String x:Key="Inv.PartyExists">"{0}" موجود بالفعل - اختره من القائمة.</sys:String>
+    <sys:String x:Key="Inv.PartyIdExists">الكود {0} مستخدم بالفعل.</sys:String>
+    <sys:String x:Key="Inv.PartyAdded">تمت إضافة "{0}" واختياره - جاهز لأول فاتورة.</sys:String>
 </ResourceDictionary>

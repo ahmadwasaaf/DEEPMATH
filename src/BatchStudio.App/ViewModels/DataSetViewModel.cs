@@ -16,11 +16,24 @@ public sealed partial class FieldEditViewModel : ObservableObject
     public string Caption { get; }
     public bool IsLong { get; }
 
-    public FieldEditViewModel(DataRowView row, DataColumn column)
+    /// <summary>Choices for a dropdown field (Category, DEFAULT TEMPLATE, Status); null = free text.</summary>
+    public IReadOnlyList<string>? Options { get; }
+    public bool IsChoice => Options != null;
+    public bool IsText => Options == null;
+
+    public FieldEditViewModel(DataRowView row, DataColumn column, IReadOnlyList<string>? options = null)
     {
         _row = row;
         _column = column.ColumnName;
         Caption = column.Caption;
+        if (options != null)
+        {
+            var current = row[_column] as string ?? "";
+            var list = new List<string> { "" };
+            list.AddRange(options.Where(o => o.Length > 0));
+            if (current.Length > 0 && !list.Contains(current)) list.Insert(1, current);
+            Options = list;
+        }
         var v = row[_column] as string ?? "";
         IsLong = v.Contains('\n') || v.Length > 60 ||
                  Caption.Contains("Address", StringComparison.OrdinalIgnoreCase) ||
@@ -172,7 +185,26 @@ public sealed partial class DataSetViewModel : ObservableObject
     {
         Fields.Clear();
         if (value == null || Table == null) return;
-        foreach (DataColumn c in Table.Columns) Fields.Add(new FieldEditViewModel(value, c));
+        foreach (DataColumn c in Table.Columns)
+            Fields.Add(new FieldEditViewModel(value, c, _main.OptionsFor(Session.Definition.Key, c.Caption, ColumnValues(c))));
+    }
+
+    private IEnumerable<string> ColumnValues(DataColumn c) =>
+        Table == null ? [] : Table.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Deleted)
+            .Select(r => (r[c] as string ?? "").Trim()).Where(v => v.Length > 0).Distinct();
+
+    /// <summary>Suppliers / Clients show only ID and name in the list; the details pane gets the room.</summary>
+    public bool CompactGrid => Session.Definition.Key is "suppliers" or "clients";
+
+    public string NextId() => ToTableData().NextId(Session.Definition.IdPrefix);
+
+    /// <summary>Adds a record (values in header order) to the table; saved by the normal sync.</summary>
+    public void AddRecord(string[] values)
+    {
+        if (Table == null) return;
+        var row = Table.NewRow();
+        for (int i = 0; i < Table.Columns.Count; i++) row[i] = i < values.Length ? values[i] ?? "" : "";
+        Table.Rows.Add(row);
     }
 
     // ---------------------------------------------------------------- commands

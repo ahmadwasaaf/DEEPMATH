@@ -82,9 +82,9 @@
         <!-- grid + details -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition x:Name="ListColumn" Width="*" />
                 <ColumnDefinition Width="12" />
-                <ColumnDefinition Width="360" />
+                <ColumnDefinition x:Name="DetailsColumn" Width="360" />
             </Grid.ColumnDefinitions>
 
             <DataGrid x:Name="Grid" Grid.Column="0" ItemsSource="{Binding View}" SelectedItem="{Binding SelectedRow}"
@@ -101,10 +101,13 @@
                         <ItemsControl ItemsSource="{Binding Fields}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <StackPanel Margin="0,0,0,12">
+                                    <StackPanel Margin="0,0,6,12">
                                         <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4" />
                                         <TextBox Text="{Binding Value, UpdateSourceTrigger=LostFocus}" TextWrapping="Wrap"
-                                                 AcceptsReturn="{Binding IsLong}" MaxHeight="220" VerticalScrollBarVisibility="Auto" />
+                                                 AcceptsReturn="{Binding IsLong}" MaxHeight="260" VerticalScrollBarVisibility="Auto"
+                                                 Visibility="{Binding IsText, Converter={StaticResource BoolToVis}}" />
+                                        <ComboBox ItemsSource="{Binding Options}" SelectedItem="{Binding Value}" HorizontalAlignment="Stretch"
+                                                  Visibility="{Binding IsChoice, Converter={StaticResource BoolToVis}}" />
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

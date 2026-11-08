@@ -45,6 +45,17 @@ public sealed partial class LineViewModel : ObservableObject
     public decimal Amount => Line.Amount;
 }
 
+/// <summary>One field of the "new supplier / client" form.</summary>
+public sealed partial class NewFieldViewModel : ObservableObject
+{
+    public required string Caption { get; init; }
+    public bool IsLong { get; init; }
+    public IReadOnlyList<string>? Options { get; init; }
+    public bool IsChoice => Options != null;
+    public bool IsText => Options == null;
+    [ObservableProperty] private string _value = "";
+}
+
 public sealed class TemplateOption
 {
     public required TemplateEntry Entry { get; init; }
@@ -85,6 +96,10 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [ObservableProperty] private string _words = "";
     [ObservableProperty] private string _templateInfo = "";
     [ObservableProperty] private string? _savedPath;
+    [ObservableProperty] private bool _isAddingParty;
+    [ObservableProperty] private string _newPartyTitle = "";
+    [ObservableProperty] private string _newPartyError = "";
+    public ObservableCollection<NewFieldViewModel> NewPartyFields { get; } = [];
 
     public bool HasSaved => SavedPath != null;
     partial void OnSavedPathChanged(string? value) => OnPropertyChanged(nameof(HasSaved));
@@ -171,6 +186,81 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         _draft = null;
         SavedPath = null;
         NetText = VatText = TotalText = DifferenceText = Words = "";
+    }
+
+    // ------------------------------------------------------------------ new supplier / client
+    private DataSetViewModel? PartyPage => main.DataPages.FirstOrDefault(p => p.Session.Definition.Key == (IsClients ? "clients" : "suppliers"));
+
+    /// <summary>Opens the form for a supplier / client that is not in the data yet (same columns as the sheet).</summary>
+    [RelayCommand]
+    private void AddParty()
+    {
+        var page = PartyPage;
+        if (page == null) return;
+        var headers = page.Session.Current.Headers;
+        NewPartyFields.Clear();
+        NewPartyError = "";
+        NewPartyTitle = Loc.T(IsClients ? "Inv.NewClient" : "Inv.NewSupplier");
+        for (int i = 0; i < headers.Count; i++)
+        {
+            var h = headers[i];
+            var options = main.OptionsFor(page.Session.Definition.Key, h, []);
+            string value = "";
+            if (i == 0) value = page.NextId();
+            else if (options != null && h.Contains("Category", StringComparison.OrdinalIgnoreCase) && SelectedCategory != null) value = SelectedCategory.Text;
+            else if (options != null && h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase) && SelectedTemplate != null) value = SelectedTemplate.Name;
+            if (options != null && value.Length > 0 && !options.Contains(value)) options = [value, .. options];
+            if (options != null) options = ["", .. options];
+            NewPartyFields.Add(new NewFieldViewModel
+            {
+                Caption = h, Options = options, Value = value,
+                IsLong = h.Contains("Address", StringComparison.OrdinalIgnoreCase) || h.Contains("Bank", StringComparison.OrdinalIgnoreCase) ||
+                         h.Contains("Activit", StringComparison.OrdinalIgnoreCase),
+            });
+        }
+        IsAddingParty = true;
+    }
+
+    [RelayCommand]
+    private void CancelParty()
+    {
+        IsAddingParty = false;
+        NewPartyFields.Clear();
+    }
+
+    [RelayCommand]
+    private async Task SavePartyAsync()
+    {
+        var page = PartyPage;
+        if (page == null) return;
+        NewPartyError = "";
+        var values = NewPartyFields.Select(f => f.Value.Trim()).ToArray();
+        var headers = page.Session.Current.Headers;
+        int nameCol = headers.FindIndex(h => h.Contains("Name", StringComparison.OrdinalIgnoreCase) &&
+                                             !h.Contains("Chinese", StringComparison.OrdinalIgnoreCase) && !h.Contains("Native", StringComparison.OrdinalIgnoreCase));
+        if (nameCol < 0) nameCol = 1;
+        var name = nameCol < values.Length ? values[nameCol] : "";
+        if (values[0].Length == 0 || name.Length == 0) { NewPartyError = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
+        var existing = IsClients ? _clients : _suppliers;
+        if (existing.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
+        { NewPartyError = Loc.F("Inv.PartyExists", name); return; }
+        if (page.Session.Current.Rows.Any(r => string.Equals(r[0], values[0], StringComparison.OrdinalIgnoreCase)))
+        { NewPartyError = Loc.F("Inv.PartyIdExists", values[0]); return; }
+
+        IsBusy = true;
+        Status = Loc.T("Status.SavingWorkbook");
+        try
+        {
+            page.AddRecord(values);
+            await page.SaveAsync();
+        }
+        finally { IsBusy = false; }
+
+        IsAddingParty = false;
+        NewPartyFields.Clear();
+        Refresh();
+        SelectedParty = Parties.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        Status = page.IsDirty ? page.Status : Loc.F("Inv.PartyAdded", name);
     }
 
     // ------------------------------------------------------------------ commands

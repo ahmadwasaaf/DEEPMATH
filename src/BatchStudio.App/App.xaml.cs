@@ -31,9 +31,10 @@ public partial class App : Application
         if (i >= 0 && i + 1 < e.Args.Length && vm.HasEntity)
         {
             var arg = e.Args[i + 1].ToLowerInvariant();
-            var key = arg == "newinvoice" ? "Nav.NewInvoice" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
+            var key = arg is "newinvoice" or "newparty" ? "Nav.NewInvoice" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
             var nav = vm.Nav.FirstOrDefault(n => n.Key == key);
             if (nav != null) vm.SelectedNav = nav;
+            if (arg == "newparty") vm.NewInvoice.AddPartyCommand.Execute(null);
         }
     }
 
