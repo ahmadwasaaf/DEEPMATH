@@ -220,17 +220,15 @@
                         <TextBlock DockPanel.Dock="Top" Text="{DynamicResource Inv.Edit}" Style="{StaticResource Muted}" FontSize="11" Margin="6,0,0,6" />
                         <DataGrid ItemsSource="{Binding Lines}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                                   HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="32" SelectionUnit="Cell">
-                            <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsLocked}" Value="True">
-                                            <Setter Property="Opacity" Value="0.62" />
-                                            <Setter Property="ToolTip" Value="{DynamicResource Rep.Locked}" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </DataGrid.RowStyle>
                             <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="30" IsReadOnly="True">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="12" Opacity="0.7" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       ToolTip="{DynamicResource Rep.Locked}" Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="{StaticResource Inv.Code}" Binding="{Binding Code}" Width="110" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Desc}" Binding="{Binding Description}" Width="*" MinWidth="220" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Qty}" Binding="{Binding Quantity}" Width="70" />

@@ -124,6 +124,9 @@
                             <Setter Property="Margin" Value="6,0" />
                             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
                         </Style>
+                        <Style x:Key="MidCenter" TargetType="TextBlock" BasedOn="{StaticResource Mid}">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                        </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
                         <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Rank}" Binding="{Binding RankText}" Width="Auto" MinWidth="70" />
@@ -138,7 +141,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.InvCount}" Binding="{Binding Count}" Width="Auto" MinWidth="80" />
+                        <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" Header="{StaticResource Col.InvCount}" Binding="{Binding Count}" Width="Auto" MinWidth="80" />
                         <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Type}" Binding="{Binding Type}" Width="Auto" MinWidth="90" />
                         <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Category}" Binding="{Binding Category}" Width="Auto" MinWidth="120" />
                         <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="Auto">

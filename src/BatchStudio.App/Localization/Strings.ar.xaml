@@ -264,4 +264,6 @@
     <sys:String x:Key="Rep.NumberLocked">لا يمكن تغيير رقم الفاتورة أثناء الإصلاح.</sys:String>
     <sys:String x:Key="Rep.ConfirmReplace">استبدال الفاتورة المؤرشفة {0} بالنسخة المعدّلة؟&#x0a;سيتم تحديث سطرها في INVOICE HISTORY (بدون تكرار).&#x0a;&#x0a;{1}</sys:String>
     <sys:String x:Key="Rep.Replaced">تم إصلاح الفاتورة {0}: استُبدل الملف المؤرشف وتم تحديث سطر السجل.</sys:String>
+    <sys:String x:Key="Act.ViewReportShort">عرض التقرير</sys:String>
+    <sys:String x:Key="Act.ExportReportShort">تصدير التقرير</sys:String>
 </ResourceDictionary>

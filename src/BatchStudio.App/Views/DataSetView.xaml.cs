@@ -11,6 +11,8 @@ public partial class DataSetView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => ApplyLayout();
+        // the search box keeps its width but never overlaps the toolbar buttons
+        SearchHost.SizeChanged += (_, _) => SearchBox.Width = Math.Max(0, Math.Min(300, SearchHost.ActualWidth));
     }
 
     /// <summary>Suppliers / Clients: a narrow ID + name list and a wide details pane.</summary>
