@@ -242,4 +242,9 @@
     <sys:String x:Key="Inv.PartyExists">"{0}" already exists - choose it from the list.</sys:String>
     <sys:String x:Key="Inv.PartyIdExists">The ID {0} is already used.</sys:String>
     <sys:String x:Key="Inv.PartyAdded">"{0}" was added and selected - ready for its first invoice.</sys:String>
+    <sys:String x:Key="Act.Open">Open Invoice</sys:String>
+    <sys:String x:Key="Act.Remove">Remove Invoice</sys:String>
+    <sys:String x:Key="Act.Pdf">Export PDF</sys:String>
+    <sys:String x:Key="Act.ViewReport">View Full Report</sys:String>
+    <sys:String x:Key="Act.ExportReport">Export Full Report</sys:String>
 </ResourceDictionary>

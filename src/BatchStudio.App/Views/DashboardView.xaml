@@ -112,9 +112,16 @@
                 <TextBlock DockPanel.Dock="Top" Text="{Binding RankingTitle}" Style="{StaticResource SectionTitle}" Margin="6,2,0,8" />
                 <DataGrid ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="40" SelectionMode="Single">
+                    <DataGrid.Resources>
+                        <Style x:Key="Mid" TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="6,0" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        </Style>
+                    </DataGrid.Resources>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="{StaticResource Col.Rank}" Binding="{Binding RankText}" Width="Auto" MinWidth="70" />
-                        <DataGridTextColumn Header="{StaticResource Col.Company}" Binding="{Binding Name}" Width="*" MinWidth="180" />
+                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Rank}" Binding="{Binding RankText}" Width="Auto" MinWidth="70" />
+                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Company}" Binding="{Binding Name}" Width="*" MinWidth="180" />
                         <DataGridTemplateColumn Header="{StaticResource Col.Amount}" Width="170" SortMemberPath="Amount">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -125,9 +132,9 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="{StaticResource Col.InvCount}" Binding="{Binding Count}" Width="Auto" MinWidth="80" />
-                        <DataGridTextColumn Header="{StaticResource Col.Type}" Binding="{Binding Type}" Width="Auto" MinWidth="90" />
-                        <DataGridTextColumn Header="{StaticResource Col.Category}" Binding="{Binding Category}" Width="Auto" MinWidth="120" />
+                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.InvCount}" Binding="{Binding Count}" Width="Auto" MinWidth="80" />
+                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Type}" Binding="{Binding Type}" Width="Auto" MinWidth="90" />
+                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Category}" Binding="{Binding Category}" Width="Auto" MinWidth="120" />
                         <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="Auto">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

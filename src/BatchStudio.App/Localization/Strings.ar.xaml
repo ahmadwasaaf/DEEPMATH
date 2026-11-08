@@ -242,4 +242,9 @@
     <sys:String x:Key="Inv.PartyExists">"{0}" موجود بالفعل - اختره من القائمة.</sys:String>
     <sys:String x:Key="Inv.PartyIdExists">الكود {0} مستخدم بالفعل.</sys:String>
     <sys:String x:Key="Inv.PartyAdded">تمت إضافة "{0}" واختياره - جاهز لأول فاتورة.</sys:String>
+    <sys:String x:Key="Act.Open">فتح الفاتورة</sys:String>
+    <sys:String x:Key="Act.Remove">حذف الفاتورة</sys:String>
+    <sys:String x:Key="Act.Pdf">تصدير PDF</sys:String>
+    <sys:String x:Key="Act.ViewReport">عرض التقرير الكامل</sys:String>
+    <sys:String x:Key="Act.ExportReport">تصدير التقرير الكامل</sys:String>
 </ResourceDictionary>

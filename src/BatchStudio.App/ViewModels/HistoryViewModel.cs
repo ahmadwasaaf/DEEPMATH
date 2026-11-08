@@ -216,6 +216,34 @@ public sealed partial class HistoryViewModel : ObservableObject
         catch { return false; }
     }
 
+    /// <summary>Runs a command from a row's Actions list (parameter: [row, action]).</summary>
+    [RelayCommand]
+    private async Task RunActionAsync(object[]? args)
+    {
+        if (args is not [HistoryRow row, string action]) return;
+        Selected = row;
+        switch (action)
+        {
+            case "open": OpenInvoice(row); break;
+            case "remove": await RemoveAsync(); break;
+            case "pdf": await ExportInvoicePdfAsync(); break;
+            case "report": CompanyReport(); break;
+            case "exportreport": await ExportFullReportAsync(); break;
+        }
+    }
+
+    /// <summary>"Export Full Report": the company's statement as PDF on the Desktop.</summary>
+    private async Task ExportFullReportAsync()
+    {
+        if (Selected is not { } r) return;
+        var vm = _main.BuildCompanyReport(r.Name, r.PartyType,
+            new BatchStudio.Core.Reports.DashboardFilter { WeekStart = HistoryPeriods.ParseWeekStart(WeekStart) });
+        if (vm == null) return;
+        IsBusy = true;
+        try { Status = await vm.ExportPdfCoreAsync(); }
+        finally { IsBusy = false; }
+    }
+
     [RelayCommand]
     private void CompanyReport()
     {

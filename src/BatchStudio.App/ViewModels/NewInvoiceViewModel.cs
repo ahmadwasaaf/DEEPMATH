@@ -210,7 +210,6 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             else if (options != null && h.Contains("Category", StringComparison.OrdinalIgnoreCase) && SelectedCategory != null) value = SelectedCategory.Text;
             else if (options != null && h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase) && SelectedTemplate != null) value = SelectedTemplate.Name;
             if (options != null && value.Length > 0 && !options.Contains(value)) options = [value, .. options];
-            if (options != null) options = ["", .. options];
             NewPartyFields.Add(new NewFieldViewModel
             {
                 Caption = h, Options = options, Value = value,

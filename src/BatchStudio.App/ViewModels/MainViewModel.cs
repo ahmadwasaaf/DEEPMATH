@@ -124,7 +124,8 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var (def, key) in new[] { (DataSets.Suppliers, "Nav.Suppliers"), (DataSets.Clients, "Nav.Clients"), (DataSets.Items, "Nav.Items"), (DataSets.Categories, "Nav.Categories") })
             if (File.Exists(ws.DataPath(def)))
                 DataPages.Add(new DataSetViewModel(this, new DataSetSession(ws, def), key, ""));
-        foreach (var p in DataPages) p.Load();
+        // categories first: the suppliers / clients dropdowns list them
+        foreach (var p in DataPages.OrderBy(p => p.Session.Definition.Key == "categories" ? 0 : 1)) p.Load();
 
         _watcher = new WorkbookWatcher(ws);
         _watcher.SheetsChanged += paths => Application.Current.Dispatcher.InvokeAsync(() => { foreach (var p in paths) OnFileChanged(p); });
@@ -195,6 +196,14 @@ public sealed partial class MainViewModel : ObservableObject
     /// Dropdown choices for a field, like the workbook's validations: categories (V06CategoryList /
     /// V14_ClientCategories), templates (V11_TemplateChoices) and Status. Null = free text.
     /// </summary>
+    public bool HasOptions(string dataSet, string caption)
+    {
+        var c = caption.Trim();
+        return c.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase) ||
+               (c.Contains("Category", StringComparison.OrdinalIgnoreCase) && dataSet != "categories") ||
+               string.Equals(c, "Status", StringComparison.OrdinalIgnoreCase);
+    }
+
     public IReadOnlyList<string>? OptionsFor(string dataSet, string caption, IEnumerable<string> existing)
     {
         var c = caption.Trim();

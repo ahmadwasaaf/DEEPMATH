@@ -90,16 +90,21 @@
         <Border Grid.Row="2" Style="{StaticResource Card}" Padding="6">
             <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
                       CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" HeadersVisibility="Column"
-                      GridLinesVisibility="Horizontal" RowHeight="34" EnableRowVirtualization="True"
+                      GridLinesVisibility="Horizontal" RowHeight="38" EnableRowVirtualization="True"
                       MouseDoubleClick="OnRowDoubleClick">
+                <DataGrid.Resources>
+                    <Style x:Key="Mid" TargetType="TextBlock">
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                        <Setter Property="Margin" Value="6,0" />
+                        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                    </Style>
+                </DataGrid.Resources>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="{StaticResource Col.No}" Binding="{Binding No}" Width="Auto" MinWidth="64" />
-                    <DataGridTextColumn Header="{StaticResource Col.Name}" Binding="{Binding Name}" Width="*" MinWidth="150" />
-                    <DataGridTextColumn Header="{StaticResource Col.Amount}" Binding="{Binding Amount, StringFormat=N2}" Width="Auto" MinWidth="100" SortMemberPath="Amount" />
-                    <DataGridTextColumn Header="{StaticResource Col.Date}" Binding="{Binding DateText}" Width="Auto" MinWidth="90" SortMemberPath="SortDate" />
-                    <DataGridTextColumn Header="{StaticResource Col.InvoiceNo}" Binding="{Binding InvoiceNo}" Width="Auto" MinWidth="100" />
-                    <DataGridTextColumn Header="{StaticResource Col.Type}" Binding="{Binding PartyType}" Width="Auto" MinWidth="80" />
-                    <DataGridTextColumn Header="{StaticResource Col.Template}" Binding="{Binding Template}" Width="Auto" MinWidth="70" />
+                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.No}" Binding="{Binding No}" Width="Auto" MinWidth="64" />
+                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Name}" Binding="{Binding Name}" Width="*" MinWidth="150" />
+                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Amount}" Binding="{Binding Amount, StringFormat=N2}" Width="Auto" MinWidth="100" SortMemberPath="Amount" />
+                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Date}" Binding="{Binding DateText}" Width="Auto" MinWidth="90" SortMemberPath="SortDate" />
+                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.InvoiceNo}" Binding="{Binding InvoiceNo}" Width="Auto" MinWidth="100" />
                     <DataGridTemplateColumn Header="{StaticResource Col.Status}" Width="Auto" MinWidth="110" SortMemberPath="FileExists">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -115,6 +120,33 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="170">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid Margin="4,0" VerticalAlignment="Center">
+                                    <ComboBox x:Name="Act" SelectionChanged="OnActionChosen" HorizontalAlignment="Stretch" MinHeight="28" Padding="10,3">
+                                        <ComboBoxItem Tag="open" Content="{DynamicResource Act.Open}" />
+                                        <ComboBoxItem Tag="remove" Content="{DynamicResource Act.Remove}" />
+                                        <ComboBoxItem Tag="pdf" Content="{DynamicResource Act.Pdf}" />
+                                        <ComboBoxItem Tag="report" Content="{DynamicResource Act.ViewReport}" />
+                                        <ComboBoxItem Tag="exportreport" Content="{DynamicResource Act.ExportReport}" />
+                                    </ComboBox>
+                                    <TextBlock Text="{DynamicResource Col.Actions}" IsHitTestVisible="False" VerticalAlignment="Center" Margin="11,0,30,0" Opacity="0.75">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedIndex, ElementName=Act}" Value="-1">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

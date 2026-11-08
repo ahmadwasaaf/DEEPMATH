@@ -16,24 +16,36 @@ public sealed partial class FieldEditViewModel : ObservableObject
     public string Caption { get; }
     public bool IsLong { get; }
 
-    /// <summary>Choices for a dropdown field (Category, DEFAULT TEMPLATE, Status); null = free text.</summary>
-    public IReadOnlyList<string>? Options { get; }
-    public bool IsChoice => Options != null;
-    public bool IsText => Options == null;
+    private readonly Func<IReadOnlyList<string>?>? _options;
+    private IReadOnlyList<string>? _optionList;
+    private bool _optionsBuilt;
 
-    public FieldEditViewModel(DataRowView row, DataColumn column, IReadOnlyList<string>? options = null)
+    /// <summary>Choices for a dropdown field (Category, DEFAULT TEMPLATE, Status); null = free text. Built when first shown.</summary>
+    public IReadOnlyList<string>? Options
+    {
+        get
+        {
+            if (_optionsBuilt) return _optionList;
+            _optionsBuilt = true;
+            var options = _options?.Invoke();
+            if (options == null) return null;
+            var current = _row[_column] as string ?? "";
+            var list = options.Where(o => o.Length > 0).Distinct().ToList();
+            if (current.Length > 0 && !list.Contains(current)) list.Insert(0, current);
+            return _optionList = list;
+        }
+    }
+
+    public bool IsChoice { get; }
+    public bool IsText => !IsChoice;
+
+    public FieldEditViewModel(DataRowView row, DataColumn column, bool isChoice = false, Func<IReadOnlyList<string>?>? options = null)
     {
         _row = row;
         _column = column.ColumnName;
         Caption = column.Caption;
-        if (options != null)
-        {
-            var current = row[_column] as string ?? "";
-            var list = new List<string> { "" };
-            list.AddRange(options.Where(o => o.Length > 0));
-            if (current.Length > 0 && !list.Contains(current)) list.Insert(1, current);
-            Options = list;
-        }
+        IsChoice = isChoice && options != null;
+        _options = options;
         var v = row[_column] as string ?? "";
         IsLong = v.Contains('\n') || v.Length > 60 ||
                  Caption.Contains("Address", StringComparison.OrdinalIgnoreCase) ||
@@ -187,7 +199,11 @@ public sealed partial class DataSetViewModel : ObservableObject
         Fields.Clear();
         if (value == null || Table == null) return;
         foreach (DataColumn c in Table.Columns)
-            Fields.Add(new FieldEditViewModel(value, c, _main.OptionsFor(Session.Definition.Key, c.Caption, ColumnValues(c))));
+        {
+            var col = c;
+            Fields.Add(new FieldEditViewModel(value, c, _main.HasOptions(Session.Definition.Key, c.Caption),
+                () => _main.OptionsFor(Session.Definition.Key, col.Caption, ColumnValues(col))));
+        }
     }
 
     private IEnumerable<string> ColumnValues(DataColumn c) =>
