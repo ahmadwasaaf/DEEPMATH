@@ -131,8 +131,9 @@ public sealed partial class DataSetViewModel : ObservableObject
         ApplyFilter();
         RowCount = dt.Rows.Count;
         _loading = false;
-        if (keepSel != null)
-            SelectedRow = View.Cast<DataRowView>().FirstOrDefault(v => string.Equals(v[ColName(0)] as string, keepSel, StringComparison.OrdinalIgnoreCase));
+        SelectedRow = (keepSel == null ? null
+            : View.Cast<DataRowView>().FirstOrDefault(v => string.Equals(v[ColName(0)] as string, keepSel, StringComparison.OrdinalIgnoreCase)))
+            ?? View.Cast<DataRowView>().FirstOrDefault();
     }
 
     private static string ColName(int i) => "c" + i;
