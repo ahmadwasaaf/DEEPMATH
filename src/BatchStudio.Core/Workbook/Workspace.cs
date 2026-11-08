@@ -212,6 +212,8 @@ public sealed class Workspace
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var tmp = path + $".{Guid.NewGuid():N}.tmp";
         File.WriteAllBytes(tmp, data);
+        // buttons with macros and ActiveX / form controls have no use in a copy (V28 removed them from archived copies too)
+        try { PackageRepair.StripControls(tmp); } catch (InvalidDataException) { }
         try
         {
             if (File.Exists(path)) File.Replace(tmp, path, null);
