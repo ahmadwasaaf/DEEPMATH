@@ -105,6 +105,40 @@ public static class ReportBooks
     public static string DashboardPath(string root) => Path.Combine(root, DatabaseLayout.DashboardFolder, "Dashboard.xlsx");
     public static string ReportTemplatePath(string root) => Path.Combine(root, DatabaseLayout.DashboardFolder, "Supplier Report.xlsx");
 
+    /// <summary>Same cells as DashboardV8.RefreshDashboard, written into the workbook's own Dashboard sheet (through Excel).</summary>
+    public static void WriteDashboard(BatchStudio.Core.Workbook.ISheetEditor ws, DashboardResult d, DashboardFilter f)
+    {
+        ws.Set(3, 7, f.Period);
+        ws.Set(4, 7, f.Mode);
+        ws.Set(5, 7, f.Ranking);
+        if (f.Period == HistoryPeriods.CustomRange)
+        {
+            if (f.From is { } a) { ws.Set(2, 16, a); ws.SetNumberFormat(2, 16, "dd/mm/yyyy"); }
+            if (f.To is { } b) { ws.Set(4, 16, b); ws.SetNumberFormat(4, 16, "dd/mm/yyyy"); }
+        }
+        void N(int r, int c, double v, string fmt) { ws.Set(r, c, v); ws.SetNumberFormat(r, c, fmt); }
+        N(8, 2, (double)d.Total, "#,##0.00 \"USD\"");
+        N(6, 4, d.SupplierCount, "#,##0 \"Supplier\"");
+        N(8, 4, (double)d.SuppliersTotal, "#,##0.00 \"USD\"");
+        N(6, 6, d.ClientCount, "#,##0 \"Client\"");
+        N(8, 6, (double)d.ClientsTotal, "#,##0.00 \"USD\"");
+        N(8, 7, d.Invoices, "#,##0 \"Invoice\"");
+        var block = new object?[20, 7];
+        int i = 0;
+        foreach (var row in d.Top20.Take(20))
+        {
+            block[i, 0] = $"Rank-{row.Rank}";
+            block[i, 1] = row.Name;
+            block[i, 2] = (double)row.Amount;
+            block[i, 3] = (double)row.Count;
+            block[i, 4] = row.Category;
+            block[i, 5] = "View Full Report";
+            block[i, 6] = "Export Full Report";
+            i++;
+        }
+        ws.Write(12, 2, block);
+    }
+
     /// <summary>Same cells as DashboardV8.RefreshDashboard. Returns false when the file is missing.</summary>
     public static bool WriteDashboard(string path, DashboardResult d, DashboardFilter f)
     {

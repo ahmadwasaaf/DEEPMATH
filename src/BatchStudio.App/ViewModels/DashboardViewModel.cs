@@ -221,8 +221,7 @@ public sealed partial class DashboardViewModel : ObservableObject
     private async Task ExportPdfAsync()
     {
         if (_main.Workspace is not { } ws || _result == null) return;
-        var template = ws.DashboardPath;
-        if (!File.Exists(template)) { Status = Loc.T("Dash.NoExcel"); return; }
+        if (!ws.Sheets.Contains(BatchStudio.Core.Workbook.Workspace.DashboardSheet, StringComparer.OrdinalIgnoreCase)) { Status = Loc.T("Dash.NoExcel"); return; }
         var dest = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
                                 $"BATCH_STUDIO_DASHBOARD_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
         var result = _result;
@@ -231,14 +230,17 @@ public sealed partial class DashboardViewModel : ObservableObject
         Status = Loc.T("Rep.Exporting");
         try
         {
+            var book = ws.WorkbookPath;
             await Task.Run(() =>
             {
-                var tmp = Path.Combine(Path.GetTempPath(), $"BS_dash_{Guid.NewGuid():N}.xlsx");
+                // a private copy of the workbook: its real Dashboard sheet gets the current numbers and is exported
+                var tmp = Path.Combine(Path.GetTempPath(), $"BS_dash_{Guid.NewGuid():N}{Path.GetExtension(book)}");
                 try
                 {
-                    File.Copy(template, tmp);
-                    ReportBooks.WriteDashboard(tmp, result, filter);
-                    ExcelPdf.Export(tmp, dest);
+                    File.WriteAllBytes(tmp, BatchStudio.Core.Data.PackageRepair.ReadAllShared(book));
+                    using var ed = (ExcelWorkbookEditor)ExcelWorkbookEditor.Open(tmp);
+                    ReportBooks.WriteDashboard(ed.Sheet(BatchStudio.Core.Workbook.Workspace.DashboardSheet), result, filter);
+                    ed.ExportSheetPdf(BatchStudio.Core.Workbook.Workspace.DashboardSheet, dest);
                 }
                 finally { try { File.Delete(tmp); } catch { } }
             });

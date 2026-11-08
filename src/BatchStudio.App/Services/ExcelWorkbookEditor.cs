@@ -87,6 +87,19 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
         throw new InvalidOperationException($"Sheet \"{name}\" was not found in the workbook.");
     }
 
+    /// <summary>Exports one sheet to PDF with its own print setup (like the sheet's Export PDF button).</summary>
+    public void ExportSheetPdf(string sheetName, string pdfPath)
+    {
+        foreach (dynamic ws in Retry(() => _wb.Worksheets))
+            if (string.Equals((string)ws.Name, sheetName, StringComparison.OrdinalIgnoreCase))
+            {
+                Retry(() => { _app.Calculate(); });
+                Retry(() => { ws.ExportAsFixedFormat(0, pdfPath); });   // 0 = xlTypePDF
+                return;
+            }
+        throw new InvalidOperationException($"Sheet \"{sheetName}\" was not found in the workbook.");
+    }
+
     public void Save()
     {
         Retry(() => { _wb.Save(); });
