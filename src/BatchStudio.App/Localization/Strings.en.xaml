@@ -198,7 +198,7 @@
     <sys:String x:Key="Dash.Search">Search company…</sys:String>
     <sys:String x:Key="Dash.ExcelUpdated">Dashboard.xlsx updated</sys:String>
     <sys:String x:Key="Dash.ExcelLocked">Dashboard.xlsx is open in Excel; it will be updated next time.</sys:String>
-    <sys:String x:Key="Dash.NoExcel">Dashboard\Dashboard.xlsx not found in the Database folder.</sys:String>
+    <sys:String x:Key="Dash.NoExcel">The workbook has no Dashboard sheet.</sys:String>
     <sys:String x:Key="Dash.OpenExcel">Open the workbook</sys:String>
     <sys:String x:Key="Col.Rank">Rank</sys:String>
     <sys:String x:Key="Col.Company">COMPANY NAME</sys:String>
@@ -247,4 +247,21 @@
     <sys:String x:Key="Act.Pdf">Export PDF</sys:String>
     <sys:String x:Key="Act.ViewReport">View Full Report</sys:String>
     <sys:String x:Key="Act.ExportReport">Export Full Report</sys:String>
+    <sys:String x:Key="Dash.ExportPdf">Export PDF</sys:String>
+    <sys:String x:Key="Dash.PdfSaved">Dashboard PDF saved on the Desktop: {0}</sys:String>
+    <sys:String x:Key="Rep.Exporting">Exporting PDF…</sys:String>
+    <sys:String x:Key="Rep.Ask">Invoice {0} ({1})&#x0a;&#x0a;YES = Restore it for editing (Smart Invoice Repair)&#x0a;NO = Open the archived file as usual&#x0a;CANCEL = Do nothing</sys:String>
+    <sys:String x:Key="Rep.NoTemplateMap">The template "{0}" of this invoice is not linked. Link it on the Templates page first.</sys:String>
+    <sys:String x:Key="Rep.RestoreFailed">The invoice could not be restored:</sys:String>
+    <sys:String x:Key="Rep.Info">Invoice {0} restored with {1} protected items. Change the total and/or raise the number of items, then press "Add items".</sys:String>
+    <sys:String x:Key="Rep.Hint">Protected items stay unchanged; only new unique items are added for the difference.</sys:String>
+    <sys:String x:Key="Rep.AddItems">Add items</sys:String>
+    <sys:String x:Key="Rep.Cancel">Leave repair mode</sys:String>
+    <sys:String x:Key="Rep.Locked">Protected item (from the archived invoice)</sys:String>
+    <sys:String x:Key="Rep.Expand">SMART AUTO EXPAND&#x0a;&#x0a;Requested items: {0}&#x0a;Recommended items: {1} ({2} more)&#x0a;&#x0a;An exact total was found with unique products. Use the recommended count?</sys:String>
+    <sys:String x:Key="Rep.ExpandCancelled">Cancelled - the protected items are unchanged.</sys:String>
+    <sys:String x:Key="Rep.Added">{0} new items added; the total matches exactly.</sys:String>
+    <sys:String x:Key="Rep.NumberLocked">The invoice number cannot change while repairing.</sys:String>
+    <sys:String x:Key="Rep.ConfirmReplace">Replace the archived invoice {0} with this repaired version?&#x0a;Its INVOICE HISTORY row will be updated (not duplicated).&#x0a;&#x0a;{1}</sys:String>
+    <sys:String x:Key="Rep.Replaced">Invoice {0} was repaired: archived file replaced and history row updated.</sys:String>
 </ResourceDictionary>

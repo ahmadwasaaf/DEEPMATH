@@ -71,6 +71,15 @@ public static class Dialogs
     public static void Error(string msg) =>
         MessageBox.Show(Owner!, msg, Loc.T("App.Title"), MessageBoxButton.OK, MessageBoxImage.Warning);
 
+    /// <summary>Yes / No / Cancel: true, false or null.</summary>
+    public static bool? Ask(string msg) =>
+        MessageBox.Show(Owner!, msg, Loc.T("App.Title"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question) switch
+        {
+            MessageBoxResult.Yes => true,
+            MessageBoxResult.No => false,
+            _ => null,
+        };
+
     public static bool Confirm(string msg) =>
         MessageBox.Show(Owner!, msg, Loc.T("App.Title"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 

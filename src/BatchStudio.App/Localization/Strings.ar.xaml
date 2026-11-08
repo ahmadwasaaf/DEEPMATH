@@ -198,7 +198,7 @@
     <sys:String x:Key="Dash.Search">ابحث عن شركة…</sys:String>
     <sys:String x:Key="Dash.ExcelUpdated">تم تحديث Dashboard.xlsx</sys:String>
     <sys:String x:Key="Dash.ExcelLocked">ملف Dashboard.xlsx مفتوح في Excel، وسيتم تحديثه في المرة القادمة.</sys:String>
-    <sys:String x:Key="Dash.NoExcel">الملف Dashboard\Dashboard.xlsx غير موجود في مجلد قاعدة البيانات.</sys:String>
+    <sys:String x:Key="Dash.NoExcel">الملف لا يحتوي على ورقة Dashboard.</sys:String>
     <sys:String x:Key="Dash.OpenExcel">فتح ملف الإكسيل</sys:String>
     <sys:String x:Key="Col.Rank">الترتيب</sys:String>
     <sys:String x:Key="Col.Company">اسم الشركة</sys:String>
@@ -247,4 +247,21 @@
     <sys:String x:Key="Act.Pdf">تصدير PDF</sys:String>
     <sys:String x:Key="Act.ViewReport">عرض التقرير الكامل</sys:String>
     <sys:String x:Key="Act.ExportReport">تصدير التقرير الكامل</sys:String>
+    <sys:String x:Key="Dash.ExportPdf">تصدير PDF</sys:String>
+    <sys:String x:Key="Dash.PdfSaved">تم حفظ PDF لوحة التحكم على سطح المكتب: {0}</sys:String>
+    <sys:String x:Key="Rep.Exporting">جارٍ تصدير PDF…</sys:String>
+    <sys:String x:Key="Rep.Ask">الفاتورة {0} ({1})&#x0a;&#x0a;نعم = استعادتها للتعديل (Smart Invoice Repair)&#x0a;لا = فتح الملف المؤرشف كالمعتاد&#x0a;إلغاء = لا شيء</sys:String>
+    <sys:String x:Key="Rep.NoTemplateMap">قالب هذه الفاتورة "{0}" غير مربوط. اربطه أولًا من صفحة القوالب.</sys:String>
+    <sys:String x:Key="Rep.RestoreFailed">تعذّر استعادة الفاتورة:</sys:String>
+    <sys:String x:Key="Rep.Info">تمت استعادة الفاتورة {0} بعدد {1} صنف محمي. غيّر الإجمالي و/أو زوّد عدد الأصناف ثم اضغط "إضافة أصناف".</sys:String>
+    <sys:String x:Key="Rep.Hint">الأصناف المحمية لا تتغير؛ تُضاف أصناف جديدة فريدة للفرق فقط.</sys:String>
+    <sys:String x:Key="Rep.AddItems">إضافة أصناف</sys:String>
+    <sys:String x:Key="Rep.Cancel">الخروج من وضع الإصلاح</sys:String>
+    <sys:String x:Key="Rep.Locked">صنف محمي (من الفاتورة المؤرشفة)</sys:String>
+    <sys:String x:Key="Rep.Expand">توسيع تلقائي ذكي&#x0a;&#x0a;العدد المطلوب: {0}&#x0a;العدد المقترح: {1} (زيادة {2})&#x0a;&#x0a;تم إيجاد إجمالي مطابق تمامًا بأصناف فريدة. هل تستخدم العدد المقترح؟</sys:String>
+    <sys:String x:Key="Rep.ExpandCancelled">تم الإلغاء - الأصناف المحمية كما هي.</sys:String>
+    <sys:String x:Key="Rep.Added">تمت إضافة {0} صنف جديد؛ الإجمالي مطابق تمامًا.</sys:String>
+    <sys:String x:Key="Rep.NumberLocked">لا يمكن تغيير رقم الفاتورة أثناء الإصلاح.</sys:String>
+    <sys:String x:Key="Rep.ConfirmReplace">استبدال الفاتورة المؤرشفة {0} بالنسخة المعدّلة؟&#x0a;سيتم تحديث سطرها في INVOICE HISTORY (بدون تكرار).&#x0a;&#x0a;{1}</sys:String>
+    <sys:String x:Key="Rep.Replaced">تم إصلاح الفاتورة {0}: استُبدل الملف المؤرشف وتم تحديث سطر السجل.</sys:String>
 </ResourceDictionary>

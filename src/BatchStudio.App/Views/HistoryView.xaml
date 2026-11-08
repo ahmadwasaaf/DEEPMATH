@@ -33,12 +33,7 @@
                     <TextBlock Text="{DynamicResource Hist.Title}" Foreground="White" FontSize="18" FontWeight="SemiBold" />
                     <WrapPanel Margin="0,6,0,0">
                         <TextBlock Text="{Binding CountText}" Foreground="White" FontSize="22" Margin="0,0,24,4" VerticalAlignment="Center" />
-                        <RadioButton GroupName="tab" Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center"
-                                     Content="{DynamicResource Hist.All}" IsChecked="{Binding Tab, Converter={StaticResource Equals}, ConverterParameter=ALL}" />
-                        <RadioButton GroupName="tab" Foreground="White" Margin="0,0,16,0" VerticalAlignment="Center"
-                                     Content="{DynamicResource Hist.Suppliers}" IsChecked="{Binding Tab, Converter={StaticResource Equals}, ConverterParameter=SUPPLIERS}" />
-                        <RadioButton GroupName="tab" Foreground="White" VerticalAlignment="Center"
-                                     Content="{DynamicResource Hist.Clients}" IsChecked="{Binding Tab, Converter={StaticResource Equals}, ConverterParameter=CLIENTS}" />
+                        <ComboBox ItemsSource="{Binding Tabs}" SelectedItem="{Binding Tab}" Width="160" VerticalAlignment="Center" />
                     </WrapPanel>
                 </StackPanel>
             </DockPanel>

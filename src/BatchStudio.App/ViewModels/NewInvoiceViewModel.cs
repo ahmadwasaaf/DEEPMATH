@@ -15,19 +15,23 @@ public sealed partial class LineViewModel : ObservableObject
     private readonly NewInvoiceViewModel _owner;
     public InvoiceLine Line { get; }
 
-    public LineViewModel(NewInvoiceViewModel owner, InvoiceLine line)
+    public LineViewModel(NewInvoiceViewModel owner, InvoiceLine line, bool isLocked = false)
     {
         _owner = owner;
         Line = line;
+        IsLocked = isLocked;
     }
 
-    public string Code { get => Line.Code; set { Line.Code = value; OnPropertyChanged(); } }
-    public string Description { get => Line.Description; set { Line.Description = value; OnPropertyChanged(); } }
+    /// <summary>Smart Invoice Repair: rows restored from the archive are protected.</summary>
+    public bool IsLocked { get; }
+
+    public string Code { get => Line.Code; set { if (!IsLocked) Line.Code = value; OnPropertyChanged(); } }
+    public string Description { get => Line.Description; set { if (!IsLocked) Line.Description = value; OnPropertyChanged(); } }
 
     public long Quantity
     {
         get => Line.Quantity;
-        set { Line.Quantity = Math.Max(1, value); OnPropertyChanged(); OnPropertyChanged(nameof(Amount)); _owner.RecalcTotals(); }
+        set { if (!IsLocked) Line.Quantity = Math.Max(1, value); OnPropertyChanged(); OnPropertyChanged(nameof(Amount)); _owner.RecalcTotals(); }
     }
 
     public decimal UnitPrice
@@ -35,7 +39,7 @@ public sealed partial class LineViewModel : ObservableObject
         get => Line.UnitPrice;
         set
         {
-            Line.UnitCents = Math.Max(1, (long)Math.Round(value * 100m, 0, MidpointRounding.AwayFromZero));
+            if (!IsLocked) Line.UnitCents = Math.Max(1, (long)Math.Round(value * 100m, 0, MidpointRounding.AwayFromZero));
             OnPropertyChanged();
             OnPropertyChanged(nameof(Amount));
             _owner.RecalcTotals();
@@ -101,6 +105,17 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [ObservableProperty] private string _newPartyError = "";
     public ObservableCollection<NewFieldViewModel> NewPartyFields { get; } = [];
 
+    // Smart Invoice Repair
+    private RepairSource? _repair;
+    private string _repairNo = "";
+    private bool _suspendClear;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNormal), nameof(GenerateText))]
+    private bool _isRepair;
+    [ObservableProperty] private string _repairInfo = "";
+    public bool IsNormal => !IsRepair;
+    public string GenerateText => Loc.T(IsRepair ? "Rep.AddItems" : "Inv.Generate");
+
     public bool HasSaved => SavedPath != null;
     partial void OnSavedPathChanged(string? value) => OnPropertyChanged(nameof(HasSaved));
 
@@ -110,6 +125,15 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     public void Refresh()
     {
         if (main.Root == null) return;
+        bool suspend = IsRepair && !_suspendClear;
+        if (suspend) _suspendClear = true;
+        try { RefreshCore(); }
+        finally { if (suspend) _suspendClear = false; }
+        if (IsRepair) Status = "";
+    }
+
+    private void RefreshCore()
+    {
         var keepTpl = SelectedTemplate?.Name;
         Templates.Clear();
         foreach (var e in TemplateRegistry.Scan(Root).Where(t => t.Map != null))
@@ -133,7 +157,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     {
         var map = value?.Entry.Map;
         if (map == null) { TemplateInfo = ""; return; }
-        IsClients = map.EffectivePartyType == "CLIENTS";
+        if (!_suspendClear) IsClients = map.EffectivePartyType == "CLIENTS";
         HasVat = map.VatRate is > 0;
         TemplateInfo = $"{(IsClients ? Loc.T("Nav.Clients") : Loc.T("Nav.Suppliers"))} · {map.EffectiveCurrency}" +
                        (HasVat ? $" · VAT {map.VatRate:P0}" : "") +
@@ -155,13 +179,14 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     partial void OnSelectedPartyChanged(Party? value)
     {
         ClearLines();
-        if (value == null) { PartyDetails = ""; return; }
+        if (value == null) { if (!_suspendClear) PartyDetails = ""; return; }
         var parts = new List<string> { value.Name };
         if (value.NativeName != null) parts.Add(value.NativeName);
         if (value.CategoryText != null) parts.Add(value.CategoryText);
         if (value.Address != null) parts.Add(value.Address);
         if (value.Bank != null) parts.Add(value.Bank);
         PartyDetails = string.Join("\n", parts);
+        if (_suspendClear) return;
         SelectedCategory = InvoiceService.CategoryFor(value, Categories) ?? SelectedCategory;
         // supplier's default template (column DEFAULT TEMPLATE)
         if (!string.IsNullOrWhiteSpace(value.DefaultTemplate))
@@ -181,11 +206,156 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
 
     private void ClearLines()
     {
+        if (_suspendClear) return;
         Lines.Clear();
         HasLines = false;
         _draft = null;
         SavedPath = null;
         NetText = VatText = TotalText = DifferenceText = Words = "";
+    }
+
+    // ------------------------------------------------------------------ Smart Invoice Repair
+    /// <summary>
+    /// Restores an archived invoice for repair (History → Open Invoice → Edit): its rows are protected; a new total and
+    /// a higher item count add only new unique items; saving replaces the same archived file and history row.
+    /// </summary>
+    public bool StartRepair(string templateName, string invoiceNo, string partyType, string archivedFile)
+    {
+        CancelRepair();
+        Refresh();
+        var tpl = Templates.FirstOrDefault(t => string.Equals(t.Name, templateName.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (tpl?.Entry.Map == null) { Dialogs.Error(Loc.F("Rep.NoTemplateMap", templateName)); return false; }
+        RepairSource src;
+        try { src = InvoiceRepair.Read(archivedFile, tpl.Entry.Map, invoiceNo); }
+        catch (Exception ex) { Dialogs.Error(Loc.T("Rep.RestoreFailed") + "\n" + ex.Message); return false; }
+
+        _suspendClear = true;
+        try
+        {
+            IsAddingParty = false;
+            SelectedTemplate = tpl;
+            IsClients = partyType.Equals("CLIENTS", StringComparison.OrdinalIgnoreCase) ||
+                        (partyType.Length == 0 && tpl.Entry.Map.EffectivePartyType == "CLIENTS");
+            FillParties();
+            SelectedParty = Parties.FirstOrDefault(p => BatchStudio.Core.Reports.DashboardEngine.SameCompany(p.Name, src.PartyName));
+            SelectedCategory = Categories.FirstOrDefault(c => string.Equals(c.Text.Trim(), src.CategoryText?.Trim(), StringComparison.OrdinalIgnoreCase))
+                               ?? (SelectedParty != null ? InvoiceService.CategoryFor(SelectedParty, Categories) : null)
+                               ?? SelectedCategory;
+            InvoiceNo = src.InvoiceNo;
+            Date = src.Date ?? DateTime.Today;
+            AmountText = src.Total.ToString("0.00", CultureInfo.InvariantCulture);
+            CountText = src.Lines.Count.ToString(CultureInfo.InvariantCulture);
+            PartyDetails = string.Join("\n", new[] { src.PartyName, src.NativeName, src.CategoryText }.Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+        finally { _suspendClear = false; }
+
+        _repair = src;
+        _repairNo = invoiceNo;
+        IsRepair = true;
+        SavedPath = null;
+        ShowLines(src.Lines.Select(CopyLine).ToList(), src.Total);
+        RepairInfo = Loc.F("Rep.Info", invoiceNo, src.Lines.Count);
+        Status = Loc.T("Rep.Hint");
+        return true;
+    }
+
+    private static InvoiceLine CopyLine(InvoiceLine l) => new()
+    {
+        Code = l.Code, Description = l.Description, Quantity = l.Quantity, UnitCents = l.UnitCents, ReferencePrice = l.ReferencePrice,
+    };
+
+    private void ShowLines(List<InvoiceLine> lines, decimal target)
+    {
+        var map = SelectedTemplate!.Entry.Map!;
+        var src = _repair;
+        var party = SelectedParty;
+        _draft = new InvoiceDraft
+        {
+            TemplatePath = SelectedTemplate.Entry.Path,
+            Map = map,
+            PartyType = IsClients ? "CLIENTS" : "SUPPLIERS",
+            PartyName = src?.PartyName is { Length: > 0 } pn ? pn : party?.Name ?? "",
+            NativeName = src?.NativeName ?? party?.NativeName,
+            Address = src?.Address ?? party?.Address,
+            Bank = src?.Bank ?? party?.Bank,
+            CategoryText = src?.CategoryText ?? SelectedCategory?.Text,
+            Target = target,
+            Lines = lines,
+        };
+        int locked = _repair?.Lines.Count ?? 0;
+        Lines.Clear();
+        for (int i = 0; i < lines.Count; i++) Lines.Add(new LineViewModel(this, lines[i], i < locked));
+        HasLines = true;
+        RecalcTotals();
+    }
+
+    private async Task ExtendRepairAsync()
+    {
+        if (_repair == null) return;
+        Status = "";
+        var map = SelectedTemplate?.Entry.Map;
+        if (map == null) return;
+        if (SelectedCategory == null) { Status = Loc.T("Inv.ChooseCategory"); return; }
+        if (!TryAmount(out var amount)) { Status = Loc.T("Inv.BadAmount"); return; }
+        if (!int.TryParse(CountText.Trim(), out var count) || count < 1 || count > InvoiceAllocator.MaxItems) { Status = Loc.T("Inv.BadCount"); return; }
+        var itemsTable = main.DataPages.First(p => p.Session.Definition.Key == "items").Session.Current;
+        var pool = InvoiceService.Items(itemsTable, SelectedCategory.Id);
+        decimal? vat = map.VatRate is > 0 ? (decimal)map.VatRate.Value : null;
+        var existing = _repair.Lines;
+        IsBusy = true;
+        try
+        {
+            var plan = await Task.Run(() => InvoiceRepair.Extend(existing, amount, count, pool, vat));
+            if (plan.Expanded && !Dialogs.Confirm(Loc.F("Rep.Expand", plan.RequestedCount, plan.FinalCount, plan.FinalCount - plan.RequestedCount)))
+            {
+                Status = Loc.T("Rep.ExpandCancelled");
+                return;
+            }
+            CountText = plan.FinalCount.ToString(CultureInfo.InvariantCulture);
+            ShowLines(plan.Lines, amount);
+            Status = plan.FinalCount > existing.Count ? Loc.F("Rep.Added", plan.FinalCount - existing.Count) : "";
+        }
+        catch (AllocationException ex) { Status = ex.Message; }
+        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        finally { IsBusy = false; }
+    }
+
+    private async Task SaveRepairAsync(BatchStudio.Core.Workbook.Workspace ws)
+    {
+        if (_draft == null || _repair == null) return;
+        if (!string.Equals(_draft.InvoiceNo, _repairNo, StringComparison.OrdinalIgnoreCase)) { Status = Loc.T("Rep.NumberLocked"); return; }
+        if (!Dialogs.Confirm(Loc.F("Rep.ConfirmReplace", _repairNo, _repair.ArchivePath))) return;
+        var draft = _draft;
+        var no = _repairNo;
+        var file = _repair.ArchivePath;
+        int keep = main.Settings.KeepBackups;
+        try
+        {
+            IsBusy = true;
+            Status = Loc.T("Status.SavingWorkbook");
+            SavedPath = await Task.Run(() => InvoiceService.Replace(ws, draft, no, file, keep));
+            _repair = null;
+            IsRepair = false;
+            RepairInfo = "";
+            Status = Loc.F("Rep.Replaced", no);
+            main.OnHistoryChanged();
+        }
+        catch (FileLockedException ex) { Status = Loc.F("Inv.HistoryLocked", Path.GetFileName(ex.FilePath)); }
+        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private void CancelRepair()
+    {
+        if (!IsRepair) return;
+        _repair = null;
+        IsRepair = false;
+        RepairInfo = "";
+        ClearLines();
+        AmountText = "";
+        NewNumber();
+        Status = "";
     }
 
     // ------------------------------------------------------------------ new supplier / client
@@ -281,6 +451,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [RelayCommand]
     private async Task GenerateAsync()
     {
+        if (IsRepair) { await ExtendRepairAsync(); return; }
         Status = "";
         SavedPath = null;
         var map = SelectedTemplate?.Entry.Map;
@@ -352,6 +523,11 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         _draft.InvoiceNo = InvoiceNo.Trim();
         _draft.Date = Date ?? DateTime.Today;
         var ws = main.Workspace ?? throw new InvalidOperationException("No entity is open.");
+        if (IsRepair && _repair != null)
+        {
+            await SaveRepairAsync(ws);
+            return;
+        }
         var draft = _draft;
         int keep = main.Settings.KeepBackups;
         try
@@ -397,6 +573,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [RelayCommand]
     private void NewInvoice()
     {
+        if (IsRepair) { CancelRepair(); return; }
         ClearLines();
         AmountText = "";
         NewNumber();

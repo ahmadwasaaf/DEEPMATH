@@ -38,6 +38,7 @@ public sealed partial class HistoryViewModel : ObservableObject
 
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private string _tab = "ALL";
+    public IReadOnlyList<string> Tabs { get; } = ["ALL", "SUPPLIERS", "CLIENTS"];
     [ObservableProperty] private string _period = HistoryPeriods.AllTime;
     [ObservableProperty] private string _weekStart = "Saturday";
     [ObservableProperty] private DateTime? _from;
@@ -224,11 +225,29 @@ public sealed partial class HistoryViewModel : ObservableObject
         Selected = row;
         switch (action)
         {
-            case "open": OpenInvoice(row); break;
+            case "open": OpenOrRepair(row); break;
             case "remove": await RemoveAsync(); break;
             case "pdf": await ExportInvoicePdfAsync(); break;
             case "report": CompanyReport(); break;
             case "exportreport": await ExportFullReportAsync(); break;
+        }
+    }
+
+    /// <summary>
+    /// Open Invoice like the V28 sheet: for a linked template the user can restore it for Smart Invoice Repair
+    /// (YES), open the archived file (NO) or cancel.
+    /// </summary>
+    private void OpenOrRepair(HistoryRow row)
+    {
+        if (!row.FileExists) { Status = Loc.F("Hist.FileMissing", row.InvoiceNo); return; }
+        bool canRepair = Root != null && row.Template.Length > 0 &&
+            BatchStudio.Core.Templates.TemplateRegistry.Scan(Root).Any(t => t.Map != null &&
+                string.Equals(t.Name, row.Template.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (!canRepair) { OpenInvoice(row); return; }
+        switch (Dialogs.Ask(Loc.F("Rep.Ask", row.InvoiceNo, row.Template)))
+        {
+            case true: _main.StartInvoiceRepair(row.Template, row.InvoiceNo, row.PartyType, row.ResolvedPath); break;
+            case false: OpenInvoice(row); break;
         }
     }
 

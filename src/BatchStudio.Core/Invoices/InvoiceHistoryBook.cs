@@ -282,6 +282,20 @@ public static class InvoiceHistoryBook
         catch { }
     }
 
+    /// <summary>Smart Invoice Repair: the same record gets the repaired amount / date (no new row).</summary>
+    public static void UpdateRecord(IWorkbookEditor ed, string invoiceNo, decimal amount, DateTime date)
+    {
+        var (ws, _, l, recs) = Open(ed);
+        var rec = Find(recs, invoiceNo);
+        if (l.ColAmount > 0) ws.Set(rec.Row, l.ColAmount, (double)amount);
+        if (l.ColDate > 0)
+        {
+            ws.Set(rec.Row, l.ColDate, date);
+            ws.SetNumberFormat(rec.Row, l.ColDate, "dd/mm/yyyy");
+        }
+        SetStatus(ws, l, rec, true);
+    }
+
     /// <summary>Points a record at a moved invoice file (V28 "Reassign file").</summary>
     public static void Relink(IWorkbookEditor ed, string invoiceNo, string newFile)
     {

@@ -223,6 +223,14 @@ public sealed partial class MainViewModel : ObservableObject
         return null;
     }
 
+    /// <summary>History → Open Invoice → Edit: restores the archived invoice on the New Invoice page (Smart Invoice Repair).</summary>
+    public void StartInvoiceRepair(string templateName, string invoiceNo, string partyType, string archivedFile)
+    {
+        var nav = Nav.FirstOrDefault(n => n.Key == "Nav.NewInvoice");
+        if (nav != null) SelectedNav = nav;
+        NewInvoice.StartRepair(templateName, invoiceNo, partyType, archivedFile);
+    }
+
     /// <summary>Called after an invoice was archived (history file changed by the program).</summary>
     public void OnHistoryChanged()
     {

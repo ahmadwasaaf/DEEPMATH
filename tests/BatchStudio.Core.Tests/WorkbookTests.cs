@@ -294,4 +294,102 @@ public class WorkbookTests
         }
         finally { Clean(dir); }
     }
+
+    // ------------------------------------------------------------------ Smart Invoice Repair
+    private static List<CatalogItem> BigPool(string cat) =>
+        Enumerable.Range(1, 40).Select(i => new CatalogItem($"{cat}-{i:000}", $"Product {i}", 20m + i * 7.5m, cat)).ToList();
+
+    [Fact]
+    public void Repair_restores_an_archived_invoice_and_adds_only_new_items()
+    {
+        var (dir, book) = DemoFolder();
+        try
+        {
+            var ws = Workspace.Open(book, Path.Combine(dir, "state"));
+            foreach (var t in TemplateRegistry.Scan(ws.CacheRoot))
+            {
+                var map = t.Map!;
+                decimal? vat = map.VatRate is > 0 ? (decimal)map.VatRate.Value : null;
+                var pool = BigPool("TST");
+                var lines = InvoiceAllocator.Allocate(40000m, 6, pool, vat, new Random(3));
+                var draft = new InvoiceDraft
+                {
+                    TemplatePath = t.Path, Map = map, PartyType = map.EffectivePartyType,
+                    PartyName = "Supplier 001 Trading Co., Limited", NativeName = "示例公司 001",
+                    Address = "Company Address:\nUnit 1", Bank = "PAYMENT & BANKING INSTRUCTIONS\nBANK: DEMO",
+                    CategoryText = "Lighting | الإضاءة", InvoiceNo = "Mad-5550001", Date = new DateTime(2026, 10, 1),
+                    Target = 40000m, Lines = lines,
+                };
+                var archived = Path.Combine(dir, t.Name + "_archived.xlsx");
+                TemplateFiller.Fill(draft, archived);
+
+                var src = InvoiceRepair.Read(archived, map, "Mad-5550001");
+                Assert.Equal(6, src.Lines.Count);
+                Assert.Equal(40000m, src.Total);
+                Assert.Equal(new DateTime(2026, 10, 1), src.Date);
+                Assert.Equal(lines.Select(l => l.Code), src.Lines.Select(l => l.Code));
+                Assert.Throws<InvalidOperationException>(() => InvoiceRepair.Read(archived, map, "Mad-0000000"));
+
+                var plan = InvoiceRepair.Extend(src.Lines, 55000m, 9, pool, vat, new Random(5));
+                Assert.True(plan.FinalCount >= 9, t.Name);
+                Assert.Equal(5500000, InvoiceRepair.Value(plan.Lines, vat));
+                for (int i = 0; i < 6; i++)
+                {
+                    Assert.Equal(src.Lines[i].Code, plan.Lines[i].Code);
+                    Assert.Equal(src.Lines[i].Quantity, plan.Lines[i].Quantity);
+                    Assert.Equal(src.Lines[i].UnitCents, plan.Lines[i].UnitCents);
+                }
+                Assert.Equal(plan.Lines.Count, plan.Lines.Select(l => l.Code).Distinct().Count());
+                Assert.StartsWith("7- ", plan.Lines[6].Description);
+
+                Assert.Throws<AllocationException>(() => InvoiceRepair.Extend(src.Lines, 30000m, 8, pool, vat));   // below protected items
+                Assert.Throws<AllocationException>(() => InvoiceRepair.Extend(src.Lines, 50000m, 5, pool, vat));   // fewer rows
+            }
+        }
+        finally { Clean(dir); }
+    }
+
+    [Fact]
+    public void Repair_replaces_the_archived_file_and_updates_the_same_history_row()
+    {
+        var (dir, book) = SmallBook();
+        try
+        {
+            var ws = Workspace.Open(book, Path.Combine(dir, "state"));
+            var tpl = Path.Combine(dir, "INVOICE.xlsx");
+            File.Copy(Fx("INVOICE.xlsx"), tpl);
+            var map = TemplateDetector.DetectFile(tpl);
+            var pool = BigPool("TST");
+            var draft = new InvoiceDraft
+            {
+                TemplatePath = tpl, Map = map, PartyType = "SUPPLIERS", PartyName = "GAMMA CO",
+                CategoryText = "Lighting | الإضاءة", InvoiceNo = "Mad-8880001", Date = new DateTime(2026, 9, 1), Target = 20000m,
+                Lines = InvoiceAllocator.Allocate(20000m, 5, pool, null, new Random(8)),
+            };
+            var file = InvoiceService.Archive(ws, draft);
+            int count = InvoiceHistoryBook.Read(ws.HistoryPath).Count;
+
+            var src = InvoiceRepair.Read(file, map, "Mad-8880001");
+            var plan = InvoiceRepair.Extend(src.Lines, 26000m, 7, pool, null, new Random(9));
+            var repaired = new InvoiceDraft
+            {
+                TemplatePath = tpl, Map = map, PartyType = "SUPPLIERS", PartyName = src.PartyName,
+                CategoryText = src.CategoryText, InvoiceNo = "Mad-8880001", Date = new DateTime(2026, 11, 8), Target = 26000m,
+                Lines = plan.Lines,
+            };
+            Assert.Throws<InvalidOperationException>(() => InvoiceService.Replace(ws, repaired, "Mad-0000001", file));
+            Assert.Equal(file, InvoiceService.Replace(ws, repaired, "Mad-8880001", file));
+
+            var recs = InvoiceHistoryBook.Read(ws.HistoryPath);
+            Assert.Equal(count, recs.Count);                                  // updated, not duplicated
+            var rec = recs.Single(r => r.InvoiceNo == "Mad-8880001");
+            Assert.Equal(26000m, rec.Amount);
+            Assert.Equal(new DateTime(2026, 11, 8), rec.Date);
+            Assert.Empty(Directory.GetFiles(Path.GetDirectoryName(file)!, "*.bak"));
+            var again = InvoiceRepair.Read(file, map, "Mad-8880001");
+            Assert.Equal(plan.Lines.Count, again.Lines.Count);
+            Assert.Equal(26000m, again.Total);
+        }
+        finally { Clean(dir); }
+    }
 }

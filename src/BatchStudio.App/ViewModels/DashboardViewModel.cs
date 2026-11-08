@@ -216,6 +216,38 @@ public sealed partial class DashboardViewModel : ObservableObject
         finally { IsBusy = false; }
     }
 
+    /// <summary>Export PDF (like the Dashboard sheet's button): the Dashboard sheet with the current filters, straight to the Desktop.</summary>
+    [RelayCommand]
+    private async Task ExportPdfAsync()
+    {
+        if (_main.Workspace is not { } ws || _result == null) return;
+        var template = ws.DashboardPath;
+        if (!File.Exists(template)) { Status = Loc.T("Dash.NoExcel"); return; }
+        var dest = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                                $"BATCH_STUDIO_DASHBOARD_{DateTime.Now:yyyyMMdd_HHmmss}.pdf");
+        var result = _result;
+        var filter = Filter();
+        IsBusy = true;
+        Status = Loc.T("Rep.Exporting");
+        try
+        {
+            await Task.Run(() =>
+            {
+                var tmp = Path.Combine(Path.GetTempPath(), $"BS_dash_{Guid.NewGuid():N}.xlsx");
+                try
+                {
+                    File.Copy(template, tmp);
+                    ReportBooks.WriteDashboard(tmp, result, filter);
+                    ExcelPdf.Export(tmp, dest);
+                }
+                finally { try { File.Delete(tmp); } catch { } }
+            });
+            Status = Loc.F("Dash.PdfSaved", dest);
+        }
+        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        finally { IsBusy = false; }
+    }
+
     [RelayCommand]
     private void OpenExcel()
     {

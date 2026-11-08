@@ -213,6 +213,29 @@ public sealed partial class DataSetViewModel : ObservableObject
     /// <summary>Suppliers / Clients show only ID and name in the list; the details pane gets the room.</summary>
     public bool CompactGrid => Session.Definition.Key is "suppliers" or "clients";
 
+    // ---------------------------------------------------------------- full report of the selected company
+    private string? SelectedCompany => SelectedRow != null && Table != null && Table.Columns.Count > 1
+        ? (SelectedRow[ColName(1)] as string)?.Trim() : null;
+
+    private string PartyType => Session.Definition.Key == "clients" ? "CLIENTS" : "SUPPLIERS";
+
+    [RelayCommand]
+    private void ViewReport()
+    {
+        if (SelectedCompany is { Length: > 0 } name)
+            _main.ShowCompanyReport(name, PartyType, new BatchStudio.Core.Reports.DashboardFilter());
+    }
+
+    [RelayCommand]
+    private async Task ExportReportAsync()
+    {
+        if (SelectedCompany is not { Length: > 0 } name) return;
+        var vm = _main.BuildCompanyReport(name, PartyType, new BatchStudio.Core.Reports.DashboardFilter());
+        if (vm == null) return;
+        Status = Loc.T("Rep.Exporting");
+        Status = await vm.ExportPdfCoreAsync();
+    }
+
     public string NextId() => ToTableData().NextId(Session.Definition.IdPrefix);
 
     /// <summary>Adds a record (values in header order) to the table; saved by the normal sync.</summary>

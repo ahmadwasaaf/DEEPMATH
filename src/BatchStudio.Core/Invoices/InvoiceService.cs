@@ -155,6 +155,47 @@ public static class InvoiceService
         return full;
     }
 
+    /// <summary>
+    /// Smart Invoice Repair: writes the repaired invoice over its archived file (the original is kept as a rollback
+    /// copy until the history row is updated) and updates the same INVOICE HISTORY row. The invoice number cannot change.
+    /// </summary>
+    public static string Replace(Workspace ws, InvoiceDraft d, string invoiceNo, string archivedFile, int keepBackups = 30)
+    {
+        if (!string.Equals(d.InvoiceNo.Trim(), invoiceNo.Trim(), StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("The invoice number changed; the archived invoice was not replaced.");
+        var full = Path.GetFullPath(archivedFile);
+        var archive = Path.GetFullPath(ws.ArchiveRoot).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (!full.StartsWith(archive, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("The archived invoice is outside the BATCH STUDIO archive; it was not replaced.");
+        if (!File.Exists(full)) throw new FileNotFoundException("The archived invoice is missing; nothing was replaced.", full);
+
+        var tmp = Path.Combine(Path.GetTempPath(), $"BS_{Guid.NewGuid():N}.xlsx");
+        var rollback = full + $".BS_REPLACE_{DateTime.Now:yyyyMMddHHmmss}.bak";
+        TemplateFiller.Fill(d, tmp);
+        try
+        {
+            File.Move(full, rollback);
+            File.Move(tmp, full);
+            try
+            {
+                ws.Change(ed => InvoiceHistoryBook.UpdateRecord(ed, invoiceNo, d.Total, d.Date), keepBackups);
+            }
+            catch
+            {
+                File.Delete(full);
+                File.Move(rollback, full);
+                throw;
+            }
+            File.Delete(rollback);
+        }
+        finally
+        {
+            if (File.Exists(tmp)) File.Delete(tmp);
+            if (!File.Exists(full) && File.Exists(rollback)) File.Move(rollback, full);
+        }
+        return full;
+    }
+
     /// <summary>Same as <see cref="Archive(Workspace, InvoiceDraft, int)"/> for a stand-alone Database folder (tests / old layout).</summary>
     public static string Archive(string root, InvoiceDraft d, int keepBackups = 30)
     {
