@@ -71,6 +71,8 @@ jobs:
           Run 'Arabic' 'Dark' $true 'newinvoice' '9-new-invoice-ar'
           Run 'English' 'Dark' $true 'history' '10-history'
           Run 'Arabic' 'Light' $true 'history' '11-history-ar'
+          Run 'English' 'Dark' $true 'dashboard' '12-dashboard'
+          Run 'Arabic' 'Light' $true 'dashboard' '13-dashboard-ar'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

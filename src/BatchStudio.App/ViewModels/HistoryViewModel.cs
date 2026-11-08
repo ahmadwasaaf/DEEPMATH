@@ -214,6 +214,13 @@ public sealed partial class HistoryViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void CompanyReport()
+    {
+        if (Selected is { } r)
+            _main.ShowCompanyReport(r.Name, r.PartyType, new BatchStudio.Core.Reports.DashboardFilter { WeekStart = HistoryPeriods.ParseWeekStart(WeekStart) });
+    }
+
+    [RelayCommand]
     private void CheckFiles()
     {
         if (Root == null) return;

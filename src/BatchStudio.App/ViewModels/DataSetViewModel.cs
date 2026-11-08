@@ -228,6 +228,28 @@ public sealed partial class DataSetViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Sets one column for every row whose name matches (used by the company report to save "Company's Activities").
+    /// Returns the number of rows changed; the change is saved by the normal sync.
+    /// </summary>
+    public int SetWhere(Func<string, bool> nameMatches, Func<TableData, int> targetColumn, string value)
+    {
+        if (Table == null) return 0;
+        var headers = Session.Current;
+        int target = targetColumn(headers);
+        int nameCol = headers.Headers.FindIndex(h => h.Contains("Name", StringComparison.OrdinalIgnoreCase));
+        if (target < 0 || nameCol < 0) return 0;
+        int n = 0;
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted) continue;
+            if (!nameMatches(r[nameCol] as string ?? "")) continue;
+            if ((r[target] as string ?? "") != value) r[target] = value;
+            n++;
+        }
+        return n;
+    }
+
     [RelayCommand]
     private void Reload()
     {

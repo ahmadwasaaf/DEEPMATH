@@ -30,6 +30,7 @@ public sealed partial class MainViewModel : ObservableObject
     public EntitySetupViewModel Setup { get; }
     public NewInvoiceViewModel NewInvoice { get; }
     public HistoryViewModel History { get; }
+    public DashboardViewModel Dashboard { get; }
 
     [ObservableProperty] private EntityProfile? _activeEntity;
     [ObservableProperty] private object? _currentPage;
@@ -50,10 +51,12 @@ public sealed partial class MainViewModel : ObservableObject
         Setup = new EntitySetupViewModel(this);
         NewInvoice = new NewInvoiceViewModel(this);
         History = new HistoryViewModel(this);
+        Dashboard = new DashboardViewModel(this);
         foreach (var e in settings.Entities) Entities.Add(e);
         SettingsPage.Refresh();
 
         Nav.Add(new NavItem { Key = "Nav.Home", Glyph = "", Page = () => Home });
+        Nav.Add(new NavItem { Key = "Nav.Dashboard", Glyph = "\uE9D2", Page = () => Dashboard });
         Nav.Add(new NavItem { Key = "Nav.NewInvoice", Glyph = "\uE710", Page = () => NewInvoice });
         Nav.Add(new NavItem { Key = "Nav.History", Glyph = "\uE81C", Page = () => History });
         Nav.Add(new NavItem { Key = "Nav.Suppliers", Glyph = "", Page = () => Page("suppliers") });
@@ -81,6 +84,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (CurrentPage is SettingsViewModel sp) sp.Refresh();
         if (CurrentPage is NewInvoiceViewModel ni) ni.Refresh();
         if (CurrentPage is HistoryViewModel hv) hv.Reload();
+        if (CurrentPage is DashboardViewModel dv) dv.Refresh();
     }
 
     partial void OnActiveEntityChanged(EntityProfile? oldValue, EntityProfile? newValue)
@@ -128,6 +132,8 @@ public sealed partial class MainViewModel : ObservableObject
         SelectedNav = Nav[0];
         CurrentPage = Home;
         RefreshLists();
+        Dashboard.Reset();
+        Dashboard.Refresh();
     }
 
     private void OnFileChanged(string path)
@@ -142,6 +148,8 @@ public sealed partial class MainViewModel : ObservableObject
         if (Root != null && string.Equals(full, Path.GetFullPath(DataSets.InvoiceHistory.FullPath(Root)), StringComparison.OrdinalIgnoreCase))
         {
             if (CurrentPage == History) History.Reload();
+            Dashboard.Refresh();
+            if (CurrentPage is CompanyReportViewModel cr) cr.Load();
             return;
         }
         if (Root != null && full.StartsWith(Path.GetFullPath(DatabaseLayout.Templates(Root)), StringComparison.OrdinalIgnoreCase))
@@ -172,6 +180,24 @@ public sealed partial class MainViewModel : ObservableObject
     {
         Home.Refresh();
         History.Reload();
+        Dashboard.Refresh();   // also keeps Dashboard\Dashboard.xlsx current
+    }
+
+    public CompanyReportViewModel? BuildCompanyReport(string company, string? type, BatchStudio.Core.Reports.DashboardFilter filter, object? returnPage = null)
+    {
+        if (Root == null) return null;
+        var path = DataSets.InvoiceHistory.FullPath(Root);
+        var history = File.Exists(path) ? BatchStudio.Core.Invoices.InvoiceHistoryBook.Read(path) : [];
+        var t = BatchStudio.Core.Reports.CompanyReports.ResolveType(company, type, history);
+        if (t == null) { Dialogs.Error(company); return null; }
+        return new CompanyReportViewModel(this, company, t, filter, returnPage);
+    }
+
+    public void ShowCompanyReport(string company, string? type, BatchStudio.Core.Reports.DashboardFilter filter)
+    {
+        var back = CurrentPage;
+        var vm = BuildCompanyReport(company, type, filter, back);
+        if (vm != null) CurrentPage = vm;
     }
 
     public void AddEntity(EntityProfile entity)

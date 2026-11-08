@@ -35,6 +35,10 @@ public class DemoDatabase
             foreach (var f in map.Fields.Values) f.Confirmed = f.Cell != null;
             map.Save(dst);
         }
+        // Dashboard sheets (sanitized V28)
+        Directory.CreateDirectory(Path.Combine(root, "Dashboard"));
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Dashboard_V28.xlsx"), Path.Combine(root, "Dashboard", "Dashboard.xlsx"), true);
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "SupplierReport_V28.xlsx"), Path.Combine(root, "Dashboard", "Supplier Report.xlsx"), true);
         // a few archived invoices so some history rows show "File available"
         foreach (var r in InvoiceHistoryBook.Read(DataSets.InvoiceHistory.FullPath(root)).Take(5))
         {
