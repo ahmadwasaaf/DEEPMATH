@@ -150,6 +150,28 @@ public class WorkbookTests
     }
 
     [Fact]
+    public void Sheets_of_a_closedxml_workbook_are_found()
+    {
+        var (dir, book) = SmallBook();
+        try
+        {
+            var bytes = File.ReadAllBytes(book);
+            var pkg = SheetExtractor.Load(bytes);
+            string Wb()
+            {
+                using var z = new ZipArchive(new MemoryStream(bytes));
+                using var r = new StreamReader(z.GetEntry("xl/workbook.xml")!.Open());
+                var x = r.ReadToEnd();
+                using var r2 = new StreamReader(z.GetEntry("xl/_rels/workbook.xml.rels")!.Open());
+                return x[..Math.Min(1500, x.Length)] + "\n" + r2.ReadToEnd();
+            }
+            Assert.True(pkg.Find("Suppliers") != null && pkg.Find("INVOICE HISTORY") != null, Wb());
+            Assert.True(File.Exists(Path.Combine(dir, "x")) || pkg.Sheets.All(s => s.PartName.Length > 0), Wb());
+        }
+        finally { Clean(dir); }
+    }
+
+    [Fact]
     public void Saving_a_data_set_changes_only_its_cells_in_the_workbook()
     {
         var (dir, book) = SmallBook();

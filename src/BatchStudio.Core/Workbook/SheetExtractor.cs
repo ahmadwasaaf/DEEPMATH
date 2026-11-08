@@ -62,7 +62,7 @@ public static class SheetExtractor
                 using var s = e.Open();
                 using var ms = new MemoryStream();
                 s.CopyTo(ms);
-                p.Files[e.FullName] = ms.ToArray();
+                p.Files[e.FullName] = e.FullName.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) ? Unprefix(ms.ToArray()) : ms.ToArray();
                 p.Order.Add(e.FullName);
             }
         }
@@ -70,9 +70,9 @@ public static class SheetExtractor
         foreach (var r in ParseRels(p.Text("xl/_rels/workbook.xml.rels"))) p.WorkbookRels[r.Id] = r;
         var wb = p.Text("xl/workbook.xml");
         int i = 0;
-        foreach (Match m in Regex.Matches(wb, @"<sheet\b[^>]*/>"))
+        foreach (Match m in Regex.Matches(wb, @"<sheet\b[^>]*>"))
         {
-            var el = m.Value;
+            var el = m.Value.EndsWith("/>") ? m.Value : m.Value[..^1] + "/>";
             var name = WebUtility.HtmlDecode(Attr(el, "name") ?? "");
             var state = Attr(el, "state") ?? "";
             var rid = Attr(el, "r:id") ?? "";
@@ -267,6 +267,23 @@ public static class SheetExtractor
         var idx = sx.IndexOf("<sheetView ", StringComparison.Ordinal);
         if (idx >= 0) sx = sx.Insert(idx + "<sheetView ".Length, "tabSelected=\"1\" ");
         return sx;
+    }
+
+    private const string MainNs = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+
+    /// <summary>
+    /// Some writers (the Open XML SDK) put the spreadsheet namespace on a prefix (&lt;x:sheet&gt;). Excel writes it as
+    /// the default namespace; the same form is used here so one set of patterns reads both.
+    /// </summary>
+    private static byte[] Unprefix(byte[] data)
+    {
+        var text = Encoding.UTF8.GetString(data);
+        var m = Regex.Match(text, @"xmlns:(\w+)=""" + Regex.Escape(MainNs) + @"""");
+        if (!m.Success || Regex.IsMatch(text, @"\sxmlns=""")) return data;
+        var pfx = m.Groups[1].Value;
+        text = Regex.Replace(text, "<(/?)" + pfx + ":", "<$1");
+        text = text.Replace(m.Value, $"xmlns=\"{MainNs}\"");
+        return Encoding.UTF8.GetBytes(text);
     }
 
     // ------------------------------------------------------------------ package helpers
