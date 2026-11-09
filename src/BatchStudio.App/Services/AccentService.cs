@@ -34,6 +34,21 @@ public static class AccentService
         "AccentFillColorSelectedTextBackgroundBrush",
     ];
 
+    // The Fluent theme takes every accent shade from these system keys (DynamicResource), so overriding them
+    // recolours all controls: checkboxes, radio buttons, sliders, selection, accent buttons ...
+    private static readonly (object Key, int Shade)[] SystemColorKeys =
+    [
+        (SystemColors.AccentColorKey, 0),
+        (SystemColors.AccentColorLight1Key, 1), (SystemColors.AccentColorLight2Key, 2), (SystemColors.AccentColorLight3Key, 3),
+        (SystemColors.AccentColorDark1Key, -1), (SystemColors.AccentColorDark2Key, -2), (SystemColors.AccentColorDark3Key, -3),
+    ];
+    private static readonly (object Key, int Shade)[] SystemBrushKeys =
+    [
+        (SystemColors.AccentColorBrushKey, 0),
+        (SystemColors.AccentColorLight1BrushKey, 1), (SystemColors.AccentColorLight2BrushKey, 2), (SystemColors.AccentColorLight3BrushKey, 3),
+        (SystemColors.AccentColorDark1BrushKey, -1), (SystemColors.AccentColorDark2BrushKey, -2), (SystemColors.AccentColorDark3BrushKey, -3),
+    ];
+
     private static readonly Color DefaultBrand = (Color)ColorConverter.ConvertFromString("#2F80ED");
 
     /// <summary>Applies "auto" or a #RRGGBB accent for the current theme (call again after the theme changes).</summary>
@@ -59,6 +74,7 @@ public static class AccentService
         {
             // Windows accent: drop the overrides so the Fluent theme's own (system) values are used again
             foreach (var k in ColorKeys.Concat(BrushKeys)) res.Remove(k);
+            foreach (var (k, _) in SystemColorKeys.Concat(SystemBrushKeys)) res.Remove(k);
             var sys = Application.Current!.TryFindResource("SystemAccentColor") is Color sc ? sc : DefaultBrand;
             SetBrand(res, sys, light);
             return;
@@ -66,6 +82,9 @@ public static class AccentService
 
         var l1 = Mix(c, Colors.White, 0.18); var l2 = Mix(c, Colors.White, 0.36); var l3 = Mix(c, Colors.White, 0.54);
         var d1 = Mix(c, Colors.Black, 0.18); var d2 = Mix(c, Colors.Black, 0.36); var d3 = Mix(c, Colors.Black, 0.54);
+        Color Shade(int n) => n switch { 1 => l1, 2 => l2, 3 => l3, -1 => d1, -2 => d2, -3 => d3, _ => c };
+        foreach (var (k, n) in SystemColorKeys) res[k] = Shade(n);
+        foreach (var (k, n) in SystemBrushKeys) res[k] = Brush(Shade(n));
         res["SystemAccentColor"] = c;
         res["SystemAccentColorLight1"] = l1; res["SystemAccentColorLight2"] = l2; res["SystemAccentColorLight3"] = l3;
         res["SystemAccentColorDark1"] = d1; res["SystemAccentColorDark2"] = d2; res["SystemAccentColorDark3"] = d3;
