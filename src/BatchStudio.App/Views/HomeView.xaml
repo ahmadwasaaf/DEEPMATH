@@ -117,7 +117,9 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Style="{StaticResource Card}" Width="210" Height="132" Margin="0,0,14,14">
+                        <!-- solid base: the particles pass behind the cards, not through them -->
+<Border Width="210" Height="132" Margin="0,0,14,14" CornerRadius="8" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+<Border Style="{StaticResource Card}">
                             <Grid>
                                 <Border HorizontalAlignment="Right" VerticalAlignment="Top" Width="34" Height="34" CornerRadius="10" Margin="0,-4,-4,0">
                                     <Border.Background>
@@ -132,6 +134,7 @@
                                 </StackPanel>
                             </Grid>
                         </Border>
+</Border>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
