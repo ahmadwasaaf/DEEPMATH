@@ -75,6 +75,8 @@ jobs:
           Run 'Arabic' 'Light' $true 'dashboard' '13-dashboard-ar'
           Run 'English' 'Dark' $true 'newparty' '14-new-party'
           Run 'English' 'Dark' $true 'clients' '15-clients'
+          Run 'English' 'Dark' $true 'reportview' '16-reports'
+          Run 'Arabic' 'Light' $true 'reports' '17-reports-ar'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

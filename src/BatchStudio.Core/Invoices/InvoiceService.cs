@@ -116,6 +116,27 @@ public static class InvoiceService
         Path.Combine(d.PartyType == "CLIENTS" ? DatabaseLayout.ArchiveClients : DatabaseLayout.ArchiveSuppliers,
                      SafeName(d.PartyName), SafeName(d.InvoiceNo) + ".xlsx");
 
+    /// <summary>"HALIMA INTERNATIONAL TRADING LIMITED 30,000" (cents only when there are any): the PDF name of an invoice.</summary>
+    public static string PdfBaseName(string party, decimal? amount)
+    {
+        var name = SafeName(string.IsNullOrWhiteSpace(party) ? "Invoice" : party.Trim());
+        if (amount is not { } a) return name;
+        var text = a == decimal.Truncate(a) ? a.ToString("#,##0", System.Globalization.CultureInfo.InvariantCulture)
+                                            : a.ToString("#,##0.00", System.Globalization.CultureInfo.InvariantCulture);
+        return $"{name} {text}";
+    }
+
+    /// <summary>A free path on the Desktop for the invoice PDF ("name 30,000.pdf", then "name 30,000 (2).pdf" ...).</summary>
+    public static string DesktopPdfPath(string party, decimal? amount)
+    {
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        if (string.IsNullOrEmpty(desktop)) desktop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop");
+        var baseName = PdfBaseName(party, amount);
+        var path = Path.Combine(desktop, baseName + ".pdf");
+        for (int i = 2; File.Exists(path); i++) path = Path.Combine(desktop, $"{baseName} ({i}).pdf");
+        return path;
+    }
+
     /// <summary>Most used invoice-number prefix in the history ("Mad" for Mad-1234567); "INV" when there is none.</summary>
     public static string DetectPrefix(IEnumerable<string> invoiceNumbers) =>
         invoiceNumbers.Select(n => n.Trim()).Where(n => n.Contains('-'))

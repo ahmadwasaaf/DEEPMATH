@@ -32,6 +32,7 @@ public sealed partial class MainViewModel : ObservableObject
     public NewInvoiceViewModel NewInvoice { get; }
     public HistoryViewModel History { get; }
     public DashboardViewModel Dashboard { get; }
+    public ReportsViewModel Reports { get; }
 
     [ObservableProperty] private EntityProfile? _activeEntity;
     [ObservableProperty] private object? _currentPage;
@@ -58,6 +59,7 @@ public sealed partial class MainViewModel : ObservableObject
         NewInvoice = new NewInvoiceViewModel(this);
         History = new HistoryViewModel(this);
         Dashboard = new DashboardViewModel(this);
+        Reports = new ReportsViewModel(this);
         foreach (var e in settings.Entities) Entities.Add(e);
         SettingsPage.Refresh();
 
@@ -65,6 +67,7 @@ public sealed partial class MainViewModel : ObservableObject
         Nav.Add(new NavItem { Key = "Nav.Dashboard", Glyph = "\uE9D2", Page = () => Dashboard });
         Nav.Add(new NavItem { Key = "Nav.NewInvoice", Glyph = "\uE710", Page = () => NewInvoice });
         Nav.Add(new NavItem { Key = "Nav.History", Glyph = "\uE81C", Page = () => History });
+        Nav.Add(new NavItem { Key = "Nav.Reports", Glyph = "\uE9F9", Page = () => Reports });
         Nav.Add(new NavItem { Key = "Nav.Suppliers", Glyph = "", Page = () => Page("suppliers") });
         Nav.Add(new NavItem { Key = "Nav.Clients", Glyph = "", Page = () => Page("clients") });
         Nav.Add(new NavItem { Key = "Nav.Items", Glyph = "", Page = () => Page("items") });
@@ -91,6 +94,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (CurrentPage is NewInvoiceViewModel ni) ni.Refresh();
         if (CurrentPage is HistoryViewModel hv) hv.Reload();
         if (CurrentPage is DashboardViewModel dv) dv.Refresh();
+        if (CurrentPage is ReportsViewModel rv) rv.Refresh();
     }
 
     partial void OnActiveEntityChanged(EntityProfile? oldValue, EntityProfile? newValue)

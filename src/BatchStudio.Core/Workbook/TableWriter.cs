@@ -37,6 +37,11 @@ public static class TableWriter
         int newLast = table.Rows.Count + 1;
         int last = Math.Max(oldLast, newLast);
 
+        // new rows look like the rows above them (borders, fonts, wrapping, height; banding kept by copying the row two above)
+        if (newLast > oldLast && oldLast >= 2)
+            for (int r = oldLast + 1; r <= newLast; r++)
+                sheet.CopyRow(r - 2 >= 2 ? r - 2 : oldLast, r, 1, Math.Max(1, lastCol));
+
         for (int i = 0; i < colOf.Length; i++)
         {
             var kind = i < table.Kinds.Count ? table.Kinds[i] : ColumnKind.Text;
@@ -58,7 +63,8 @@ public static class TableWriter
                 var row = r - 2 < table.Rows.Count ? table.Rows[r - 2] : null;
                 var s = row != null && i < row.Length ? row[i] ?? "" : "";
                 var old = src.Text(r, colOf[i]);
-                if (Same(old, s, kind)) { Flush(); continue; }
+                // rows added below the old data were copied from a row above: every cell is written
+                if (!(r > oldLast && oldLast >= 2) && Same(old, s, kind)) { Flush(); continue; }
                 if (runStart < 0) runStart = r;
                 run.Add(ToValue(s, kind));
             }

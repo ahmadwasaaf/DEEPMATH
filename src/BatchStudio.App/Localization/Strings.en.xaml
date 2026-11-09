@@ -266,4 +266,8 @@
     <sys:String x:Key="Rep.Replaced">Invoice {0} was repaired: archived file replaced and history row updated.</sys:String>
     <sys:String x:Key="Act.ViewReportShort">View Report</sys:String>
     <sys:String x:Key="Act.ExportReportShort">Export Report</sys:String>
+    <sys:String x:Key="Nav.Reports">Reports</sys:String>
+    <sys:String x:Key="Reports.Title">Reports</sys:String>
+    <sys:String x:Key="Reports.Hint">Choose a company on the left, then View Report (shown here) or Export Report (PDF on the Desktop).</sys:String>
+    <sys:String x:Key="Reports.Count">{0} companies</sys:String>
 </ResourceDictionary>

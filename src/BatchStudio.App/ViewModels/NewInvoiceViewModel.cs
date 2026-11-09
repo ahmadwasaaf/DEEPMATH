@@ -243,7 +243,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
                                ?? SelectedCategory;
             InvoiceNo = src.InvoiceNo;
             Date = src.Date ?? DateTime.Today;
-            AmountText = src.Total.ToString("0.00", CultureInfo.InvariantCulture);
+            AmountText = FormatMoney(src.Total);
             CountText = src.Lines.Count.ToString(CultureInfo.InvariantCulture);
             PartyDetails = string.Join("\n", new[] { src.PartyName, src.NativeName, src.CategoryText }.Where(x => !string.IsNullOrWhiteSpace(x)));
         }
@@ -498,6 +498,16 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         finally { IsBusy = false; }
     }
 
+    /// <summary>Shows the amount as 30,000 or 30,000.50 (called when the box loses focus).</summary>
+    public void FormatAmount()
+    {
+        if (decimal.TryParse(AmountText.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var a))
+            AmountText = FormatMoney(a);
+    }
+
+    public static string FormatMoney(decimal a) =>
+        a == decimal.Truncate(a) ? a.ToString("#,##0", CultureInfo.InvariantCulture) : a.ToString("#,##0.00", CultureInfo.InvariantCulture);
+
     private bool TryAmount(out decimal amount) =>
         decimal.TryParse(AmountText.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out amount) && amount > 0;
 
@@ -562,9 +572,10 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         IsBusy = true;
         try
         {
-            var pdf = await Task.Run(() => ExcelPdf.Export(SavedPath));
-            Status = Loc.T("Inv.PdfSaved");
-            Shell.Open(pdf);
+            var source = SavedPath;
+            var dest = InvoiceService.DesktopPdfPath(_draft?.PartyName ?? SelectedParty?.Name ?? "", _draft?.Total);
+            var pdf = await Task.Run(() => ExcelPdf.Export(source, dest));
+            Status = Loc.F("Hist.PdfSaved", pdf);
         }
         catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
         finally { IsBusy = false; }

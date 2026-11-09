@@ -153,8 +153,7 @@ public sealed partial class HistoryViewModel : ObservableObject
     {
         if (Selected is not { } r) return;
         if (!r.FileExists) { Status = Loc.F("Hist.FileMissing", r.InvoiceNo); return; }
-        var dest = Path.Combine(Desktop(), InvoiceService.SafeName(r.InvoiceNo) + ".pdf");
-        if (File.Exists(dest) && !Dialogs.Confirm(Loc.F("Hist.ReplacePdf", Path.GetFileName(dest)))) return;
+        var dest = InvoiceService.DesktopPdfPath(r.Name, r.Amount);
         await RunBusy(async () =>
         {
             await Task.Run(() => ExcelPdf.Export(r.ResolvedPath, dest));

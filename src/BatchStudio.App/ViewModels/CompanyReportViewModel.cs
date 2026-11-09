@@ -49,6 +49,12 @@ public sealed partial class CompanyReportViewModel : ObservableObject
     [ObservableProperty] private bool _isBusy;
 
     public bool IsCustom => Period == HistoryPeriods.CustomRange;
+
+    /// <summary>Shown inside the Reports page (no Back button).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowBack))]
+    private bool _embedded;
+    public bool ShowBack => !Embedded;
     public string TypeText => Type == "SUPPLIERS" ? Loc.T("Nav.Suppliers") : Loc.T("Nav.Clients");
     private CompanyReport? _report;
 
@@ -147,8 +153,7 @@ public sealed partial class CompanyReportViewModel : ObservableObject
         line ??= Selected;
         if (line == null) return;
         if (!line.FileExists) { Status = Loc.F("Hist.FileMissing", line.InvoiceNo); return; }
-        var dest = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), InvoiceService.SafeName(line.InvoiceNo) + ".pdf");
-        if (File.Exists(dest) && !Dialogs.Confirm(Loc.F("Hist.ReplacePdf", Path.GetFileName(dest)))) return;
+        var dest = InvoiceService.DesktopPdfPath(line.Record.Name, line.Amount);
         IsBusy = true;
         try
         {

@@ -4,6 +4,14 @@
              xmlns:svc="clr-namespace:BatchStudio.App.Services">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <Style x:Key="CenterCell" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="CenterEdit" TargetType="TextBox">
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
         <Style x:Key="FieldLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
             <Setter Property="FontSize" Value="12" />
@@ -120,7 +128,7 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                                <TextBox Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" FontSize="16" FlowDirection="LeftToRight" />
+                                <TextBox Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" FontSize="16" FlowDirection="LeftToRight" LostFocus="OnAmountLostFocus" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="{DynamicResource Inv.Count}" Style="{StaticResource FieldLabel}" />
@@ -231,9 +239,12 @@
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="{StaticResource Inv.Code}" Binding="{Binding Code}" Width="110" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Desc}" Binding="{Binding Description}" Width="*" MinWidth="220" />
-                                <DataGridTextColumn Header="{StaticResource Inv.Qty}" Binding="{Binding Quantity}" Width="70" />
-                                <DataGridTextColumn Header="{StaticResource Inv.Price}" Binding="{Binding UnitPrice, StringFormat=N2}" Width="110" />
-                                <DataGridTextColumn Header="{StaticResource Inv.LineAmount}" Binding="{Binding Amount, Mode=OneWay, StringFormat=N2}" Width="130" IsReadOnly="True" />
+                                <DataGridTextColumn Header="{StaticResource Inv.Qty}" Binding="{Binding Quantity}" Width="80"
+                                                    ElementStyle="{StaticResource CenterCell}" EditingElementStyle="{StaticResource CenterEdit}" />
+                                <DataGridTextColumn Header="{StaticResource Inv.Price}" Binding="{Binding UnitPrice, StringFormat=N2}" Width="120"
+                                                    ElementStyle="{StaticResource CenterCell}" EditingElementStyle="{StaticResource CenterEdit}" />
+                                <DataGridTextColumn Header="{StaticResource Inv.LineAmount}" Binding="{Binding Amount, Mode=OneWay, StringFormat=N2}" Width="140" IsReadOnly="True"
+                                                    ElementStyle="{StaticResource CenterCell}" />
                             </DataGrid.Columns>
                         </DataGrid>
                     </DockPanel>
