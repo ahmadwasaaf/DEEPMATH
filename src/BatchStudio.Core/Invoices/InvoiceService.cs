@@ -177,6 +177,61 @@ public static class InvoiceService
     }
 
     /// <summary>
+    /// MASS INVOICE: writes many invoices, then records all of them in INVOICE HISTORY in one workbook change
+    /// (one backup, one save). A failing invoice is reported and the others go on; when the history cannot be
+    /// written, the files of this batch are removed again and every row is reported as failed.
+    /// </summary>
+    /// <param name="progress">Called after each invoice file: index, archived file (null on failure), error.</param>
+    public static List<BatchOutcome> ArchiveBatch(Workspace ws, IReadOnlyList<InvoiceDraft> drafts, int keepBackups = 30,
+        Action<int, string?, string?>? progress = null)
+    {
+        ws.Refresh();
+        var used = File.Exists(ws.HistoryPath) ? InvoiceHistoryBook.InvoiceNumbers(ws.HistoryPath) : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var results = new List<BatchOutcome>();
+        for (int i = 0; i < drafts.Count; i++)
+        {
+            var d = drafts[i];
+            var res = new BatchOutcome { Index = i, Draft = d };
+            results.Add(res);
+            try
+            {
+                if (string.IsNullOrWhiteSpace(d.PartyName)) throw new InvalidOperationException("Choose a supplier or client.");
+                if (string.IsNullOrWhiteSpace(d.InvoiceNo)) throw new InvalidOperationException("Invoice number is empty.");
+                if (used.Contains(d.InvoiceNo)) throw new InvalidOperationException($"Invoice number {d.InvoiceNo} already exists in INVOICE HISTORY.");
+                var full = Path.Combine(ws.ArchiveRoot, ArchiveRelativePath(d));
+                if (File.Exists(full)) throw new InvalidOperationException($"An archived invoice already exists:\n{full}");
+                WriteInvoiceFile(d, full);
+                used.Add(d.InvoiceNo);
+                res.File = full;
+            }
+            catch (Exception ex) { res.Error = ex.Message; }
+            progress?.Invoke(i, res.File, res.Error);
+        }
+
+        var written = results.Where(r => r.File != null).ToList();
+        if (written.Count == 0) return results;
+        try
+        {
+            ws.Change(ed =>
+            {
+                ws.SyncArchiveConfig(ed);
+                foreach (var r in written) InvoiceHistoryBook.Append(ed, NewRecord(r.Draft, r.File!));
+            }, keepBackups);
+            foreach (var r in written) r.Recorded = true;
+        }
+        catch (Exception ex)
+        {
+            foreach (var r in written)
+            {
+                try { File.Delete(r.File!); } catch { }
+                r.File = null;
+                r.Error = ex is FileLockedException fl ? $"INVOICE HISTORY is locked ({Path.GetFileName(fl.FilePath)})." : ex.Message;
+            }
+        }
+        return results;
+    }
+
+    /// <summary>
     /// Smart Invoice Repair: writes the repaired invoice over its archived file (the original is kept as a rollback
     /// copy until the history row is updated) and updates the same INVOICE HISTORY row. The invoice number cannot change.
     /// </summary>
@@ -276,4 +331,15 @@ public static class InvoiceService
 
     /// <summary>Resolves a history "File Path" (relative to the archive, or an old absolute path).</summary>
     public static string ResolveArchivePath(string archiveRoot, string stored) => InvoiceHistoryBook.ResolvePath(archiveRoot, stored);
+}
+
+/// <summary>Result of one invoice of a MASS INVOICE run.</summary>
+public sealed class BatchOutcome
+{
+    public int Index { get; init; }
+    public required InvoiceDraft Draft { get; init; }
+    public string? File { get; set; }
+    public string? Error { get; set; }
+    /// <summary>True when the invoice is archived and recorded in INVOICE HISTORY.</summary>
+    public bool Recorded { get; set; }
 }

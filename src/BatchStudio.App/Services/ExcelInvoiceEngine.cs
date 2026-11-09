@@ -21,6 +21,32 @@ public static class ExcelInvoiceEngine
     /// <summary>Why the last invoice was written without Excel (null when Excel wrote it).</summary>
     public static string? LastFallbackReason { get; private set; }
 
+    // ---- MASS INVOICE: one hidden Excel and one snapshot of the workbook for many invoices
+    [ThreadStatic] private static Session? _session;
+
+    private sealed class Session : IDisposable
+    {
+        public dynamic? App;
+        public string? BookPath;
+        public byte[]? Book;
+        public void Dispose()
+        {
+            if (_session == this) _session = null;
+            if (App != null)
+            {
+                try { App.Quit(); } catch { }
+                try { Marshal.FinalReleaseComObject(App); } catch { }
+                App = null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps one hidden Excel open for the invoices written on this thread until disposed (much faster for a batch).
+    /// The workbook is read once, so every invoice of the batch uses the same snapshot.
+    /// </summary>
+    public static IDisposable BeginSession() => _session = new Session();
+
     public static void Fill(InvoiceDraft d, string outputPath)
     {
         LastFallbackReason = null;
@@ -59,10 +85,25 @@ public static class ExcelInvoiceEngine
 
         var tmpBook = Path.Combine(Path.GetTempPath(), $"BS_tpl_{Guid.NewGuid():N}{Path.GetExtension(d.WorkbookPath)}");
         var tmpOut = Path.Combine(Path.GetTempPath(), $"BS_inv_{Guid.NewGuid():N}.xlsx");
-        File.WriteAllBytes(tmpBook, PackageRepair.ReadAllShared(d.WorkbookPath!));
+        var session = _session;
+        byte[] bytes;
+        if (session != null && session.Book != null && string.Equals(session.BookPath, d.WorkbookPath, StringComparison.OrdinalIgnoreCase))
+            bytes = session.Book;
+        else
+        {
+            bytes = PackageRepair.ReadAllShared(d.WorkbookPath!);
+            if (session != null) { session.Book = bytes; session.BookPath = d.WorkbookPath; }
+        }
+        File.WriteAllBytes(tmpBook, bytes);
 
         var type = Type.GetTypeFromProgID("Excel.Application")!;
-        dynamic app = Activator.CreateInstance(type)!;
+        bool shared = session != null;
+        if (shared && session!.App != null)
+        {
+            try { _ = session.App.Workbooks.Count; }          // still alive?
+            catch { try { Marshal.FinalReleaseComObject(session.App); } catch { } session.App = null; }
+        }
+        dynamic app = shared ? (session!.App ??= Activator.CreateInstance(type)!) : Activator.CreateInstance(type)!;
         dynamic? wb = null, outWb = null;   // outWb kept for the cleanup below
         try
         {
@@ -197,9 +238,12 @@ public static class ExcelInvoiceEngine
         {
             try { outWb?.Close(false); } catch { }
             try { wb?.Close(false); } catch { }
-            try { app.Quit(); } catch { }
             try { if (wb != null) Marshal.FinalReleaseComObject(wb); } catch { }
-            try { Marshal.FinalReleaseComObject(app); } catch { }
+            if (!shared)
+            {
+                try { app.Quit(); } catch { }
+                try { Marshal.FinalReleaseComObject(app); } catch { }
+            }
             try { File.Delete(tmpBook); } catch { }
             try { if (File.Exists(tmpOut)) File.Delete(tmpOut); } catch { }
         }

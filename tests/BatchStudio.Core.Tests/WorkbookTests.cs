@@ -217,6 +217,48 @@ public class WorkbookTests
     }
 
     [Fact]
+    public void Mass_invoice_archives_many_and_records_them_in_one_change()
+    {
+        var (dir, book) = SmallBook();
+        try
+        {
+            var ws = Workspace.Open(book, Path.Combine(dir, "state"));
+            int before = InvoiceHistoryBook.Read(ws.HistoryPath).Count;
+            var tpl = Path.Combine(dir, "INVOICE.xlsx");
+            File.Copy(Fx("INVOICE.xlsx"), tpl);
+            var map = TemplateDetector.DetectFile(tpl);
+            InvoiceDraft Draft(string party, string no, decimal amount, int seed) => new()
+            {
+                TemplatePath = tpl, Map = map, PartyType = "SUPPLIERS",
+                PartyName = party, Address = "Company Address:\nX", Bank = "PAYMENT & BANKING INSTRUCTIONS\nBANK: Y",
+                CategoryText = "Lighting | الإضاءة", InvoiceNo = no, Date = new DateTime(2026, 11, 9), Target = amount,
+                Lines = InvoiceAllocator.Allocate(amount, 5, Pool, null, new Random(seed)),
+            };
+            var drafts = new List<InvoiceDraft>
+            {
+                Draft("ALPHA CO", "Mad-1000001", 10000m, 1),
+                Draft("BETA CO", "Mad-1000002", 20500m, 2),
+                Draft("ALPHA CO", "Mad-1000001", 9000m, 3),   // same number again: refused, the others go on
+                Draft("GAMMA CO", "Mad-1000003", 7500m, 4),
+            };
+            var seen = new List<int>();
+            var res = InvoiceService.ArchiveBatch(ws, drafts, progress: (i, f, e) => seen.Add(i));
+            Assert.Equal(new[] { 0, 1, 2, 3 }, seen);
+            Assert.True(res[0].Recorded && res[1].Recorded && res[3].Recorded);
+            Assert.False(res[2].Recorded);
+            Assert.NotNull(res[2].Error);
+            Assert.True(File.Exists(res[1].File));
+
+            var after = InvoiceHistoryBook.Read(ws.HistoryPath);
+            Assert.Equal(before + 3, after.Count);
+            Assert.Equal(new[] { "Mad-1000001", "Mad-1000002", "Mad-1000003" }, after.Skip(before).Select(r => r.InvoiceNo).ToArray());
+            Assert.Equal($"INV-{before + 3}", after[^1].No);
+            Assert.Equal(7500m, after[^1].Amount);
+        }
+        finally { Clean(dir); }
+    }
+
+    [Fact]
     public void Archiving_writes_the_history_row_into_the_workbook()
     {
         var (dir, book) = SmallBook();
