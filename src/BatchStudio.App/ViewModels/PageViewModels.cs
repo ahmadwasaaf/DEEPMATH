@@ -327,6 +327,18 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void OpenEntityFolder(EntityRowViewModel? row)
+    {
+        if (row != null && Workspace.FindWorkbook(row.Entity.DatabasePath) is { } book) Shell.ShowInFolder(book);
+    }
+
+    [RelayCommand]
+    private void OpenEntityWorkbook(EntityRowViewModel? row)
+    {
+        if (row != null && Workspace.FindWorkbook(row.Entity.DatabasePath) is { } book) Shell.Open(book);
+    }
+
+    [RelayCommand]
     private void ChangePath(EntityRowViewModel? row)
     {
         if (row == null) return;

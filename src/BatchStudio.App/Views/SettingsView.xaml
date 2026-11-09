@@ -81,6 +81,22 @@
                                                     <TextBlock Text="{DynamicResource Set.ChangeFolder}" />
                                                 </StackPanel>
                                             </Button>
+                                            <Button DockPanel.Dock="Right" Margin="8,0,0,0"
+                                                    Command="{Binding DataContext.OpenEntityWorkbookCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" FontSize="12" Margin="0,0,8,0" />
+                                                    <TextBlock Text="{DynamicResource Home.OpenWorkbook}" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button DockPanel.Dock="Right" Margin="8,0,0,0"
+                                                    Command="{Binding DataContext.OpenEntityFolderCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE838;" FontSize="12" Margin="0,0,8,0" />
+                                                    <TextBlock Text="{DynamicResource Common.OpenFolder}" />
+                                                </StackPanel>
+                                            </Button>
                                             <TextBlock Style="{StaticResource Icon}" Text="&#xE7BA;" FontSize="13" Margin="0,0,6,0" Foreground="{StaticResource BadBrush}"
                                                        ToolTip="{DynamicResource Set.FolderNotFound}">
                                                 <TextBlock.Visibility>
