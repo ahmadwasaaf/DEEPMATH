@@ -328,8 +328,8 @@
     <sys:String x:Key="Home.TotalValue">Total Transactions Value</sys:String>
     <sys:String x:Key="Home.TotalInvoices">Total Invoices Count</sys:String>
     <sys:String x:Key="Home.Pulse">BUSINESS PULSE</sys:String>
-    <sys:String x:Key="Home.PulseInvoices">INVOICES</sys:String>
-    <sys:String x:Key="Home.PulseValue">TRANSACTIONS</sys:String>
+    <sys:String x:Key="Home.PulseInvoices">TOTAL INVOICES</sys:String>
+    <sys:String x:Key="Home.PulseValue">TOTAL TRANSACTIONS</sys:String>
     <sys:String x:Key="Home.PulseTopSupplier">TOP SUPPLIER</sys:String>
     <sys:String x:Key="Home.PulseTopClient">TOP CLIENT</sys:String>
 </ResourceDictionary>
