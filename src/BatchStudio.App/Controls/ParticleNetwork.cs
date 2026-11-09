@@ -44,6 +44,7 @@ public sealed class ParticleNetwork : FrameworkElement
     public ParticleNetwork()
     {
         IsHitTestVisible = false;
+        ClipToBounds = true;
         _timer.Tick += (_, _) => Step();
         Loaded += (_, _) => { BackgroundFx.Changed += OnSettingsChanged; Rebuild(); Restart(); };
         Unloaded += (_, _) => { BackgroundFx.Changed -= OnSettingsChanged; _timer.Stop(); };
@@ -299,7 +300,7 @@ public sealed class ParticleNetwork : FrameworkElement
             double f = 0.15 + 0.35 * (0.5 + 0.5 * Math.Sin(_t * 1.2 + s.Phase));
             dc.DrawEllipse(Dot(f), null, new Point(s.X, s.Y), s.R, s.R);
         }
-        double cx = w / 2, cy = h / 2, rad = Math.Min(w, h) * 0.36;
+        double cx = w / 2, cy = h * 0.56, rad = Math.Min(w, h) * 0.36;
         double tiltX = 0.35, tiltY = 0;
         if (_pointer is { } m) { tiltX += (m.Y - cy) / h * 0.8; tiltY = (m.X - cx) / w * 0.8; }
         double ay = _t * 0.35 + tiltY, cyA = Math.Cos(ay), syA = Math.Sin(ay), cxA = Math.Cos(tiltX), sxA = Math.Sin(tiltX);

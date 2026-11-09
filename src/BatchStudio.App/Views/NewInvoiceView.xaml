@@ -257,7 +257,7 @@
                                 </Style>
                             </StackPanel.Style>
                             <Border Height="1" Background="{DynamicResource ControlStrokeColorDefaultBrush}" Margin="0,0,0,10" />
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="300">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="230">
                                 <ItemsControl ItemsSource="{Binding PartyFields}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
