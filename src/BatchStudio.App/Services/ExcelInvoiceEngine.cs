@@ -63,7 +63,7 @@ public static class ExcelInvoiceEngine
 
         var type = Type.GetTypeFromProgID("Excel.Application")!;
         dynamic app = Activator.CreateInstance(type)!;
-        dynamic? wb = null, outWb = null;
+        dynamic? wb = null, outWb = null;   // outWb kept for the cleanup below
         try
         {
             app.Visible = false;
@@ -155,42 +155,39 @@ public static class ExcelInvoiceEngine
 
             app.Calculate();
 
-            // ---- copy the invoice to its own workbook, exactly like ArchiveEngine
-            // the new workbook is found by comparing the open workbooks before / after the copy:
-            // in a hidden Excel, ActiveWorkbook can still be the source workbook (would archive the whole system file)
-            var before = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (dynamic b in app.Workbooks) before.Add((string)b.Name);
-            ws.Copy();
-            foreach (dynamic b in app.Workbooks)
-                if (!before.Contains((string)b.Name)) { outWb = b; break; }
-            if (outWb == null) throw new InvalidOperationException("Excel did not create the invoice workbook.");
-            // only the invoice sheet may stay in the archived file
-            for (int i = (int)outWb.Worksheets.Count; i >= 1; i--)
-            {
-                dynamic sh = outWb.Worksheets[i];
-                if (string.Equals((string)sh.Name, (string)ws.Name, StringComparison.OrdinalIgnoreCase)) continue;
-                try { sh.Visible = -1; sh.Delete(); } catch { }
-            }
-            if ((int)outWb.Worksheets.Count != 1 || (int)outWb.Sheets.Count != 1)
-                throw new InvalidOperationException("The invoice workbook has more than one sheet.");
-            dynamic outWs = outWb.Worksheets[1];
-            try { for (int i = (int)outWs.OLEObjects().Count; i >= 1; i--) outWs.OLEObjects(i).Delete(); } catch { }
+            // ---- the invoice becomes its own workbook. We already work on a private copy of the system file, so instead of
+            // Worksheet.Copy (whose new workbook a hidden Excel does not reliably hand back) every other sheet is removed
+            // from that copy and it is saved as .xlsx: the invoice sheet keeps all its shapes, lines, row heights and colours.
+            FreezeFormulas(ws);                       // values first: the formulas point at sheets that are about to go
+            try { for (int i = (int)ws.OLEObjects().Count; i >= 1; i--) ws.OLEObjects(i).Delete(); } catch { }
             try
             {
-                for (int i = (int)outWs.Shapes.Count; i >= 1; i--)
+                for (int i = (int)ws.Shapes.Count; i >= 1; i--)
                 {
-                    dynamic shp = outWs.Shapes.Item(i);
+                    dynamic shp = ws.Shapes.Item(i);
                     string onAction = "";
                     try { onAction = Convert.ToString(shp.OnAction) ?? ""; } catch { }
                     if (onAction.Length > 0) shp.Delete();
                 }
             }
             catch { }
-            FreezeFormulas(outWs);
-            CleanLinks(outWb);
-            outWb.SaveAs(tmpOut, 51);     // xlOpenXMLWorkbook
-            outWb.Close(false);
-            outWb = null;
+            try { wb.Unprotect(); } catch { }
+            string keep = (string)ws.Name;
+            try { ws.Visible = -1; ws.Activate(); } catch { }
+            for (int i = (int)wb.Sheets.Count; i >= 1; i--)
+            {
+                dynamic sh = wb.Sheets[i];
+                if (string.Equals((string)sh.Name, keep, StringComparison.OrdinalIgnoreCase)) continue;
+                try { sh.Visible = -1; } catch { }
+                try { sh.Delete(); } catch { }
+            }
+            if ((int)wb.Sheets.Count != 1)
+                throw new InvalidOperationException($"Could not reduce the workbook to the invoice sheet ({(int)wb.Sheets.Count} sheets left).");
+            CleanLinks(wb);
+            try { ws.Range["A1"].Select(); } catch { }
+            wb.SaveAs(tmpOut, 51);     // xlOpenXMLWorkbook (no macros)
+            wb.Close(false);
+            wb = null;
 
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
             if (File.Exists(outputPath)) File.Delete(outputPath);
@@ -417,7 +414,7 @@ public static class ExcelInvoiceEngine
                 dynamic nm = book.Names.Item(j);
                 string refers = "";
                 try { refers = Convert.ToString(nm.RefersTo) ?? ""; } catch { }
-                if (refers.Contains('[')) try { nm.Delete(); } catch { }
+                if (refers.Contains('[') || refers.Contains("#REF")) try { nm.Delete(); } catch { }
             }
         }
         catch { }
