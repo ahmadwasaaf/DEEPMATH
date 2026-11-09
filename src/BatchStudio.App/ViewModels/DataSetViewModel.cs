@@ -264,6 +264,36 @@ public sealed partial class DataSetViewModel : ObservableObject
         Table.Rows.Add(row);
     }
 
+    /// <summary>The values (header order) of the record with this ID, or null.</summary>
+    public string[]? RecordValues(string id)
+    {
+        if (Table == null) return null;
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted) continue;
+            if (!string.Equals((r[0] as string ?? "").Trim(), id.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+            var arr = new string[Table.Columns.Count];
+            for (int i = 0; i < arr.Length; i++) arr[i] = r[i] as string ?? "";
+            return arr;
+        }
+        return null;
+    }
+
+    /// <summary>Replaces the values of the record with this ID (saved by the normal sync / SaveAsync).</summary>
+    public bool UpdateRecord(string id, string[] values)
+    {
+        if (Table == null) return false;
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted) continue;
+            if (!string.Equals((r[0] as string ?? "").Trim(), id.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+            for (int i = 1; i < Table.Columns.Count && i < values.Length; i++)
+                if (!string.Equals(r[i] as string ?? "", values[i] ?? "", StringComparison.Ordinal)) r[i] = values[i] ?? "";
+            return true;
+        }
+        return false;
+    }
+
     // ---------------------------------------------------------------- commands
     [RelayCommand]
     private void AddRow()

@@ -79,6 +79,10 @@ jobs:
           Run 'Arabic' 'Light' $true 'reports' '17-reports-ar'
           Run 'English' 'Dark' $true 'mass' '18-mass'
           Run 'Arabic' 'Light' $true 'mass' '19-mass-ar'
+          Run 'English' 'Dark' $true 'home-sphere' '20-bg-sphere'
+          Run 'English' 'Dark' $true 'home-waves' '21-bg-waves'
+          Run 'English' 'Dark' $true 'home-datastream' '22-bg-stream'
+          Run 'English' 'Dark' $true 'newinvoice-details' '23-newinvoice-details'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''
@@ -122,7 +126,7 @@ jobs:
         if: hashFiles('out/*.exe') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: BatchStudio-Setup
+          name: DEEPMATH-Setup
           path: out/*.exe
 
       - name: Release
@@ -131,8 +135,8 @@ jobs:
         with:
           tag_name: v${{ steps.installer.outputs.version }}
           target_commitish: ${{ github.sha }}
-          name: BATCH STUDIO ${{ steps.installer.outputs.version }}
-          body: Download **BatchStudio-Setup-${{ steps.installer.outputs.version }}.exe** below and run it.
+          name: DEEPMATH ${{ steps.installer.outputs.version }}
+          body: Download **DEEPMATH-Setup-${{ steps.installer.outputs.version }}.exe** below and run it.
           files: out/*.exe
           overwrite_files: true
           make_latest: true

@@ -8,7 +8,12 @@
     <!-- WPF0001: built-in Fluent theme (ThemeMode) is marked experimental -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationIcon>Assets\deepmath.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\deepmath.ico" />
+    <Resource Include="Assets\deepmath.png" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
   </ItemGroup>

@@ -53,6 +53,8 @@ public sealed partial class LineViewModel : ObservableObject
 public sealed partial class NewFieldViewModel : ObservableObject
 {
     public required string Caption { get; init; }
+    /// <summary>Column of the field in the sheet (party details editor).</summary>
+    public int Index { get; init; }
     public bool IsLong { get; init; }
     public IReadOnlyList<string>? Options { get; init; }
     public bool IsChoice => Options != null;
@@ -91,6 +93,13 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [ObservableProperty] private bool _hasLines;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _partyDetails = "";
+    /// <summary>All fields of the selected supplier / client, editable in the expanded details panel.</summary>
+    public ObservableCollection<NewFieldViewModel> PartyFields { get; } = [];
+    [ObservableProperty] private bool _detailsExpanded;
+    [ObservableProperty] private bool _partyDirty;
+    public bool CanEditParty => PartyFields.Count > 0 && !IsRepair;
+    private string[] _partyOriginal = [];
+    private string? _partyId;
     [ObservableProperty] private string _netText = "";
     [ObservableProperty] private string _vatText = "";
     [ObservableProperty] private string _totalText = "";
@@ -110,7 +119,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     private string _repairNo = "";
     private bool _suspendClear;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsNormal), nameof(GenerateText))]
+    [NotifyPropertyChangedFor(nameof(IsNormal), nameof(GenerateText), nameof(CanEditParty))]
     private bool _isRepair;
     [ObservableProperty] private string _repairInfo = "";
     public bool IsNormal => !IsRepair;
@@ -179,13 +188,13 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     partial void OnSelectedPartyChanged(Party? value)
     {
         ClearLines();
-        if (value == null) { if (!_suspendClear) PartyDetails = ""; return; }
+        if (value == null) { if (!_suspendClear) { PartyDetails = ""; LoadPartyFields(null); } return; }
+        // collapsed view: name, native name, category; everything else in the expandable panel
         var parts = new List<string> { value.Name };
         if (value.NativeName != null) parts.Add(value.NativeName);
         if (value.CategoryText != null) parts.Add(value.CategoryText);
-        if (value.Address != null) parts.Add(value.Address);
-        if (value.Bank != null) parts.Add(value.Bank);
         PartyDetails = string.Join("\n", parts);
+        LoadPartyFields(value);
         if (_suspendClear) return;
         SelectedCategory = InvoiceService.CategoryFor(value, Categories) ?? SelectedCategory;
         // supplier's default template (column DEFAULT TEMPLATE)
@@ -203,6 +212,99 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     }
 
     partial void OnSelectedCategoryChanged(CategoryInfo? value) => ClearLines();
+
+    // ------------------------------------------------------------------ party details (expand / edit / save)
+    private void LoadPartyFields(Party? party)
+    {
+        foreach (var f in PartyFields) f.PropertyChanged -= OnPartyFieldChanged;
+        PartyFields.Clear();
+        PartyDirty = false;
+        _partyId = null;
+        _partyOriginal = [];
+        var page = PartyPage;
+        if (party != null && page != null && party.Id.Length > 0 && page.RecordValues(party.Id) is { } values)
+        {
+            var headers = page.Session.Current.Headers;
+            _partyId = party.Id;
+            _partyOriginal = values;
+            for (int i = 1; i < headers.Count && i < values.Length; i++)
+            {
+                var h = headers[i];
+                var options = main.OptionsFor(page.Session.Definition.Key, h, []);
+                if (options != null && values[i].Length > 0 && !options.Contains(values[i])) options = [values[i], .. options];
+                var f = new NewFieldViewModel
+                {
+                    Caption = h, Options = options, Value = values[i], Index = i,
+                    IsLong = h.Contains("Address", StringComparison.OrdinalIgnoreCase) || h.Contains("Bank", StringComparison.OrdinalIgnoreCase) ||
+                             h.Contains("Activit", StringComparison.OrdinalIgnoreCase),
+                };
+                f.PropertyChanged += OnPartyFieldChanged;
+                PartyFields.Add(f);
+            }
+        }
+        OnPropertyChanged(nameof(CanEditParty));
+    }
+
+    private void OnPartyFieldChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(NewFieldViewModel.Value)) return;
+        PartyDirty = PartyFields.Any(f => f.Index < _partyOriginal.Length && !string.Equals(f.Value, _partyOriginal[f.Index], StringComparison.Ordinal));
+    }
+
+    [RelayCommand]
+    private void ToggleDetails() => DetailsExpanded = !DetailsExpanded;
+
+    /// <summary>Saves the edited supplier / client into its sheet; the invoice keeps its lines and uses the new details.</summary>
+    [RelayCommand]
+    private async Task SavePartyDetailsAsync()
+    {
+        var page = PartyPage;
+        if (page == null || _partyId == null || !PartyDirty) return;
+        var values = (string[])_partyOriginal.Clone();
+        foreach (var f in PartyFields) if (f.Index < values.Length) values[f.Index] = f.Value.Trim();
+        var headers = page.Session.Current.Headers;
+        int nameCol = headers.FindIndex(h => h.Contains("Name", StringComparison.OrdinalIgnoreCase) &&
+                                             !h.Contains("Chinese", StringComparison.OrdinalIgnoreCase) && !h.Contains("Native", StringComparison.OrdinalIgnoreCase));
+        if (nameCol < 0) nameCol = 1;
+        var name = nameCol < values.Length ? values[nameCol] : "";
+        if (name.Length == 0) { Status = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
+        var others = (IsClients ? _clients : _suppliers).Where(p => !string.Equals(p.Id, _partyId, StringComparison.OrdinalIgnoreCase));
+        if (others.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase))) { Status = Loc.F("Inv.PartyExists", name); return; }
+
+        IsBusy = true;
+        Status = Loc.T("Status.SavingWorkbook");
+        try
+        {
+            page.UpdateRecord(_partyId, values);
+            await page.SaveAsync();
+        }
+        finally { IsBusy = false; }
+
+        // reload the parties without clearing the generated lines
+        var id = _partyId;
+        _suspendClear = true;
+        try
+        {
+            RefreshCore();
+            SelectedParty = Parties.FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.OrdinalIgnoreCase));
+        }
+        finally { _suspendClear = false; }
+        if (SelectedParty is { } party)
+        {
+            var parts = new List<string> { party.Name };
+            if (party.NativeName != null) parts.Add(party.NativeName);
+            if (party.CategoryText != null) parts.Add(party.CategoryText);
+            PartyDetails = string.Join("\n", parts);
+            if (_draft != null && _repair == null)
+            {
+                _draft.PartyName = party.Name;
+                _draft.NativeName = party.NativeName;
+                _draft.Address = party.Address;
+                _draft.Bank = party.Bank;
+            }
+        }
+        Status = page.IsDirty ? page.Status : Loc.F("Inv.PartySaved", name);
+    }
 
     private void ClearLines()
     {

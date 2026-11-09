@@ -4,6 +4,7 @@
         xmlns:vm="clr-namespace:BatchStudio.App.ViewModels"
         xmlns:views="clr-namespace:BatchStudio.App.Views"
         Title="{DynamicResource App.Title}"
+        Icon="pack://application:,,,/BatchStudio;component/Assets/deepmath.ico"
         Width="1280" Height="800" MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         FontFamily="Segoe UI Variable Text, Segoe UI">
@@ -33,15 +34,14 @@
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
             <DockPanel Margin="12,16,12,12" LastChildFill="True">
                 <StackPanel DockPanel.Dock="Top" Margin="4,0,4,16">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
-                        <Border Width="34" Height="34" CornerRadius="8" Background="{StaticResource BrandBrush}">
-                            <TextBlock Text="BS" Foreground="White" FontWeight="Bold" FontSize="14"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" FlowDirection="LeftToRight" />
-                        </Border>
-                        <TextBlock Text="BATCH STUDIO" FontWeight="SemiBold" FontSize="16" Margin="10,0,0,0"
-                                   VerticalAlignment="Center" FlowDirection="LeftToRight" />
+                    <!-- DEEPMATH brand: gradient D mark + name + tagline -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20" FlowDirection="LeftToRight">
+                        <Image Source="pack://application:,,,/BatchStudio;component/Assets/deepmath.png" Width="38" Height="38" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="DEEPMATH" FontWeight="Bold" FontSize="17" />
+                            <TextBlock Text="INTELLIGENT ACCOUNTING SYSTEM" FontSize="8.5" Opacity="0.6" Margin="0,1,0,0" />
+                        </StackPanel>
                     </StackPanel>
-                    <TextBlock Text="{DynamicResource Entity.Label}" Style="{StaticResource Muted}" Margin="0,0,0,4" />
                     <ComboBox ItemsSource="{Binding Entities}" SelectedItem="{Binding ActiveEntity}" DisplayMemberPath="Name" />
                     <Button Command="{Binding ShowSetupCommand}" Margin="0,6,0,0" HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal">
@@ -51,7 +51,7 @@
                     </Button>
                 </StackPanel>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="v0.8.3 · excel engine" Style="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" />
+                <TextBlock DockPanel.Dock="Bottom" Text="{Binding VersionText}" Style="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" />
 
                 <ListBox ItemsSource="{Binding Nav}" SelectedItem="{Binding SelectedNav}"
                          Background="Transparent" BorderThickness="0"

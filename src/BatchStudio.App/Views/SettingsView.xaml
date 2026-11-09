@@ -1,6 +1,7 @@
 <UserControl x:Class="BatchStudio.App.Views.SettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctl="clr-namespace:BatchStudio.App.Controls">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="820" HorizontalAlignment="Left">
             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
@@ -32,6 +33,66 @@
                             <RadioButton Content="{DynamicResource Set.Dark}" IsChecked="{Binding IsLight, Converter={StaticResource InverseBool}}" GroupName="theme" Margin="0,0,20,0" />
                             <RadioButton Content="{DynamicResource Set.Light}" IsChecked="{Binding IsLight}" GroupName="theme" />
                         </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- ========== Home background (particle animation) ========== -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Command="{Binding ResetBackgroundCommand}" Content="{DynamicResource Bg.Reset}" />
+                        <TextBlock Text="{DynamicResource Bg.Title}" Style="{StaticResource SectionTitle}" />
+                    </DockPanel>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="300" />
+                        </Grid.ColumnDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="{DynamicResource Bg.Show}" VerticalAlignment="Center" />
+                            <CheckBox Grid.Row="0" Grid.Column="1" IsChecked="{Binding BgEnabled}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Text="{DynamicResource Bg.Style}" VerticalAlignment="Center" />
+                            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding BgStyles}" SelectedIndex="{Binding BgStyleIndex}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
+                            <TextBlock Grid.Row="2" Text="{DynamicResource Bg.Speed}" VerticalAlignment="Center" />
+                            <Slider Grid.Row="2" Grid.Column="1" Minimum="0.2" Maximum="3" Value="{Binding BgSpeed}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="3" Text="{DynamicResource Bg.Opacity}" VerticalAlignment="Center" />
+                            <Slider Grid.Row="3" Grid.Column="1" Minimum="0.05" Maximum="1" Value="{Binding BgOpacity}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="4" Text="{DynamicResource Bg.Density}" VerticalAlignment="Center" />
+                            <Slider Grid.Row="4" Grid.Column="1" Minimum="0.4" Maximum="2" Value="{Binding BgDensity}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="5" Text="{DynamicResource Bg.Color}" VerticalAlignment="Center" />
+                            <DockPanel Grid.Row="5" Grid.Column="1" VerticalAlignment="Center">
+                                <Button DockPanel.Dock="Right" Command="{Binding PickBgColorCommand}" Margin="8,0,0,0" Padding="4" ToolTip="{DynamicResource Bg.Color.Custom}">
+                                    <Border Width="20" Height="20" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                            Background="{Binding BgCustomHex}" />
+                                </Button>
+                                <ComboBox ItemsSource="{Binding BgColors}" SelectedIndex="{Binding BgColorIndex}" HorizontalAlignment="Stretch" />
+                            </DockPanel>
+                            <TextBlock Grid.Row="6" Text="{DynamicResource Bg.Mouse}" VerticalAlignment="Center" />
+                            <CheckBox Grid.Row="6" Grid.Column="1" IsChecked="{Binding BgMouse}" VerticalAlignment="Center" />
+                        </Grid>
+                        <!-- live preview -->
+                        <Border Grid.Column="2" CornerRadius="10" Background="#181A1F" ClipToBounds="True" Height="250" VerticalAlignment="Top"
+                                MouseMove="OnPreviewMouseMove" MouseLeave="OnPreviewMouseLeave">
+                            <Grid>
+                                <ctl:ParticleNetwork x:Name="Preview" Tint="White" />
+                                <TextBlock Text="{DynamicResource Bg.Preview}" Foreground="White" Opacity="0.55" FontSize="11" Margin="10,8" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                            </Grid>
+                        </Border>
                     </Grid>
                 </StackPanel>
             </Border>

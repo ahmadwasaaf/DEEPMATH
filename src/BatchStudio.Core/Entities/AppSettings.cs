@@ -14,6 +14,25 @@ public sealed class EntityProfile
 }
 
 public enum AppLanguage { English, Arabic }
+
+/// <summary>Animated background of the Home page (Settings → Home background).</summary>
+public sealed class BackgroundSettings
+{
+    public bool Enabled { get; set; } = true;
+    /// <summary>Network, Constellation, Floating, DataStream, Waves, Sphere.</summary>
+    public string Style { get; set; } = "Network";
+    /// <summary>0.2 (very slow) … 3 (fast); 1 = normal.</summary>
+    public double Speed { get; set; } = 1.0;
+    /// <summary>Dot opacity 0.05 … 1 (lines are fainter).</summary>
+    public double Opacity { get; set; } = 0.45;
+    /// <summary>"auto" (follows the theme) or #RRGGBB.</summary>
+    public string Color { get; set; } = "auto";
+    /// <summary>0.4 (few) … 2 (many); 1 = normal.</summary>
+    public double Density { get; set; } = 1.0;
+    public bool Mouse { get; set; } = true;
+
+    public static readonly string[] Styles = ["Network", "Constellation", "Floating", "DataStream", "Waves", "Sphere"];
+}
 public enum AppTheme { Dark, Light }
 
 /// <summary>Per-user settings, stored in %AppData%\BATCH STUDIO\settings.json.</summary>
@@ -31,6 +50,8 @@ public sealed class AppSettings
     /// <summary>Save edits automatically a few seconds after the last change.</summary>
     public bool AutoSave { get; set; } = true;
     public int KeepBackups { get; set; } = 30;
+
+    public BackgroundSettings Background { get; set; } = new();
 
     public EntityProfile? Active =>
         Entities.FirstOrDefault(e => string.Equals(e.Name, ActiveEntity, StringComparison.OrdinalIgnoreCase))

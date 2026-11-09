@@ -3,9 +3,9 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.8.3</Version>
+    <Version>0.9.0</Version>
     <Company>BATCH STUDIO</Company>
-    <Product>BATCH STUDIO Desktop</Product>
+    <Product>DEEPMATH</Product>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 </Project>

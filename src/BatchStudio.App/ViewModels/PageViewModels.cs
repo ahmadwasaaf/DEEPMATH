@@ -374,9 +374,95 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _autoSave;
     [ObservableProperty] private int _keepBackups;
 
+    // ---------------------------------------------------------------- Home background (particle animation)
+    public IReadOnlyList<string> BgStyles => BackgroundSettings.Styles.Select(s => Loc.T("Bg.Style." + s)).ToList();
+    public IReadOnlyList<string> BgColors => [Loc.T("Bg.Color.Auto"), Loc.T("Bg.Color.White"), Loc.T("Bg.Color.Blue"), Loc.T("Bg.Color.Custom")];
+    [ObservableProperty] private bool _bgEnabled;
+    [ObservableProperty] private int _bgStyleIndex;
+    [ObservableProperty] private double _bgSpeed;
+    [ObservableProperty] private double _bgOpacity;
+    [ObservableProperty] private double _bgDensity;
+    [ObservableProperty] private bool _bgMouse;
+    [ObservableProperty] private int _bgColorIndex;
+    [ObservableProperty] private string _bgCustomHex = "#4FACFE";
+    private bool _bgLoading;
+    private const string BlueHex = "#4FACFE";
+
+    private BackgroundSettings Bg => _main.Settings.Background;
+
+    private void LoadBackground()
+    {
+        _bgLoading = true;
+        BgEnabled = Bg.Enabled;
+        BgStyleIndex = Math.Max(0, Array.IndexOf(BackgroundSettings.Styles, Bg.Style));
+        BgSpeed = Bg.Speed;
+        BgOpacity = Bg.Opacity;
+        BgDensity = Bg.Density;
+        BgMouse = Bg.Mouse;
+        var c = (Bg.Color ?? "auto").Trim();
+        BgColorIndex = c.Equals("auto", StringComparison.OrdinalIgnoreCase) ? 0 : c.Equals("#FFFFFF", StringComparison.OrdinalIgnoreCase) ? 1
+                     : c.Equals(BlueHex, StringComparison.OrdinalIgnoreCase) ? 2 : 3;
+        if (BgColorIndex == 3) BgCustomHex = c;
+        _bgLoading = false;
+    }
+
+    private void ApplyBackground()
+    {
+        if (_bgLoading) return;
+        Bg.Enabled = BgEnabled;
+        Bg.Style = BackgroundSettings.Styles[Math.Clamp(BgStyleIndex, 0, BackgroundSettings.Styles.Length - 1)];
+        Bg.Speed = Math.Round(BgSpeed, 2);
+        Bg.Opacity = Math.Round(BgOpacity, 2);
+        Bg.Density = Math.Round(BgDensity, 2);
+        Bg.Mouse = BgMouse;
+        Bg.Color = BgColorIndex switch { 0 => "auto", 1 => "#FFFFFF", 2 => BlueHex, _ => BgCustomHex };
+        _main.SaveSettings();
+        BatchStudio.App.Controls.BackgroundFx.Notify();
+    }
+
+    partial void OnBgEnabledChanged(bool value) => ApplyBackground();
+    partial void OnBgStyleIndexChanged(int value) => ApplyBackground();
+    partial void OnBgSpeedChanged(double value) => ApplyBackground();
+    partial void OnBgOpacityChanged(double value) => ApplyBackground();
+    partial void OnBgDensityChanged(double value) => ApplyBackground();
+    partial void OnBgMouseChanged(bool value) => ApplyBackground();
+    partial void OnBgColorIndexChanged(int value)
+    {
+        if (value == 3 && !_bgLoading) { PickBgColor(); return; }
+        ApplyBackground();
+    }
+
+    [RelayCommand]
+    private void PickBgColor()
+    {
+        int? initial = null;
+        if (ThemeMemory.TryParseHex(BgCustomHex, out var rgb)) initial = rgb;
+        if (ColorPicker.Pick(initial) is { } picked) BgCustomHex = ThemeMemory.ToHex(picked);
+        _bgLoading = true;
+        BgColorIndex = 3;
+        _bgLoading = false;
+        ApplyBackground();
+    }
+
+    [RelayCommand]
+    private void ResetBackground()
+    {
+        var d = new BackgroundSettings();
+        _main.Settings.Background.Enabled = d.Enabled;
+        _main.Settings.Background.Style = d.Style;
+        _main.Settings.Background.Speed = d.Speed;
+        _main.Settings.Background.Opacity = d.Opacity;
+        _main.Settings.Background.Density = d.Density;
+        _main.Settings.Background.Mouse = d.Mouse;
+        _main.Settings.Background.Color = d.Color;
+        LoadBackground();
+        ApplyBackground();
+    }
+
     public SettingsViewModel(MainViewModel main)
     {
         _main = main;
+        LoadBackground();
         _isArabic = main.Settings.Language == AppLanguage.Arabic;
         _isLight = main.Settings.Theme == AppTheme.Light;
         _autoSave = main.Settings.AutoSave;

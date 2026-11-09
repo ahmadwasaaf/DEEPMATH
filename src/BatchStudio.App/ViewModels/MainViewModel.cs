@@ -24,6 +24,16 @@ public sealed partial class NavItem : ObservableObject
 public sealed partial class MainViewModel : ObservableObject
 {
     public AppSettings Settings { get; }
+
+    /// <summary>Sidebar footer: "v0.9.0 · Powered by Precision" (version read from the program itself).</summary>
+    public string VersionText
+    {
+        get
+        {
+            var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            return $"v{v?.Major}.{v?.Minor}.{v?.Build} · Powered by Precision";
+        }
+    }
     public ObservableCollection<EntityProfile> Entities { get; } = [];
     public ObservableCollection<NavItem> Nav { get; } = [];
     public List<DataSetViewModel> DataPages { get; } = [];
@@ -59,6 +69,8 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(AppSettings settings)
     {
         Settings = settings;
+        Settings.Background ??= new();
+        BatchStudio.App.Controls.BackgroundFx.Settings = Settings.Background;
         Home = new HomeViewModel(this);
         Templates = new TemplatesViewModel(this);
         SettingsPage = new SettingsViewModel(this);

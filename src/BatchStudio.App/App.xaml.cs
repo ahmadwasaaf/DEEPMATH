@@ -33,12 +33,24 @@ public partial class App : Application
         if (i >= 0 && i + 1 < e.Args.Length && vm.HasEntity)
         {
             var arg = e.Args[i + 1].ToLowerInvariant();
-            var key = arg is "newinvoice" or "newparty" ? "Nav.NewInvoice" : arg == "reportview" ? "Nav.Reports" : arg == "mass" ? "Nav.Mass" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
+            // screenshot checks of the Home background styles: --page home-sphere, home-waves ... (not saved)
+            if (arg.StartsWith("home-", StringComparison.Ordinal))
+            {
+                var style = BatchStudio.Core.Entities.BackgroundSettings.Styles.FirstOrDefault(x => x.Equals(arg[5..], StringComparison.OrdinalIgnoreCase));
+                if (style != null) BatchStudio.App.Controls.BackgroundFx.Settings = new BatchStudio.Core.Entities.BackgroundSettings { Style = style };
+                arg = "home";
+            }
+            var key = arg is "newinvoice" or "newparty" or "newinvoice-details" ? "Nav.NewInvoice" : arg == "reportview" ? "Nav.Reports" : arg == "mass" ? "Nav.Mass" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
             var nav = vm.Nav.FirstOrDefault(n => n.Key == key);
             if (nav != null) vm.SelectedNav = nav;
             if (arg == "newparty") vm.NewInvoice.AddPartyCommand.Execute(null);
             if (arg == "reportview") vm.Reports.ViewReportCommand.Execute(null);
             if (arg == "mass") vm.Mass.FillSample();
+            if (arg == "newinvoice-details")
+            {
+                vm.NewInvoice.SelectedParty = vm.NewInvoice.Parties.FirstOrDefault();
+                vm.NewInvoice.DetailsExpanded = true;
+            }
         }
     }
 
@@ -51,7 +63,7 @@ public partial class App : Application
             File.AppendAllText(log, $"[{DateTime.Now:u}] {e.Exception}\n\n");
         }
         catch { }
-        MessageBox.Show(e.Exception.Message, "BATCH STUDIO", MessageBoxButton.OK, MessageBoxImage.Warning);
+        MessageBox.Show(e.Exception.Message, "DEEPMATH", MessageBoxButton.OK, MessageBoxImage.Warning);
         e.Handled = true;
     }
 }
