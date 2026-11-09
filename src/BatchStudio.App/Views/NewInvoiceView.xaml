@@ -4,6 +4,48 @@
              xmlns:svc="clr-namespace:BatchStudio.App.Services">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+<DataTemplate x:Key="ThemeFieldTemplate">
+                                    <StackPanel Margin="0,0,6,12">
+                                        <TextBlock Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4">
+                                            <Run Text="{Binding Caption, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding Note, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <DockPanel IsEnabled="{Binding Supported}">
+                                            <Button DockPanel.Dock="Right" Command="{Binding PickCommand}" Margin="8,0,0,0" Padding="0" Width="64" MinHeight="32"
+                                                    ToolTip="{DynamicResource Theme.Pick}">
+                                                <Grid Width="60" Height="26">
+                                                    <Border CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Background="{Binding Swatch}" />
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE790;" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Visibility="{Binding HasColor, Converter={StaticResource InverseBoolToVis}}" />
+                                                </Grid>
+                                            </Button>
+                                            <Grid>
+                                                <TextBox x:Name="ThemeHex" Text="{Binding Hex, UpdateSourceTrigger=PropertyChanged}" FlowDirection="LeftToRight" FontFamily="Consolas" FontSize="14"
+                                                         VerticalContentAlignment="Center" LostFocus="OnThemeLostFocus" KeyDown="OnThemeKeyDown" />
+                                                <TextBlock Text="Not Assigned Yet" Margin="12,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.5" FlowDirection="LeftToRight">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Text, ElementName=ThemeHex}" Value="">
+                                                                    <Setter Property="Visibility" Value="Visible" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Grid>
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding Status}" Style="{StaticResource Muted}" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+        <Style x:Key="MidLeftCell" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="Margin" Value="4,0" />
+        </Style>
+        <Style x:Key="MidLeftEdit" TargetType="TextBox">
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
         <Style x:Key="CenterCell" TargetType="TextBlock">
             <Setter Property="HorizontalAlignment" Value="Center" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -224,7 +266,7 @@
                 <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,12" Padding="14,10">
                     <StackPanel>
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Command="{Binding ToggleDetailsCommand}" VerticalAlignment="Top" Padding="8,6"
+                            <Button x:Name="DetailsToggle" DockPanel.Dock="Right" Command="{Binding ToggleDetailsCommand}" VerticalAlignment="Top" Padding="8,6"
                                     Visibility="{Binding CanEditParty, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Inv.AllDetails}">
                                 <TextBlock FontSize="12">
                                     <TextBlock.Style>
@@ -241,47 +283,6 @@
                             </Button>
                             <TextBlock Text="{Binding PartyDetails}" TextWrapping="Wrap" MaxHeight="80" VerticalAlignment="Center" />
                         </DockPanel>
-                        <StackPanel Margin="0,10,0,0">
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding DetailsExpanded}" Value="True" />
-                                                <Condition Binding="{Binding CanEditParty}" Value="True" />
-                                            </MultiDataTrigger.Conditions>
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-                            <Border Height="1" Background="{DynamicResource ControlStrokeColorDefaultBrush}" Margin="0,0,0,10" />
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="230">
-                                <ItemsControl ItemsSource="{Binding PartyFields}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Margin="0,0,6,10">
-                                                <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4" />
-                                                <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap"
-                                                         AcceptsReturn="{Binding IsLong}" MaxHeight="200"
-                                                         VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
-                                                         Visibility="{Binding IsText, Converter={StaticResource BoolToVis}}" />
-                                                <ComboBox ItemsSource="{Binding Options}" Text="{Binding Value, UpdateSourceTrigger=Explicit}" svc:ComboSearch.IsEnabled="True" HorizontalAlignment="Stretch"
-                                                          Visibility="{Binding IsChoice, Converter={StaticResource BoolToVis}}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
-                            <Button Command="{Binding SavePartyDetailsCommand}" HorizontalAlignment="Right" Margin="0,6,6,0" Padding="16,7"
-                                    Style="{DynamicResource AccentButtonStyle}" Visibility="{Binding PartyDirty, Converter={StaticResource BoolToVis}}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" FontSize="13" Margin="0,0,8,0" />
-                                    <TextBlock Text="{DynamicResource Common.Save}" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
                     </StackPanel>
                 </Border>
 
@@ -300,7 +301,8 @@
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="{StaticResource Inv.Code}" HeaderTemplate="{StaticResource CenterHeader}" ElementStyle="{StaticResource CenterCell}" Binding="{Binding Code}" Width="110" />
-                                <DataGridTextColumn Header="{StaticResource Inv.Desc}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Description}" Width="*" MinWidth="220" />
+                                <DataGridTextColumn Header="{StaticResource Inv.Desc}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Description}" Width="*" MinWidth="220"
+                                                    ElementStyle="{StaticResource MidLeftCell}" EditingElementStyle="{StaticResource MidLeftEdit}" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Qty}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Quantity}" Width="80"
                                                     ElementStyle="{StaticResource CenterCell}" EditingElementStyle="{StaticResource CenterEdit}" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Price}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding UnitPrice, StringFormat=N2}" Width="120"
@@ -312,6 +314,63 @@
                     </DockPanel>
                 </Border>
 
+
+                <!-- expanded party details float over the items, down to the totals (the items do not move) -->
+                <Border Grid.Row="1" Panel.ZIndex="10" Margin="0,-6,0,0" CornerRadius="8" Padding="14,10,8,10"
+                        Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                        BorderBrush="{DynamicResource BrandBrush}" BorderThickness="1" x:Name="PartyOverlay">
+                    <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding DetailsExpanded}" Value="True" />
+                                                <Condition Binding="{Binding CanEditParty}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.35" />
+                    </Border.Effect>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <ItemsControl ItemsSource="{Binding PartyFields}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,0,6,10">
+                                                <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4" />
+                                                <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap"
+                                                         AcceptsReturn="{Binding IsLong}" MaxHeight="200"
+                                                         VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                                         Visibility="{Binding IsText, Converter={StaticResource BoolToVis}}" />
+                                                <ComboBox ItemsSource="{Binding Options}" Text="{Binding Value, UpdateSourceTrigger=Explicit}" svc:ComboSearch.IsEnabled="True" HorizontalAlignment="Stretch"
+                                                          Visibility="{Binding IsChoice, Converter={StaticResource BoolToVis}}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <!-- supplier theme (same field as in Suppliers details) -->
+                                <ContentControl Content="{Binding PartyTheme}" ContentTemplate="{StaticResource ThemeFieldTemplate}" Focusable="False" />
+                            </StackPanel>
+                            </ScrollViewer>
+                        <Button Grid.Row="1" Command="{Binding SavePartyDetailsCommand}" HorizontalAlignment="Right" Margin="0,6,6,0" Padding="16,7"
+                                    Style="{DynamicResource AccentButtonStyle}" Visibility="{Binding PartyDirty, Converter={StaticResource BoolToVis}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" FontSize="13" Margin="0,0,8,0" />
+                                    <TextBlock Text="{DynamicResource Common.Save}" />
+                                </StackPanel>
+                            </Button>
+                    </Grid>
+                </Border>
                 <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="14,10">
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Command="{Binding SaveCommand}" VerticalAlignment="Center" Padding="22,10" Margin="12,0,0,0"

@@ -18,6 +18,7 @@ public partial class App : Application
         BatchStudio.Core.Invoices.InvoiceService.FileWriter = Services.ExcelInvoiceEngine.Fill;
 
         var settings = SettingsStore.Load();
+        ThemeService.Accent = string.IsNullOrWhiteSpace(settings.Accent) ? "auto" : settings.Accent;
         ThemeService.Apply(settings.Theme);
         LanguageService.Apply(settings.Language);
 

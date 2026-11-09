@@ -53,6 +53,11 @@ public sealed class AppSettings
 
     public BackgroundSettings Background { get; set; } = new();
 
+    /// <summary>Accent colour: "auto" (Windows accent) or #RRGGBB.</summary>
+    public string Accent { get; set; } = "auto";
+    /// <summary>Last picked accent colours (newest first, up to 6).</summary>
+    public List<string> RecentAccents { get; set; } = [];
+
     public EntityProfile? Active =>
         Entities.FirstOrDefault(e => string.Equals(e.Name, ActiveEntity, StringComparison.OrdinalIgnoreCase))
         ?? Entities.OrderByDescending(e => e.LastOpenedUtc).FirstOrDefault();

@@ -3,6 +3,7 @@
 
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     <SolidColorBrush x:Key="BrandBrush" Color="#2F80ED" />
+    <SolidColorBrush x:Key="BrandSoftBrush" Color="#2F80ED" Opacity="0.16" />
     <SolidColorBrush x:Key="GoodBrush" Color="#2EA043" />
     <SolidColorBrush x:Key="WarnBrush" Color="#D29922" />
     <SolidColorBrush x:Key="BadBrush" Color="#E5534B" />

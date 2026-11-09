@@ -95,6 +95,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [ObservableProperty] private string _partyDetails = "";
     /// <summary>All fields of the selected supplier / client, editable in the expanded details panel.</summary>
     public ObservableCollection<NewFieldViewModel> PartyFields { get; } = [];
+    /// <summary>Supplier theme colour (CLIENT THEME MEMORY) for the selected template; null for clients.</summary>
+    [ObservableProperty] private ThemeFieldViewModel? _partyTheme;
     [ObservableProperty] private bool _detailsExpanded;
     [ObservableProperty] private bool _partyDirty;
     public bool CanEditParty => PartyFields.Count > 0 && !IsRepair;
@@ -173,6 +175,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
                        (map.Items != null ? $" · {Loc.T("Tpl.Items")}: {map.Items.Capacity}" : "");
         if (value!.Entry.Status == TemplateStatus.ChangedSinceLinked) Status = Loc.T("Tpl.Status.Changed");
         ClearLines();
+        if (SelectedParty is { } p && !IsClients && _partyId != null)
+            PartyTheme = new ThemeFieldViewModel(main, p.Name, ThemeTemplateName(p));
     }
 
     partial void OnIsClientsChanged(bool value) => FillParties();
@@ -243,6 +247,17 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             }
         }
         OnPropertyChanged(nameof(CanEditParty));
+        PartyTheme = party != null && !IsClients && _partyId != null
+            ? new ThemeFieldViewModel(main, party.Name, ThemeTemplateName(party))
+            : null;
+    }
+
+    /// <summary>The template the theme is shown for: the selected one when it has themes, else the supplier's default.</summary>
+    private string ThemeTemplateName(Party party)
+    {
+        var sel = SelectedTemplate?.Name;
+        if (BatchStudio.Core.Workbook.ThemeMemory.Supports(sel)) return sel!;
+        return string.IsNullOrWhiteSpace(party.DefaultTemplate) ? "INVOICE" : party.DefaultTemplate.Trim();
     }
 
     private void OnPartyFieldChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -648,6 +663,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             await SaveRepairAsync(ws);
             return;
         }
+        // a theme changed in the details panel since the items were generated is used too
+        if (!IsClients) _draft.ThemeRgb = ThemeFor(_draft.PartyName);
         var draft = _draft;
         int keep = main.Settings.KeepBackups;
         try

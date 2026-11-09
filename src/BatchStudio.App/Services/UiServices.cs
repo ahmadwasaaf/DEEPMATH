@@ -34,11 +34,23 @@ public static class LanguageService
 
 public static class ThemeService
 {
+    /// <summary>Accent colour re-applied after every theme change ("auto" or #RRGGBB).</summary>
+    public static string Accent { get; set; } = "auto";
+    public static AppTheme Current { get; private set; } = AppTheme.Dark;
+
     public static void Apply(AppTheme theme)
     {
 #pragma warning disable WPF0001
         Application.Current.ThemeMode = theme == AppTheme.Light ? ThemeMode.Light : ThemeMode.Dark;
 #pragma warning restore WPF0001
+        Current = theme;
+        AccentService.Apply(Accent, theme == AppTheme.Light);
+    }
+
+    public static void ApplyAccent(string accent)
+    {
+        Accent = accent;
+        AccentService.Apply(accent, Current == AppTheme.Light);
     }
 }
 

@@ -93,7 +93,7 @@
     <sys:String x:Key="Set.Entities">Entities</sys:String>
     <sys:String x:Key="Set.RemoveEntity">Remove from list</sys:String>
     <sys:String x:Key="Set.RemoveNote">Removing an entity only removes it from this list. Its workbook is not touched.</sys:String>
-    <sys:String x:Key="Set.About">BATCH STUDIO Desktop - phase 1</sys:String>
+    <sys:String x:Key="Set.About">DEEPMATH · Intelligent Accounting System · Powered by Precision</sys:String>
     <sys:String x:Key="Entity.PathInUse">This folder is already used by the entity "{0}".</sys:String>
     <sys:String x:Key="Entity.PathMissing">This folder is not a complete Database. Missing:&#x0a;&#x0a;{0}&#x0a;&#x0a;Use it anyway? Missing folders and files will be created (nothing is overwritten).</sys:String>
     <sys:String x:Key="Entity.NameInUse">An entity named "{0}" already exists.</sys:String>
@@ -354,4 +354,9 @@
     <sys:String x:Key="Bg.Style.DataStream">Data stream</sys:String>
     <sys:String x:Key="Bg.Style.Waves">Waves</sys:String>
     <sys:String x:Key="Bg.Style.Sphere">Glowing sphere</sys:String>
+    <sys:String x:Key="Set.Accent">Accent colour</sys:String>
+    <sys:String x:Key="Set.AccentAuto">Use the Windows accent colour</sys:String>
+    <sys:String x:Key="Set.AccentRecent">Recent colours</sys:String>
+    <sys:String x:Key="Set.AccentColors">Colours</sys:String>
+    <sys:String x:Key="Set.AccentCustom">Custom colour</sys:String>
 </ResourceDictionary>

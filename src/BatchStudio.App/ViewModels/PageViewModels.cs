@@ -17,6 +17,14 @@ public sealed class StatTile
     public required string Glyph { get; init; }
 }
 
+/// <summary>A colour square of the accent palette (Settings → Appearance).</summary>
+public sealed partial class AccentSwatch : ObservableObject
+{
+    public required string Hex { get; init; }
+    public System.Windows.Media.Brush Brush => new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(Hex));
+    [ObservableProperty] private bool _isSelected;
+}
+
 /// <summary>One indicator of the Home "Business pulse" strip (small caps label over the value).</summary>
 public sealed class TickerItem
 {
@@ -459,10 +467,72 @@ public sealed partial class SettingsViewModel : ObservableObject
         ApplyBackground();
     }
 
+    // ---------------------------------------------------------------- accent colour
+    public List<AccentSwatch> AccentPalette { get; } = AccentService.Palette.Select(h => new AccentSwatch { Hex = h }).ToList();
+    public ObservableCollection<AccentSwatch> RecentAccents { get; } = [];
+    [ObservableProperty] private bool _useWindowsAccent;
+    [ObservableProperty] private string _accentHex = "";
+    public bool HasRecentAccents => RecentAccents.Count > 0;
+
+    private void LoadAccent()
+    {
+        var a = _main.Settings.Accent ?? "auto";
+        _accentLoading = true;
+        UseWindowsAccent = a.Equals("auto", StringComparison.OrdinalIgnoreCase);
+        AccentHex = UseWindowsAccent ? "" : a.ToUpperInvariant();
+        _accentLoading = false;
+        RecentAccents.Clear();
+        foreach (var h in _main.Settings.RecentAccents.Take(6)) RecentAccents.Add(new AccentSwatch { Hex = h });
+        OnPropertyChanged(nameof(HasRecentAccents));
+        MarkSelectedAccent();
+    }
+    private bool _accentLoading;
+
+    private void MarkSelectedAccent()
+    {
+        foreach (var sw in AccentPalette.Concat(RecentAccents))
+            sw.IsSelected = !UseWindowsAccent && string.Equals(sw.Hex, AccentHex, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void SetAccent(string accent)
+    {
+        _main.Settings.Accent = accent;
+        if (!accent.Equals("auto", StringComparison.OrdinalIgnoreCase))
+        {
+            var list = _main.Settings.RecentAccents;
+            list.RemoveAll(x => string.Equals(x, accent, StringComparison.OrdinalIgnoreCase));
+            list.Insert(0, accent.ToUpperInvariant());
+            if (list.Count > 6) list.RemoveRange(6, list.Count - 6);
+        }
+        _main.SaveSettings();
+        ThemeService.ApplyAccent(accent);
+        LoadAccent();
+    }
+
+    partial void OnUseWindowsAccentChanged(bool value)
+    {
+        if (_accentLoading) return;
+        SetAccent(value ? "auto" : (_main.Settings.RecentAccents.FirstOrDefault() ?? "#0078D7"));
+    }
+
+    [RelayCommand]
+    private void PickAccent(AccentSwatch? swatch)
+    {
+        if (swatch != null) SetAccent(swatch.Hex);
+    }
+
+    [RelayCommand]
+    private void CustomAccent()
+    {
+        int? initial = BatchStudio.Core.Workbook.ThemeMemory.TryParseHex(AccentHex, out var rgb) ? rgb : null;
+        if (ColorPicker.Pick(initial) is { } picked) SetAccent(BatchStudio.Core.Workbook.ThemeMemory.ToHex(picked));
+    }
+
     public SettingsViewModel(MainViewModel main)
     {
         _main = main;
         LoadBackground();
+        LoadAccent();
         _isArabic = main.Settings.Language == AppLanguage.Arabic;
         _isLight = main.Settings.Theme == AppTheme.Light;
         _autoSave = main.Settings.AutoSave;

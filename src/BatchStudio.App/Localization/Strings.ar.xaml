@@ -93,7 +93,7 @@
     <sys:String x:Key="Set.Entities">الكيانات</sys:String>
     <sys:String x:Key="Set.RemoveEntity">إزالة من القائمة</sys:String>
     <sys:String x:Key="Set.RemoveNote">إزالة الكيان تحذفه من القائمة فقط، ولا تلمس ملف الإكسيل.</sys:String>
-    <sys:String x:Key="Set.About">باتش ستوديو - المرحلة الأولى</sys:String>
+    <sys:String x:Key="Set.About">DEEPMATH · نظام محاسبة ذكي · Powered by Precision</sys:String>
     <sys:String x:Key="Entity.PathInUse">هذا المجلد مستخدم بالفعل للكيان "{0}".</sys:String>
     <sys:String x:Key="Entity.PathMissing">هذا المجلد ليس قاعدة بيانات كاملة. الناقص:&#x0a;&#x0a;{0}&#x0a;&#x0a;هل تريد استخدامه؟ سيتم إنشاء المجلدات والملفات الناقصة فقط (لن يُستبدل أي ملف).</sys:String>
     <sys:String x:Key="Entity.NameInUse">يوجد كيان باسم "{0}" بالفعل.</sys:String>
@@ -354,4 +354,9 @@
     <sys:String x:Key="Bg.Style.DataStream">سيل بيانات</sys:String>
     <sys:String x:Key="Bg.Style.Waves">موجات</sys:String>
     <sys:String x:Key="Bg.Style.Sphere">كرة مضيئة</sys:String>
+    <sys:String x:Key="Set.Accent">اللون المميز</sys:String>
+    <sys:String x:Key="Set.AccentAuto">استخدام اللون المميز لويندوز</sys:String>
+    <sys:String x:Key="Set.AccentRecent">الألوان الأخيرة</sys:String>
+    <sys:String x:Key="Set.AccentColors">الألوان</sys:String>
+    <sys:String x:Key="Set.AccentCustom">لون مخصص</sys:String>
 </ResourceDictionary>
