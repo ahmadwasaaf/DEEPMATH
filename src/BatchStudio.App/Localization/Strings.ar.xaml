@@ -311,4 +311,16 @@
     <sys:String x:Key="Mass.Plain">تنسيق بسيط</sys:String>
     <sys:String x:Key="Mass.Summary">تمت: {0}     فشلت: {1}     فارغة: {2}     الإجمالي: {3}</sys:String>
     <sys:String x:Key="Mass.PlainNote">{0} فاتورة اتعملت بدون تنسيق Excel (السبب في %APPDATA%\BATCH STUDIO\error.log).</sys:String>
+    <sys:String x:Key="Mass.InvoiceNo">رقم الفاتورة</sys:String>
+    <sys:String x:Key="Mass.ExportPdf">تصدير PDF</sys:String>
+    <sys:String x:Key="Mass.NoInHistory">رقم الفاتورة {0} موجود في INVOICE HISTORY. الرقم الجديد: {1}</sys:String>
+    <sys:String x:Key="Mass.NoOnRow">رقم الفاتورة {0} مستخدم في الصف {1}. الرقم الجديد: {2}</sys:String>
+    <sys:String x:Key="Mass.ErrNoUsed">رقم الفاتورة {0} موجود في INVOICE HISTORY.</sys:String>
+    <sys:String x:Key="Mass.ErrDupNo">رقم الفاتورة {0} مستخدم في صف آخر.</sys:String>
+    <sys:String x:Key="Mass.AllArchived">كل الصفوف المملوءة اتأرشفت بالفعل. استخدم تصدير PDF، أو امسح لدفعة جديدة.</sys:String>
+    <sys:String x:Key="Mass.ExportHint">تم. تصدير PDF يحفظ ملفات PDF للفواتير دي في سطح المكتب\Mass Invoice.</sys:String>
+    <sys:String x:Key="Mass.Exporting">جاري تصدير {0} ملف PDF…</sys:String>
+    <sys:String x:Key="Mass.PdfDone">تم حفظ PDF</sys:String>
+    <sys:String x:Key="Mass.PdfSummary">تم تصدير: {0}     فشل: {1}</sys:String>
+    <sys:String x:Key="Mass.PdfSaved">اتحفظت في {0}</sys:String>
 </ResourceDictionary>

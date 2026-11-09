@@ -127,10 +127,20 @@ public static class InvoiceService
     }
 
     /// <summary>A free path on the Desktop for the invoice PDF ("name 30,000.pdf", then "name 30,000 (2).pdf" ...).</summary>
-    public static string DesktopPdfPath(string party, decimal? amount)
+    public static string DesktopPdfPath(string party, decimal? amount) => FreePdfPath(DesktopFolder(), party, amount);
+
+    public static string DesktopFolder()
     {
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         if (string.IsNullOrEmpty(desktop)) desktop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop");
+        return desktop;
+    }
+
+    /// <summary>A free "name 30,000.pdf" path in a folder (created when missing).</summary>
+    public static string FreePdfPath(string folder, string party, decimal? amount)
+    {
+        Directory.CreateDirectory(folder);
+        var desktop = folder;
         var baseName = PdfBaseName(party, amount);
         var path = Path.Combine(desktop, baseName + ".pdf");
         for (int i = 2; File.Exists(path); i++) path = Path.Combine(desktop, $"{baseName} ({i}).pdf");

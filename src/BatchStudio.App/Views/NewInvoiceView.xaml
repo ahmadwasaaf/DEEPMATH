@@ -241,8 +241,8 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="{StaticResource Inv.Code}" Binding="{Binding Code}" Width="110" />
-                                <DataGridTextColumn Header="{StaticResource Inv.Desc}" Binding="{Binding Description}" Width="*" MinWidth="220" />
+                                <DataGridTextColumn Header="{StaticResource Inv.Code}" HeaderTemplate="{StaticResource CenterHeader}" ElementStyle="{StaticResource CenterCell}" Binding="{Binding Code}" Width="110" />
+                                <DataGridTextColumn Header="{StaticResource Inv.Desc}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Description}" Width="*" MinWidth="220" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Qty}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Quantity}" Width="80"
                                                     ElementStyle="{StaticResource CenterCell}" EditingElementStyle="{StaticResource CenterEdit}" />
                                 <DataGridTextColumn Header="{StaticResource Inv.Price}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding UnitPrice, StringFormat=N2}" Width="120"

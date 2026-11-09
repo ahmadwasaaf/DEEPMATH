@@ -93,17 +93,23 @@
                         <Setter Property="Margin" Value="6,0" />
                         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
                     </Style>
+                    <Style x:Key="MidCenter" TargetType="TextBlock" BasedOn="{StaticResource Mid}">
+                        <Setter Property="HorizontalAlignment" Value="Center" />
+                    </Style>
+                    <DataTemplate x:Key="CenterHeader">
+                        <TextBlock Text="{Binding}" Loaded="OnCenterHeaderLoaded" />
+                    </DataTemplate>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
                     <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.No}" Binding="{Binding No}" Width="Auto" MinWidth="64" />
                     <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Name}" Binding="{Binding Name}" Width="*" MinWidth="150" />
-                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Amount}" Binding="{Binding Amount, StringFormat=N2}" Width="Auto" MinWidth="100" SortMemberPath="Amount" />
-                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Date}" Binding="{Binding DateText}" Width="Auto" MinWidth="90" SortMemberPath="SortDate" />
-                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.InvoiceNo}" Binding="{Binding InvoiceNo}" Width="Auto" MinWidth="100" />
-                    <DataGridTemplateColumn Header="{StaticResource Col.Status}" Width="Auto" MinWidth="110" SortMemberPath="FileExists">
+                    <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" HeaderTemplate="{StaticResource CenterHeader}" Header="{StaticResource Col.Amount}" Binding="{Binding Amount, StringFormat=N2}" Width="Auto" MinWidth="100" SortMemberPath="Amount" />
+                    <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" HeaderTemplate="{StaticResource CenterHeader}" Header="{StaticResource Col.Date}" Binding="{Binding DateText}" Width="Auto" MinWidth="90" SortMemberPath="SortDate" />
+                    <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" HeaderTemplate="{StaticResource CenterHeader}" Header="{StaticResource Col.InvoiceNo}" Binding="{Binding InvoiceNo}" Width="Auto" MinWidth="100" />
+                    <DataGridTemplateColumn Header="{StaticResource Col.Status}" HeaderTemplate="{StaticResource CenterHeader}" Width="Auto" MinWidth="110" SortMemberPath="FileExists">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" Margin="6,0">
+                                <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="6,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
@@ -118,7 +124,7 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="190">
+                    <DataGridTemplateColumn Header="{StaticResource Col.Actions}" HeaderTemplate="{StaticResource CenterHeader}" Width="190">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Grid Margin="4,0" VerticalAlignment="Center">

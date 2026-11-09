@@ -45,6 +45,12 @@ public partial class HistoryView : UserControl
         if (row != null && DataContext is HistoryViewModel vm) vm.RunActionCommand.Execute(new object[] { row, action });
     }
 
+    private void OnCenterHeaderLoaded(object sender, RoutedEventArgs e)
+    {
+        var h = FindParent<System.Windows.Controls.Primitives.DataGridColumnHeader>(sender as DependencyObject);
+        if (h != null) h.HorizontalContentAlignment = HorizontalAlignment.Center;
+    }
+
     private void OnRowDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (e.OriginalSource is DependencyObject d && FindParent<ComboBox>(d) != null) return;

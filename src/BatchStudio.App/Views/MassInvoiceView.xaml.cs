@@ -15,6 +15,11 @@ public partial class MassInvoiceView : UserControl
         if (sender is FrameworkElement { DataContext: MassRowViewModel row }) row.FormatAmount();
     }
 
+    private void OnInvoiceNoLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: MassRowViewModel row }) row.CommitInvoiceNo();
+    }
+
     private void OnCenterHeaderLoaded(object sender, RoutedEventArgs e)
     {
         DependencyObject? d = sender as DependencyObject;

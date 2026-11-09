@@ -311,4 +311,16 @@
     <sys:String x:Key="Mass.Plain">simple format</sys:String>
     <sys:String x:Key="Mass.Summary">COMPLETED: {0}     FAILED: {1}     EMPTY: {2}     TOTAL: {3}</sys:String>
     <sys:String x:Key="Mass.PlainNote">{0} invoice(s) were written without Excel formatting (see %APPDATA%\BATCH STUDIO\error.log).</sys:String>
+    <sys:String x:Key="Mass.InvoiceNo">INVOICE NO</sys:String>
+    <sys:String x:Key="Mass.ExportPdf">Export PDF</sys:String>
+    <sys:String x:Key="Mass.NoInHistory">Invoice number {0} already exists in INVOICE HISTORY. New number: {1}</sys:String>
+    <sys:String x:Key="Mass.NoOnRow">Invoice number {0} is already used on row {1}. New number: {2}</sys:String>
+    <sys:String x:Key="Mass.ErrNoUsed">Invoice number {0} already exists in INVOICE HISTORY.</sys:String>
+    <sys:String x:Key="Mass.ErrDupNo">Invoice number {0} is used on another row.</sys:String>
+    <sys:String x:Key="Mass.AllArchived">All filled rows are already archived. Use Export PDF, or Clear for a new batch.</sys:String>
+    <sys:String x:Key="Mass.ExportHint">Done. Export PDF saves the PDFs of these invoices to Desktop\Mass Invoice.</sys:String>
+    <sys:String x:Key="Mass.Exporting">Exporting {0} PDF(s)…</sys:String>
+    <sys:String x:Key="Mass.PdfDone">PDF saved</sys:String>
+    <sys:String x:Key="Mass.PdfSummary">PDF EXPORTED: {0}     FAILED: {1}</sys:String>
+    <sys:String x:Key="Mass.PdfSaved">Saved in {0}</sys:String>
 </ResourceDictionary>
