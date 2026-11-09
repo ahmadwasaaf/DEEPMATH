@@ -15,57 +15,10 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <StackPanel VerticalAlignment="Center" Margin="0,0,24,0">
+                <StackPanel VerticalAlignment="Center">
                     <TextBlock Style="{StaticResource Muted}" Text="{DynamicResource Home.Welcome}" FontSize="14" />
                     <TextBlock Style="{StaticResource PageTitle}" Text="{Binding EntityName}" FontSize="32" />
                 </StackPanel>
-
-                <!-- business pulse: live indicators -->
-                <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="12" Padding="14,10" Margin="0,4,24,0"
-                        Background="{DynamicResource SubtleFillColorSecondaryBrush}"
-                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" CornerRadius="9" Padding="8,2" BorderThickness="1"
-                                BorderBrush="{StaticResource GoodBrush}">
-                            <Border.Background>
-                                <SolidColorBrush Color="#2EA043" Opacity="0.14" />
-                            </Border.Background>
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse x:Name="LiveDot" Width="6" Height="6" Fill="{StaticResource GoodBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                <TextBlock Text="LIVE" Foreground="{StaticResource GoodBrush}" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
-                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Top">
-                            <TextBlock Text="{DynamicResource Home.Pulse}" FontSize="12" FontWeight="SemiBold" Opacity="0.85" VerticalAlignment="Center" />
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE9D2;" FontSize="13" Foreground="{StaticResource GoodBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <Canvas x:Name="TickerHost" Grid.Row="1" Height="44" Margin="0,8,0,0" ClipToBounds="True" SizeChanged="OnTickerSizeChanged">
-                            <ItemsControl x:Name="TickerStrip" ItemsSource="{Binding Ticker}">
-                                <ItemsControl.RenderTransform>
-                                    <TranslateTransform x:Name="TickerShift" />
-                                </ItemsControl.RenderTransform>
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border BorderThickness="0,0,1,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Padding="16,0" Height="44">
-                                            <StackPanel VerticalAlignment="Center" MaxWidth="260">
-                                                <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" FontSize="10.5" FontWeight="SemiBold" />
-                                                <TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" FlowDirection="LeftToRight"
-                                                           HorizontalAlignment="Left" ToolTip="{Binding Tip}" ToolTipService.IsEnabled="{Binding HasTip}" />
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Canvas>
-                    </Grid>
-                </Border>
 
                 <!-- lock-screen clock -->
                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
@@ -77,32 +30,51 @@
                 </StackPanel>
             </Grid>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,18">
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Command="{Binding ChangeFolderCommand}" VerticalAlignment="Center" Margin="8,0,0,0">
+            <!-- business pulse: live indicators -->
+            <Border CornerRadius="12" Padding="18,12" Margin="0,12,0,18"
+                    Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                    BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Top" CornerRadius="9" Padding="8,2" BorderThickness="1"
+                            BorderBrush="{StaticResource GoodBrush}">
+                        <Border.Background>
+                            <SolidColorBrush Color="#2EA043" Opacity="0.14" />
+                        </Border.Background>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE70F;" FontSize="13" Margin="0,0,8,0" />
-                            <TextBlock Text="{DynamicResource Set.ChangeFolder}" />
+                            <Ellipse x:Name="LiveDot" Width="6" Height="6" Fill="{StaticResource GoodBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Text="LIVE" Foreground="{StaticResource GoodBrush}" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
                         </StackPanel>
-                    </Button>
-                    <Button DockPanel.Dock="Right" Command="{Binding OpenWorkbookCommand}" VerticalAlignment="Center" Margin="8,0,0,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" FontSize="13" Margin="0,0,8,0" />
-                            <TextBlock Text="{DynamicResource Home.OpenWorkbook}" />
-                        </StackPanel>
-                    </Button>
-                    <Button DockPanel.Dock="Right" Command="{Binding OpenDatabaseCommand}" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="13" Margin="0,0,8,0" />
-                            <TextBlock Text="{DynamicResource Common.OpenFolder}" />
-                        </StackPanel>
-                    </Button>
-                    <TextBlock Style="{StaticResource Icon}" Text="&#xE9F9;" FontSize="22" Margin="0,0,14,0" Foreground="{StaticResource BrandBrush}" />
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Home.Database}" Style="{StaticResource Muted}" FontSize="12" />
-                        <TextBlock Text="{Binding DatabasePath}" FontSize="14" TextTrimming="CharacterEllipsis" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
+                    </Border>
+                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                        <TextBlock Text="{DynamicResource Home.Pulse}" FontSize="12" FontWeight="SemiBold" Opacity="0.85" VerticalAlignment="Center" />
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE9D2;" FontSize="13" Foreground="{StaticResource GoodBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
-                </DockPanel>
+                    <Canvas x:Name="TickerHost" Grid.Row="1" Height="48" Margin="0,10,0,0" ClipToBounds="True" SizeChanged="OnTickerSizeChanged">
+                        <ItemsControl x:Name="TickerStrip" ItemsSource="{Binding Ticker}">
+                            <ItemsControl.RenderTransform>
+                                <TranslateTransform x:Name="TickerShift" />
+                            </ItemsControl.RenderTransform>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderThickness="0,0,1,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Padding="16,0" Height="44">
+                                        <StackPanel VerticalAlignment="Center" MaxWidth="260">
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" FontSize="10.5" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" FlowDirection="LeftToRight"
+                                                       HorizontalAlignment="Left" ToolTip="{Binding Tip}" ToolTipService.IsEnabled="{Binding HasTip}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Canvas>
+                </Grid>
             </Border>
 
             <!-- ========== stat cards ========== -->

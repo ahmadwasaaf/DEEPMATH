@@ -59,17 +59,18 @@ public partial class HomeView : UserControl
     {
         TickerShift.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, null);
         TickerShift.X = 0;
+        Canvas.SetLeft(TickerStrip, 0);
+        TickerStrip.Width = double.NaN;
         TickerStrip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         double content = TickerStrip.DesiredSize.Width;
         double view = TickerHost.ActualWidth;
         if (content <= 0 || view <= 0) return;
-        // fits: aligned to the end of the card like the header
+        // fits: the indicators share the whole width of the card
         if (content <= view)
         {
-            Canvas.SetLeft(TickerStrip, view - content);
+            TickerStrip.Width = view;
             return;
         }
-        Canvas.SetLeft(TickerStrip, 0);
         double travel = content - view;
         const double pixelsPerSecond = 25;
         var glide = TimeSpan.FromSeconds(travel / pixelsPerSecond);
