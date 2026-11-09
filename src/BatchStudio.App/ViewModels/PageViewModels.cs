@@ -17,12 +17,15 @@ public sealed class StatTile
     public required string Glyph { get; init; }
 }
 
-/// <summary>One entry of the Home news ticker ("Top Supplier: NAME · 321,501.00").</summary>
+/// <summary>One indicator of the Home "Business pulse" strip (small caps label over the value).</summary>
 public sealed class TickerItem
 {
     public required string Glyph { get; init; }
     public required string Label { get; init; }
     public required string Value { get; init; }
+    /// <summary>Exact figure shown on hover.</summary>
+    public string Tip { get; init; } = "";
+    public bool HasTip => Tip.Length > 0;
 }
 
 public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
@@ -66,6 +69,17 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         HasMissing = Missing.Count > 0;
     }
 
+    /// <summary>$5.19M / $812.5K / $950 style amount for the pulse strip.</summary>
+    public static string Compact(decimal v)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var a = Math.Abs(v);
+        if (a >= 1_000_000_000m) return "$" + (v / 1_000_000_000m).ToString("0.##", inv) + "B";
+        if (a >= 1_000_000m) return "$" + (v / 1_000_000m).ToString("0.##", inv) + "M";
+        if (a >= 1_000m) return "$" + (v / 1_000m).ToString("0.#", inv) + "K";
+        return "$" + v.ToString("0.##", inv);
+    }
+
     /// <summary>Latest figures of INVOICE HISTORY (all time): top supplier, top client, total value, invoice count.</summary>
     public void RefreshTicker()
     {
@@ -80,13 +94,13 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             var cli = main.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "clients")?.Session.Current;
             var r = BatchStudio.Core.Reports.DashboardEngine.Compute(history, BatchStudio.Core.Reports.DashboardEngine.Categories(sup, cli),
                 new BatchStudio.Core.Reports.DashboardFilter());
-            static string Money(decimal v) => v.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
             var topS = r.Ranking.FirstOrDefault(x => x.Type == "SUPPLIERS");
             var topC = r.Ranking.FirstOrDefault(x => x.Type == "CLIENTS");
-            if (topS != null) Ticker.Add(new TickerItem { Glyph = "\uE734", Label = Loc.T("Home.TopSupplier"), Value = $"{topS.Name} · {Money(topS.Amount)}" });
-            if (topC != null) Ticker.Add(new TickerItem { Glyph = "\uE734", Label = Loc.T("Home.TopClient"), Value = $"{topC.Name} · {Money(topC.Amount)}" });
-            Ticker.Add(new TickerItem { Glyph = "\uE9D2", Label = Loc.T("Home.TotalValue"), Value = Money(r.Total) });
-            Ticker.Add(new TickerItem { Glyph = "\uE81C", Label = Loc.T("Home.TotalInvoices"), Value = r.Invoices.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) });
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseInvoices"), Value = r.Invoices.ToString("N0", inv), Tip = "" });
+            Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseValue"), Value = Compact(r.Total), Tip = r.Total.ToString("N2", inv) });
+            if (topS != null) Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseTopSupplier"), Value = topS.Name, Tip = topS.Amount.ToString("N2", inv) });
+            if (topC != null) Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseTopClient"), Value = topC.Name, Tip = topC.Amount.ToString("N2", inv) });
         }
         catch { }
         TickerChanged?.Invoke();

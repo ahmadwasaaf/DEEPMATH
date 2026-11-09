@@ -20,19 +20,31 @@
                     <TextBlock Style="{StaticResource PageTitle}" Text="{Binding EntityName}" FontSize="32" />
                 </StackPanel>
 
-                <!-- news ticker -->
-                <Border Grid.Column="1" VerticalAlignment="Center" Height="44" CornerRadius="22" Padding="6,0,0,0" Margin="0,8,24,0"
+                <!-- business pulse: live indicators -->
+                <Border Grid.Column="1" VerticalAlignment="Center" CornerRadius="12" Padding="14,10" Margin="0,4,24,0"
                         Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                         BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1">
-                    <DockPanel>
-                        <Border DockPanel.Dock="Left" CornerRadius="16" Height="32" Padding="12,0" VerticalAlignment="Center" Background="{StaticResource BrandBrush}">
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Ellipse x:Name="LiveDot" Width="7" Height="7" Fill="White" Margin="0,0,7,0" VerticalAlignment="Center" />
-                                <TextBlock Text="LIVE" Foreground="White" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" />
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" CornerRadius="9" Padding="8,2" BorderThickness="1"
+                                BorderBrush="{StaticResource GoodBrush}">
+                            <Border.Background>
+                                <SolidColorBrush Color="#2EA043" Opacity="0.14" />
+                            </Border.Background>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse x:Name="LiveDot" Width="6" Height="6" Fill="{StaticResource GoodBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                <TextBlock Text="LIVE" Foreground="{StaticResource GoodBrush}" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>
-                        <Canvas x:Name="TickerHost" ClipToBounds="True" Margin="12,0,16,0" SizeChanged="OnTickerSizeChanged" FlowDirection="LeftToRight">
-                            <ItemsControl x:Name="TickerStrip" ItemsSource="{Binding Ticker}" Canvas.Top="0">
+                        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                            <TextBlock Text="{DynamicResource Home.Pulse}" FontSize="12" FontWeight="SemiBold" Opacity="0.85" VerticalAlignment="Center" />
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE9D2;" FontSize="13" Foreground="{StaticResource GoodBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Canvas x:Name="TickerHost" Grid.Row="1" Height="44" Margin="0,8,0,0" ClipToBounds="True" SizeChanged="OnTickerSizeChanged">
+                            <ItemsControl x:Name="TickerStrip" ItemsSource="{Binding Ticker}">
                                 <ItemsControl.RenderTransform>
                                     <TranslateTransform x:Name="TickerShift" />
                                 </ItemsControl.RenderTransform>
@@ -41,17 +53,18 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Margin="0,0,46,0" Height="42">
-                                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="14" Foreground="{StaticResource BrandBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" FontSize="13" VerticalAlignment="Center" />
-                                            <TextBlock Text=":" Style="{StaticResource Muted}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0" />
-                                            <TextBlock Text="{Binding Value}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                        </StackPanel>
+                                        <Border BorderThickness="0,0,1,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Padding="16,0" Height="44">
+                                            <StackPanel VerticalAlignment="Center" MaxWidth="260">
+                                                <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" FontSize="10.5" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" FlowDirection="LeftToRight"
+                                                           HorizontalAlignment="Left" ToolTip="{Binding Tip}" ToolTipService.IsEnabled="{Binding HasTip}" />
+                                            </StackPanel>
+                                        </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </Canvas>
-                    </DockPanel>
+                    </Grid>
                 </Border>
 
                 <!-- lock-screen clock -->

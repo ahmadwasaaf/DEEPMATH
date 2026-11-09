@@ -51,20 +51,34 @@ public partial class HomeView : UserControl
     // ---------------------------------------------------------------- news ticker
     private void OnTickerSizeChanged(object sender, SizeChangedEventArgs e) => RestartTicker();
 
-    /// <summary>Scrolls the entries from the right edge to the left, forever, at a steady reading speed.</summary>
+    /// <summary>
+    /// The indicators sit side by side; when they do not fit, the strip glides slowly to the end and back
+    /// (a calm pan instead of fast scrolling text).
+    /// </summary>
     private void RestartTicker()
     {
         TickerShift.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, null);
-        TickerStrip.UpdateLayout();
+        TickerShift.X = 0;
         TickerStrip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         double content = TickerStrip.DesiredSize.Width;
         double view = TickerHost.ActualWidth;
         if (content <= 0 || view <= 0) return;
-        const double pixelsPerSecond = 60;
-        var anim = new DoubleAnimation(view, -content, TimeSpan.FromSeconds((view + content) / pixelsPerSecond))
+        // fits: aligned to the end of the card like the header
+        if (content <= view)
         {
-            RepeatBehavior = RepeatBehavior.Forever,
-        };
+            Canvas.SetLeft(TickerStrip, view - content);
+            return;
+        }
+        Canvas.SetLeft(TickerStrip, 0);
+        double travel = content - view;
+        const double pixelsPerSecond = 25;
+        var glide = TimeSpan.FromSeconds(travel / pixelsPerSecond);
+        var pause = TimeSpan.FromSeconds(2.5);
+        var anim = new DoubleAnimationUsingKeyFrames { RepeatBehavior = RepeatBehavior.Forever };
+        anim.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(pause)));
+        anim.KeyFrames.Add(new EasingDoubleKeyFrame(-travel, KeyTime.FromTimeSpan(pause + glide), new SineEase { EasingMode = EasingMode.EaseInOut }));
+        anim.KeyFrames.Add(new LinearDoubleKeyFrame(-travel, KeyTime.FromTimeSpan(pause + glide + pause)));
+        anim.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(pause + glide + pause + glide), new SineEase { EasingMode = EasingMode.EaseInOut }));
         TickerShift.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, anim);
     }
 

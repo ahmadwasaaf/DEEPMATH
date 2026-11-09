@@ -327,4 +327,9 @@
     <sys:String x:Key="Home.TopClient">أكبر عميل</sys:String>
     <sys:String x:Key="Home.TotalValue">إجمالي قيمة المعاملات</sys:String>
     <sys:String x:Key="Home.TotalInvoices">عدد الفواتير</sys:String>
+    <sys:String x:Key="Home.Pulse">نبض الأعمال</sys:String>
+    <sys:String x:Key="Home.PulseInvoices">الفواتير</sys:String>
+    <sys:String x:Key="Home.PulseValue">المعاملات</sys:String>
+    <sys:String x:Key="Home.PulseTopSupplier">أكبر مورد</sys:String>
+    <sys:String x:Key="Home.PulseTopClient">أكبر عميل</sys:String>
 </ResourceDictionary>
