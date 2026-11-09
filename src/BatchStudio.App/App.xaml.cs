@@ -34,6 +34,8 @@ public partial class App : Application
         if (i >= 0 && i + 1 < e.Args.Length && vm.HasEntity)
         {
             var arg = e.Args[i + 1].ToLowerInvariant();
+            // screenshot check of a custom accent colour (not saved)
+            if (arg == "settings-accent") { ThemeService.ApplyAccent("#E3008C"); arg = "settings"; }
             // screenshot checks of the Home background styles: --page home-sphere, home-waves ... (not saved)
             if (arg.StartsWith("home-", StringComparison.Ordinal))
             {

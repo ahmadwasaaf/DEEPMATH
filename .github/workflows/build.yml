@@ -83,6 +83,8 @@ jobs:
           Run 'English' 'Dark' $true 'home-waves' '21-bg-waves'
           Run 'English' 'Dark' $true 'home-datastream' '22-bg-stream'
           Run 'English' 'Dark' $true 'newinvoice-details' '23-newinvoice-details'
+          Run 'English' 'Dark' $true 'settings-accent' '24-accent-dark'
+          Run 'English' 'Light' $true 'settings-accent' '25-accent-light'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''
