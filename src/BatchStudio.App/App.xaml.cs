@@ -36,7 +36,12 @@ public partial class App : Application
         {
             var arg = e.Args[i + 1].ToLowerInvariant();
             // screenshot check of a custom accent colour (not saved)
-            if (arg == "settings-accent") { ThemeService.ApplyAccent("#E3008C"); arg = "settings"; }
+            // like a user picking a colour on the open Settings page (controls already created)
+            if (arg == "settings-accent")
+            {
+                arg = "settings";
+                Dispatcher.BeginInvoke(() => ThemeService.ApplyAccent("#E3008C"), DispatcherPriority.ContextIdle);
+            }
             // screenshot checks of the Home background styles: --page home-sphere, home-waves ... (not saved)
             if (arg.StartsWith("home-", StringComparison.Ordinal))
             {
