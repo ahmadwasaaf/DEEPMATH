@@ -227,6 +227,19 @@ public sealed partial class MainViewModel : ObservableObject
         return null;
     }
 
+    /// <summary>Theme colour assigned to a supplier for a template (CLIENT THEME MEMORY), or null.</summary>
+    public int? ThemeFor(string supplier, string template) =>
+        Workspace == null ? null
+        : BatchStudio.Core.Workbook.ThemeMemory.Find(BatchStudio.Core.Workbook.ThemeMemory.Read(Workspace.ThemeMemoryPath), supplier, template);
+
+    /// <summary>Saves (null = removes) a supplier's theme colour in the workbook, like ASSIGN THEME.</summary>
+    public Task AssignTheme(string supplier, string template, int? rgb)
+    {
+        var ws = Workspace ?? throw new InvalidOperationException("No entity is open.");
+        int keep = Settings.KeepBackups;
+        return Task.Run(() => ws.Change(ed => BatchStudio.Core.Workbook.ThemeMemory.Assign(ed, supplier, template, rgb), keep));
+    }
+
     /// <summary>History → Open Invoice → Edit: restores the archived invoice on the New Invoice page (Smart Invoice Repair).</summary>
     public void StartInvoiceRepair(string templateName, string invoiceNo, string partyType, string archivedFile)
     {

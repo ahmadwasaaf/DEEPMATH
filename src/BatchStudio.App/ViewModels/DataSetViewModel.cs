@@ -89,7 +89,8 @@ public sealed partial class DataSetViewModel : ObservableObject
     [ObservableProperty] private bool _isWaitingForExcel;
     [ObservableProperty] private int _rowCount;
 
-    public ObservableCollection<FieldEditViewModel> Fields { get; } = [];
+    /// <summary>Details pane: <see cref="FieldEditViewModel"/>s plus, for suppliers, the <see cref="ThemeFieldViewModel"/>.</summary>
+    public ObservableCollection<object> Fields { get; } = [];
     public DataTable? Table { get; private set; }
     public string Title => Loc.T(TitleKey);
 
@@ -203,7 +204,23 @@ public sealed partial class DataSetViewModel : ObservableObject
             var col = c;
             Fields.Add(new FieldEditViewModel(value, c, _main.HasOptions(Session.Definition.Key, c.Caption),
                 () => _main.OptionsFor(Session.Definition.Key, col.Caption, ColumnValues(col))));
+            // suppliers: the client theme colour sits right after DEFAULT TEMPLATE
+            if (Session.Definition.Key == "suppliers" && c.Caption.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))
+                Fields.Add(ThemeFieldFor(value));
         }
+        if (Session.Definition.Key == "suppliers" && !Fields.OfType<ThemeFieldViewModel>().Any()) Fields.Add(ThemeFieldFor(value));
+    }
+
+    private ThemeFieldViewModel ThemeFieldFor(DataRowView row)
+    {
+        string Get(Func<string, bool> pick)
+        {
+            foreach (DataColumn c in Table!.Columns) if (pick(c.Caption)) return (row[c.ColumnName] as string ?? "").Trim();
+            return "";
+        }
+        var name = Table!.Columns.Count > 1 ? (row[ColName(1)] as string ?? "").Trim() : "";
+        var template = Get(c => c.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase));
+        return new ThemeFieldViewModel(_main, name, template.Length > 0 ? template : "INVOICE");
     }
 
     private IEnumerable<string> ColumnValues(DataColumn c) =>
@@ -430,5 +447,80 @@ public sealed partial class DataSetViewModel : ObservableObject
     {
         _autoSave.Stop();
         _retry.Stop();
+    }
+}
+
+/// <summary>
+/// Supplier theme colour (Client Theme Memory): hex code + swatch; empty = "Not Assigned Yet".
+/// Saved into CLIENT THEME MEMORY for the supplier's template (INVOICE / INV1), like ASSIGN THEME in Excel.
+/// </summary>
+public sealed partial class ThemeFieldViewModel : ObservableObject
+{
+    private readonly MainViewModel _main;
+    private int? _saved;
+
+    public string Supplier { get; }
+    public string Template { get; }
+    public bool Supported { get; }
+    public string Caption => "Theme";
+    public string Note => Supported ? Loc.F("Theme.For", Template.ToUpperInvariant()) : Loc.T("Theme.NotSupported");
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Swatch), nameof(HasColor))]
+    private string _hex = "";
+    [ObservableProperty] private string _status = "";
+
+    public bool HasColor => BatchStudio.Core.Workbook.ThemeMemory.TryParseHex(Hex, out _);
+    public System.Windows.Media.Brush Swatch
+    {
+        get
+        {
+            if (!BatchStudio.Core.Workbook.ThemeMemory.TryParseHex(Hex, out var rgb)) return System.Windows.Media.Brushes.Transparent;
+            var (r, g, b) = BatchStudio.Core.Workbook.ThemeMemory.Split(rgb);
+            return new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
+        }
+    }
+
+    public ThemeFieldViewModel(MainViewModel main, string supplier, string template)
+    {
+        _main = main;
+        Supplier = supplier;
+        Template = template;
+        Supported = BatchStudio.Core.Workbook.ThemeMemory.Supports(template) && supplier.Length > 0;
+        _saved = Supported ? main.ThemeFor(supplier, template) : null;
+        _hex = _saved is { } v ? BatchStudio.Core.Workbook.ThemeMemory.ToHex(v) : "";
+    }
+
+    [RelayCommand]
+    private async Task PickAsync()
+    {
+        if (!Supported) return;
+        var picked = ColorPicker.Pick(_saved);
+        if (picked == null) return;
+        Hex = BatchStudio.Core.Workbook.ThemeMemory.ToHex(picked.Value);
+        await CommitAsync();
+    }
+
+    /// <summary>Called when the hex box is left or Enter is pressed.</summary>
+    [RelayCommand]
+    public async Task CommitAsync()
+    {
+        if (!Supported) return;
+        int? rgb = null;
+        if (Hex.Trim().Length > 0)
+        {
+            if (!BatchStudio.Core.Workbook.ThemeMemory.TryParseHex(Hex, out var v)) { Status = Loc.T("Theme.BadHex"); return; }
+            rgb = v;
+            Hex = BatchStudio.Core.Workbook.ThemeMemory.ToHex(v);
+        }
+        if (rgb == _saved) { Status = ""; return; }
+        Status = Loc.T("Status.SavingWorkbook");
+        try
+        {
+            await _main.AssignTheme(Supplier, Template, rgb);
+            _saved = rgb;
+            Status = rgb == null ? Loc.T("Theme.Cleared") : Loc.T("Theme.Saved");
+        }
+        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
     }
 }

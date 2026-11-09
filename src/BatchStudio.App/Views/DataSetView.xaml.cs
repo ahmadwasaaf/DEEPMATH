@@ -15,6 +15,16 @@ public partial class DataSetView : UserControl
         SearchHost.SizeChanged += (_, _) => SearchBox.Width = Math.Max(0, Math.Min(300, SearchHost.ActualWidth));
     }
 
+    private void OnThemeLostFocus(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is ThemeFieldViewModel t) t.CommitCommand.Execute(null);
+    }
+
+    private void OnThemeKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.Enter && (sender as FrameworkElement)?.DataContext is ThemeFieldViewModel t) t.CommitCommand.Execute(null);
+    }
+
     /// <summary>Suppliers / Clients: a narrow ID + name list and a wide details pane.</summary>
     private void ApplyLayout()
     {

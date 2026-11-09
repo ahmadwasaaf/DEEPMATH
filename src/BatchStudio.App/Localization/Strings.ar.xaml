@@ -270,4 +270,10 @@
     <sys:String x:Key="Reports.Title">التقارير</sys:String>
     <sys:String x:Key="Reports.Hint">اختر شركة من القائمة ثم "عرض التقرير" (يظهر هنا) أو "تصدير التقرير" (PDF على سطح المكتب).</sys:String>
     <sys:String x:Key="Reports.Count">{0} شركة</sys:String>
+    <sys:String x:Key="Theme.For">لون الفاتورة على قالب {0}</sys:String>
+    <sys:String x:Key="Theme.NotSupported">الثيم يعمل مع قالبي INVOICE و INV1</sys:String>
+    <sys:String x:Key="Theme.BadHex">اكتب كود لون مثل #7030A0.</sys:String>
+    <sys:String x:Key="Theme.Saved">تم حفظ لون الثيم في الملف (CLIENT THEME MEMORY).</sys:String>
+    <sys:String x:Key="Theme.Cleared">تمت إزالة لون الثيم - غير معيّن.</sys:String>
+    <sys:String x:Key="Theme.Pick">اختيار لون</sys:String>
 </ResourceDictionary>

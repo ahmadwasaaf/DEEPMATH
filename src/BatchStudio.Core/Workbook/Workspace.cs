@@ -45,6 +45,8 @@ public sealed class Workspace
     public string DashboardPath => Path.Combine(CacheRoot, DatabaseLayout.DashboardFolder, "Dashboard.xlsx");
     public string ReportTemplatePath => Path.Combine(CacheRoot, DatabaseLayout.DashboardFolder, "Supplier Report.xlsx");
     public string HistoryPath => DataSets.InvoiceHistory.FullPath(CacheRoot);
+    /// <summary>Copy of CLIENT THEME MEMORY (supplier colours).</summary>
+    public string ThemeMemoryPath => Path.Combine(CacheRoot, "System", "ThemeMemory.xlsx");
     public string DataPath(DataSetDefinition d) => d.FullPath(CacheRoot);
 
     /// <summary>The archive root: BATCH STUDIO next to the workbook, else the one set in the workbook (_ARCHIVE_CONFIG).</summary>
@@ -166,6 +168,7 @@ public sealed class Workspace
             var report = pkg.Sheets.FirstOrDefault(s => s.Name.StartsWith("Supplier Re", StringComparison.OrdinalIgnoreCase));
             if (report != null) plan.Add((report.Name, Path.Combine(DatabaseLayout.DashboardFolder, "Supplier Report.xlsx")));
             if (pkg.Find(ArchiveConfigSheet) is { } cfg) plan.Add((cfg.Name, Path.Combine("System", "ArchiveConfig.xlsx")));
+            if (pkg.Find(ThemeMemory.Sheet) is { } theme) plan.Add((theme.Name, Path.Combine("System", "ThemeMemory.xlsx")));
             var templates = pkg.Sheets
                 .Where(s => s.Visible && s != report && !SystemSheets.Contains(s.Name, StringComparer.OrdinalIgnoreCase))
                 .Select(s => s.Name).ToList();
