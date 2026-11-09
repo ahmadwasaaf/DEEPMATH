@@ -186,8 +186,10 @@ public sealed partial class MainViewModel : ObservableObject
             var stamp = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
             if (force || stamp != _historyStamp)
             {
+                bool first = _historyStamp == default;
                 _historyStamp = stamp;
                 _historyCount = File.Exists(path) ? BatchStudio.Core.Invoices.InvoiceHistoryBook.Read(path).Count : 0;
+                if (!first && !force) Home.RefreshTicker();
             }
         }
         catch { }

@@ -323,4 +323,8 @@
     <sys:String x:Key="Mass.PdfDone">تم حفظ PDF</sys:String>
     <sys:String x:Key="Mass.PdfSummary">تم تصدير: {0}     فشل: {1}</sys:String>
     <sys:String x:Key="Mass.PdfSaved">اتحفظت في {0}</sys:String>
+    <sys:String x:Key="Home.TopSupplier">أكبر مورد</sys:String>
+    <sys:String x:Key="Home.TopClient">أكبر عميل</sys:String>
+    <sys:String x:Key="Home.TotalValue">إجمالي قيمة المعاملات</sys:String>
+    <sys:String x:Key="Home.TotalInvoices">عدد الفواتير</sys:String>
 </ResourceDictionary>

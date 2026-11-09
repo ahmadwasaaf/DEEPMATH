@@ -17,9 +17,20 @@ public sealed class StatTile
     public required string Glyph { get; init; }
 }
 
+/// <summary>One entry of the Home news ticker ("Top Supplier: NAME · 321,501.00").</summary>
+public sealed class TickerItem
+{
+    public required string Glyph { get; init; }
+    public required string Label { get; init; }
+    public required string Value { get; init; }
+}
+
 public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
 {
     public ObservableCollection<StatTile> Tiles { get; } = [];
+    public ObservableCollection<TickerItem> Ticker { get; } = [];
+    /// <summary>Raised after the ticker entries changed (the view restarts its scroll).</summary>
+    public event Action? TickerChanged;
     public ObservableCollection<string> Missing { get; } = [];
     [ObservableProperty] private string _entityName = "";
     [ObservableProperty] private string _databasePath = "";
@@ -34,19 +45,51 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         EntityName = main.ActiveEntity?.Name ?? "";
         var ws = main.Workspace!;
         DatabasePath = ws.WorkbookPath;
-        foreach (var p in main.DataPages)
-            Tiles.Add(new StatTile { Title = p.Title, Value = p.RowCount.ToString("N0"), Glyph = p.Icon });
+        // same order and icons as the sidebar
+        foreach (var (key, nav) in new[] { ("suppliers", "Nav.Suppliers"), ("clients", "Nav.Clients"), ("items", "Nav.Items"), ("categories", "Nav.Categories") })
+        {
+            var p = main.DataPages.FirstOrDefault(x => x.Session.Definition.Key == key);
+            if (p == null) continue;
+            Tiles.Add(new StatTile { Title = p.Title, Value = p.RowCount.ToString("N0"), Glyph = main.Nav.FirstOrDefault(n => n.Key == nav)?.Glyph ?? "" });
+        }
         var tpl = TemplateRegistry.Scan(root);
         Tiles.Add(new StatTile
         {
             Title = Loc.T("Nav.Templates"),
             Value = $"{tpl.Count(t => t.Status == TemplateStatus.Linked)} / {tpl.Count}",
-            Glyph = "",
+            Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.Templates")?.Glyph ?? "",
         });
+        RefreshTicker();
         foreach (var d in DataSets.All)
             if (!ws.Sheets.Contains(d.SheetName, StringComparer.OrdinalIgnoreCase)) Missing.Add(Loc.F("Home.MissingSheet", d.SheetName));
         if (!Directory.Exists(ws.ArchiveRoot)) Missing.Add(Loc.F("Home.MissingArchive", ws.ArchiveRoot));
         HasMissing = Missing.Count > 0;
+    }
+
+    /// <summary>Latest figures of INVOICE HISTORY (all time): top supplier, top client, total value, invoice count.</summary>
+    public void RefreshTicker()
+    {
+        Ticker.Clear();
+        var root = main.Root;
+        if (root == null) { TickerChanged?.Invoke(); return; }
+        try
+        {
+            var path = DataSets.InvoiceHistory.FullPath(root);
+            var history = File.Exists(path) ? BatchStudio.Core.Invoices.InvoiceHistoryBook.Read(path) : [];
+            var sup = main.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "suppliers")?.Session.Current;
+            var cli = main.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "clients")?.Session.Current;
+            var r = BatchStudio.Core.Reports.DashboardEngine.Compute(history, BatchStudio.Core.Reports.DashboardEngine.Categories(sup, cli),
+                new BatchStudio.Core.Reports.DashboardFilter());
+            static string Money(decimal v) => v.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+            var topS = r.Ranking.FirstOrDefault(x => x.Type == "SUPPLIERS");
+            var topC = r.Ranking.FirstOrDefault(x => x.Type == "CLIENTS");
+            if (topS != null) Ticker.Add(new TickerItem { Glyph = "\uE734", Label = Loc.T("Home.TopSupplier"), Value = $"{topS.Name} · {Money(topS.Amount)}" });
+            if (topC != null) Ticker.Add(new TickerItem { Glyph = "\uE734", Label = Loc.T("Home.TopClient"), Value = $"{topC.Name} · {Money(topC.Amount)}" });
+            Ticker.Add(new TickerItem { Glyph = "\uE9D2", Label = Loc.T("Home.TotalValue"), Value = Money(r.Total) });
+            Ticker.Add(new TickerItem { Glyph = "\uE81C", Label = Loc.T("Home.TotalInvoices"), Value = r.Invoices.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) });
+        }
+        catch { }
+        TickerChanged?.Invoke();
     }
 
     [RelayCommand]

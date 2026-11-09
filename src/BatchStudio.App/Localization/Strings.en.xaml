@@ -323,4 +323,8 @@
     <sys:String x:Key="Mass.PdfDone">PDF saved</sys:String>
     <sys:String x:Key="Mass.PdfSummary">PDF EXPORTED: {0}     FAILED: {1}</sys:String>
     <sys:String x:Key="Mass.PdfSaved">Saved in {0}</sys:String>
+    <sys:String x:Key="Home.TopSupplier">Top Supplier</sys:String>
+    <sys:String x:Key="Home.TopClient">Top Client</sys:String>
+    <sys:String x:Key="Home.TotalValue">Total Transactions Value</sys:String>
+    <sys:String x:Key="Home.TotalInvoices">Total Invoices Count</sys:String>
 </ResourceDictionary>
