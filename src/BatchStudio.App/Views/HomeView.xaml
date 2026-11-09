@@ -92,12 +92,13 @@
                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PulseTopSupplier}" ToolTip="{Binding PulseTopSupplierTip}" Style="{StaticResource PulseValue}" />
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Home.PulseTopClient}" Style="{StaticResource PulseLabel}" />
                     <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PulseTopClient}" ToolTip="{Binding PulseTopClientTip}" Style="{StaticResource PulseValue}" />
-                    <!-- totals -->
+                    <!-- total transactions: label on top, the value large -->
                     <Border Grid.RowSpan="2" Grid.Column="2" Width="1" Margin="20,2" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
-                    <TextBlock Grid.Row="0" Grid.Column="3" Text="{DynamicResource Home.PulseInvoices}" Style="{StaticResource PulseLabel}" />
-                    <TextBlock Grid.Row="0" Grid.Column="4" Text="{Binding PulseInvoices}" Style="{StaticResource PulseValue}" FlowDirection="LeftToRight" HorizontalAlignment="Right" MinWidth="90" TextAlignment="Right" />
-                    <TextBlock Grid.Row="1" Grid.Column="3" Text="{DynamicResource Home.PulseValue}" Style="{StaticResource PulseLabel}" />
-                    <TextBlock Grid.Row="1" Grid.Column="4" Text="{Binding PulseTotal}" ToolTip="{Binding PulseTotalTip}" Style="{StaticResource PulseValue}" FlowDirection="LeftToRight" HorizontalAlignment="Right" MinWidth="90" TextAlignment="Right" />
+                    <StackPanel Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="2" VerticalAlignment="Center" MinWidth="170">
+                        <TextBlock Text="{DynamicResource Home.PulseValue}" Style="{StaticResource PulseLabel}" Margin="0,0,0,2" HorizontalAlignment="Right" />
+                        <TextBlock Text="{Binding PulseTotal}" ToolTip="{Binding PulseTotalTip}" FontSize="30" FontWeight="SemiBold"
+                                   FlowDirection="LeftToRight" HorizontalAlignment="Right" />
+                    </StackPanel>
                 </Grid>
                 </Grid>
             </Border>

@@ -359,4 +359,5 @@
     <sys:String x:Key="Set.AccentRecent">Recent colours</sys:String>
     <sys:String x:Key="Set.AccentColors">Colours</sys:String>
     <sys:String x:Key="Set.AccentCustom">Custom colour</sys:String>
+    <sys:String x:Key="Home.InvoicesTile">Invoices</sys:String>
 </ResourceDictionary>

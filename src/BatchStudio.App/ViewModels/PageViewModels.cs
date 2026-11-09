@@ -85,6 +85,21 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         HasMissing = Missing.Count > 0;
     }
 
+    /// <summary>The "Invoices" card (count of INVOICE HISTORY) - kept last, updated with the pulse.</summary>
+    private void SetInvoicesTile(int count)
+    {
+        var title = Loc.T("Home.InvoicesTile");
+        var tile = new StatTile
+        {
+            Title = title,
+            Value = count.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
+            Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.History")?.Glyph ?? "",
+        };
+        int i = -1;
+        for (int k = 0; k < Tiles.Count; k++) if (Tiles[k].Title == title) { i = k; break; }
+        if (i >= 0) Tiles[i] = tile; else Tiles.Add(tile);
+    }
+
     /// <summary>$5.19M / $812.5K / $950 style amount for the pulse strip.</summary>
     public static string Compact(decimal v)
     {
@@ -114,6 +129,7 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             var topC = r.Ranking.FirstOrDefault(x => x.Type == "CLIENTS");
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             PulseInvoices = r.Invoices.ToString("N0", inv);
+            SetInvoicesTile(r.Invoices);
             PulseTotal = Compact(r.Total);
             PulseTotalTip = r.Total.ToString("N2", inv);
             PulseTopSupplier = topS?.Name ?? "—";

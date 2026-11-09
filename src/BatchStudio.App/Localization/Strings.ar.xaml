@@ -359,4 +359,5 @@
     <sys:String x:Key="Set.AccentRecent">الألوان الأخيرة</sys:String>
     <sys:String x:Key="Set.AccentColors">الألوان</sys:String>
     <sys:String x:Key="Set.AccentCustom">لون مخصص</sys:String>
+    <sys:String x:Key="Home.InvoicesTile">الفواتير</sys:String>
 </ResourceDictionary>
