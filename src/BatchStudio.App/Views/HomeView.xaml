@@ -53,23 +53,44 @@
                         <TextBlock Text="{DynamicResource Home.Pulse}" FontSize="12" FontWeight="SemiBold" Opacity="0.85" VerticalAlignment="Center" />
                         <TextBlock Style="{StaticResource Icon}" Text="&#xE9D2;" FontSize="13" Foreground="{StaticResource GoodBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
-                    <Grid Grid.Row="1" Margin="0,10,0,0">
-                        <ItemsControl ItemsSource="{Binding Ticker}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderThickness="0,0,1,0" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Padding="16,0" Height="44">
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" FontSize="10.5" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Tip}" ToolTipService.IsEnabled="{Binding HasTip}" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,12,0,0">
+                    <Grid.Resources>
+                        <Style x:Key="PulseLabel" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                            <Setter Property="FontSize" Value="11" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="Margin" Value="0,0,14,0" />
+                        </Style>
+                        <Style x:Key="PulseValue" TargetType="TextBlock">
+                            <Setter Property="FontSize" Value="16" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        </Style>
+                    </Grid.Resources>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="30" />
+                        <RowDefinition Height="30" />
+                    </Grid.RowDefinitions>
+                    <!-- companies: the wide side -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Home.PulseTopSupplier}" Style="{StaticResource PulseLabel}" />
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PulseTopSupplier}" ToolTip="{Binding PulseTopSupplierTip}" Style="{StaticResource PulseValue}" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Home.PulseTopClient}" Style="{StaticResource PulseLabel}" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PulseTopClient}" ToolTip="{Binding PulseTopClientTip}" Style="{StaticResource PulseValue}" />
+                    <!-- totals -->
+                    <Border Grid.RowSpan="2" Grid.Column="2" Width="1" Margin="20,2" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                    <TextBlock Grid.Row="0" Grid.Column="3" Text="{DynamicResource Home.PulseInvoices}" Style="{StaticResource PulseLabel}" />
+                    <TextBlock Grid.Row="0" Grid.Column="4" Text="{Binding PulseInvoices}" Style="{StaticResource PulseValue}" FlowDirection="LeftToRight" HorizontalAlignment="Right" MinWidth="90" TextAlignment="Right" />
+                    <TextBlock Grid.Row="1" Grid.Column="3" Text="{DynamicResource Home.PulseValue}" Style="{StaticResource PulseLabel}" />
+                    <TextBlock Grid.Row="1" Grid.Column="4" Text="{Binding PulseTotal}" ToolTip="{Binding PulseTotalTip}" Style="{StaticResource PulseValue}" FlowDirection="LeftToRight" HorizontalAlignment="Right" MinWidth="90" TextAlignment="Right" />
+                </Grid>
                 </Grid>
             </Border>
 

@@ -32,6 +32,14 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
 {
     public ObservableCollection<StatTile> Tiles { get; } = [];
     public ObservableCollection<TickerItem> Ticker { get; } = [];
+    // Business pulse (all time)
+    [ObservableProperty] private string _pulseTopSupplier = "—";
+    [ObservableProperty] private string _pulseTopSupplierTip = "";
+    [ObservableProperty] private string _pulseTopClient = "—";
+    [ObservableProperty] private string _pulseTopClientTip = "";
+    [ObservableProperty] private string _pulseInvoices = "0";
+    [ObservableProperty] private string _pulseTotal = "$0";
+    [ObservableProperty] private string _pulseTotalTip = "";
     /// <summary>Raised after the ticker entries changed (the view restarts its scroll).</summary>
     public event Action? TickerChanged;
     public ObservableCollection<string> Missing { get; } = [];
@@ -97,6 +105,13 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             var topS = r.Ranking.FirstOrDefault(x => x.Type == "SUPPLIERS");
             var topC = r.Ranking.FirstOrDefault(x => x.Type == "CLIENTS");
             var inv = System.Globalization.CultureInfo.InvariantCulture;
+            PulseInvoices = r.Invoices.ToString("N0", inv);
+            PulseTotal = Compact(r.Total);
+            PulseTotalTip = r.Total.ToString("N2", inv);
+            PulseTopSupplier = topS?.Name ?? "—";
+            PulseTopSupplierTip = topS == null ? "" : $"{topS.Name} · {topS.Amount.ToString("N2", inv)}";
+            PulseTopClient = topC?.Name ?? "—";
+            PulseTopClientTip = topC == null ? "" : $"{topC.Name} · {topC.Amount.ToString("N2", inv)}";
             Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseInvoices"), Value = r.Invoices.ToString("N0", inv), Tip = "" });
             Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseValue"), Value = Compact(r.Total), Tip = r.Total.ToString("N2", inv) });
             if (topS != null) Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseTopSupplier"), Value = topS.Name, Tip = $"{topS.Name} · {topS.Amount.ToString("N2", inv)}" });
