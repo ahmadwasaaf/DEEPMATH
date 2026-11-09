@@ -39,8 +39,16 @@ public static class AccentService
     /// <summary>Applies "auto" or a #RRGGBB accent for the current theme (call again after the theme changes).</summary>
     public static void Apply(string? accent, bool light)
     {
-        var res = Application.Current?.Resources;
-        if (res == null) return;
+        var app = Application.Current;
+        if (app == null) return;
+        // the Fluent theme is also merged into each window's resources, which are searched before the
+        // application's: the accent is set on the application and on every open window
+        ApplyTo(app.Resources, accent, light);
+        foreach (Window w in app.Windows) ApplyTo(w.Resources, accent, light);
+    }
+
+    private static void ApplyTo(ResourceDictionary res, string? accent, bool light)
+    {
         Color? custom = null;
         if (!string.IsNullOrWhiteSpace(accent) && !accent.Equals("auto", StringComparison.OrdinalIgnoreCase))
         {

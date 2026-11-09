@@ -24,6 +24,7 @@ public partial class App : Application
 
         var window = new MainWindow();
         MainWindow = window;
+        AccentService.Apply(ThemeService.Accent, ThemeService.Current == AppTheme.Light);
         window.FlowDirection = LanguageService.CurrentFlow;
         var vm = new MainViewModel(settings);
         window.DataContext = vm;
