@@ -69,26 +69,26 @@
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="40" SelectionMode="Single"
                       EnableRowVirtualization="False" VirtualizingPanel.IsVirtualizing="False">
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="#" Width="44" HeaderTemplate="{StaticResource CenterHeader}">
+                    <DataGridTemplateColumn Header="#" Width="36" HeaderTemplate="{StaticResource CenterHeader}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding No}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Width="2.4*" MinWidth="220">
+                    <DataGridTemplateColumn Width="2*" MinWidth="170">
                         <DataGridTemplateColumn.Header>
                             <TextBlock Text="{Binding DataContext.PartyHeader, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                         </DataGridTemplateColumn.Header>
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ComboBox ItemsSource="{Binding PartyOptions}" Text="{Binding PartyName, UpdateSourceTrigger=Explicit}" svc:ComboSearch.IsEnabled="True"
+                                <ComboBox ItemsSource="{Binding PartyOptions}" Text="{Binding PartyName, UpdateSourceTrigger=Explicit}" svc:ComboSearch.IsEnabled="True" FlowDirection="LeftToRight"
                                           HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,2" MaxDropDownHeight="320"
                                           IsEnabled="{Binding DataContext.IsBusy, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBool}}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="{StaticResource Mass.Template}" Width="110" HeaderTemplate="{StaticResource CenterHeader}">
+                    <DataGridTemplateColumn Header="{StaticResource Mass.Template}" Width="92" HeaderTemplate="{StaticResource CenterHeader}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <ComboBox ItemsSource="{Binding TemplateOptions}" SelectedItem="{Binding Template}" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,2"
@@ -96,28 +96,28 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="{StaticResource Mass.Category}" Width="1.3*" MinWidth="120">
+                    <DataGridTemplateColumn Header="{StaticResource Mass.Category}" Width="1*" MinWidth="60">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding CategoryText}" VerticalAlignment="Center" Margin="6,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding CategoryText}" Opacity="0.85" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="{StaticResource Mass.Amount}" Width="130" HeaderTemplate="{StaticResource CenterHeader}">
+                    <DataGridTemplateColumn Header="{StaticResource Mass.Amount}" Width="108" HeaderTemplate="{StaticResource CenterHeader}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBox Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="2,2" MinHeight="30" Padding="4,2" IsEnabled="{Binding DataContext.IsBusy, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBool}}" FlowDirection="LeftToRight" LostFocus="OnAmountLostFocus" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="{StaticResource Mass.Items}" Width="70" HeaderTemplate="{StaticResource CenterHeader}">
+                    <DataGridTemplateColumn Header="{StaticResource Mass.Items}" Width="58" HeaderTemplate="{StaticResource CenterHeader}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBox Text="{Binding CountText, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="2,2" MinHeight="30" Padding="4,2" IsEnabled="{Binding DataContext.IsBusy, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBool}}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="{StaticResource Mass.Date}" Width="140" HeaderTemplate="{StaticResource CenterHeader}">
+                    <DataGridTemplateColumn Header="{StaticResource Mass.Date}" Width="128" HeaderTemplate="{StaticResource CenterHeader}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <DatePicker SelectedDate="{Binding Date}" VerticalAlignment="Center" Margin="2,2"
@@ -125,7 +125,7 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="{StaticResource Mass.Status}" Width="1.6*" MinWidth="150">
+                    <DataGridTemplateColumn Header="{StaticResource Mass.Status}" Width="1.4*" MinWidth="90">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding Status}" VerticalAlignment="Center" Margin="6,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding Status}">

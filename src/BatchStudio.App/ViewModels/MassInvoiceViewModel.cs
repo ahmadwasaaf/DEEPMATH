@@ -166,6 +166,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
         row.Template = tpl ?? (row.Template.Length > 0 ? row.Template : TemplateNames.FirstOrDefault() ?? "");
         row.CategoryText = InvoiceService.CategoryFor(p, _categories)?.Text ?? "";
         if (row.CountText.Trim().Length == 0) row.CountText = DefaultCount;
+        row.Date ??= DefaultDate;
         Recount();
     }
 
