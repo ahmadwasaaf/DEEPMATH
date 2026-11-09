@@ -49,6 +49,10 @@ public partial class HomeView : UserControl
         ClockDate.Text = now.ToString("dddd, d MMMM yyyy", culture);
     }
 
+    private void OnParticleAreaMouseMove(object sender, System.Windows.Input.MouseEventArgs e) => Particles.SetPointer(e.GetPosition(Particles));
+
+    private void OnParticleAreaMouseLeave(object sender, System.Windows.Input.MouseEventArgs e) => Particles.SetPointer(null);
+
     private void StartPulse()
     {
         var pulse = new DoubleAnimation(1, 0.25, TimeSpan.FromSeconds(0.9)) { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever };
