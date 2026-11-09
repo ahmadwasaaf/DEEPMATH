@@ -8,7 +8,33 @@ namespace BatchStudio.App.Views;
 
 public partial class HistoryView : UserControl
 {
-    public HistoryView() => InitializeComponent();
+    private HistoryViewModel? _vm;
+
+    public HistoryView()
+    {
+        InitializeComponent();
+        // the newest invoices matter most: the list always opens on the last one
+        Loaded += (_, _) => { Hook(DataContext as HistoryViewModel); ScrollToEnd(); };
+        Unloaded += (_, _) => Hook(null);
+        DataContextChanged += (_, e) => { if (IsLoaded) { Hook(e.NewValue as HistoryViewModel); ScrollToEnd(); } };
+    }
+
+    private void Hook(HistoryViewModel? vm)
+    {
+        if (_vm != null) _vm.ScrollToEndRequested -= ScrollToEnd;
+        _vm = vm;
+        if (_vm != null) _vm.ScrollToEndRequested += ScrollToEnd;
+    }
+
+    private void ScrollToEnd()
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (HistoryGrid.Items.Count == 0) return;
+            HistoryGrid.UpdateLayout();
+            HistoryGrid.ScrollIntoView(HistoryGrid.Items[HistoryGrid.Items.Count - 1]);
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
 
     /// <summary>A command picked in a row's Actions list runs at once (like the V28 sheet), then the list resets.</summary>
     private void OnActionChosen(object sender, SelectionChangedEventArgs e)

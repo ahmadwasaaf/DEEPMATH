@@ -95,16 +95,26 @@ public sealed partial class HistoryViewModel : ObservableObject
         From = From, To = To, Today = DateTime.Today,
     };
 
+    /// <summary>Asks the view to show the newest invoice (bottom of the list).</summary>
+    public event Action? ScrollToEndRequested;
+    private string? _lastQuery;
+    private int _lastCount = -1;
+
     private void ApplyFilter()
     {
         var keep = Selected?.InvoiceNo;
         var q = Query();
+        var sig = $"{q.Text}|{q.Tab}|{q.Period}|{q.WeekStart}|{q.From}|{q.To}";
         var shown = _all.Where(r => q.Matches(r.Record)).ToList();
         Rows.Clear();
         foreach (var r in shown) Rows.Add(r);
         CountText = Loc.F("Hist.Count", shown.Count);
         TotalText = shown.Sum(r => r.Amount ?? 0).ToString("N2", CultureInfo.InvariantCulture);
         Selected = Rows.FirstOrDefault(r => r.InvoiceNo == keep);
+        // a new filter, or new invoices, jump to the newest one; a plain refresh keeps the scroll position
+        if (sig != _lastQuery || shown.Count > _lastCount) ScrollToEndRequested?.Invoke();
+        _lastQuery = sig;
+        _lastCount = shown.Count;
     }
 
     partial void OnSearchTextChanged(string value) { _searchDelay.Stop(); _searchDelay.Start(); }
@@ -156,7 +166,8 @@ public sealed partial class HistoryViewModel : ObservableObject
         var dest = InvoiceService.DesktopPdfPath(r.Name, r.Amount);
         await RunBusy(async () =>
         {
-            await Task.Run(() => ExcelPdf.Export(r.ResolvedPath, dest));
+            var sheets = _main.InvoiceSheetNames();
+            await Task.Run(() => ExcelPdf.Export(r.ResolvedPath, dest, sheets));
             Status = Loc.F("Hist.PdfSaved", dest);
         });
     }

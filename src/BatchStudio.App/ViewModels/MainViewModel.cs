@@ -208,6 +208,23 @@ public sealed partial class MainViewModel : ObservableObject
                string.Equals(c, "Status", StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>Sheet names an invoice file can carry (template names + their sheets), for invoice-only PDF export.</summary>
+    public IReadOnlyCollection<string> InvoiceSheetNames()
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "INVOICE", "INV1" };
+        try
+        {
+            if (Root != null)
+                foreach (var t in BatchStudio.Core.Templates.TemplateRegistry.Scan(Root))
+                {
+                    set.Add(t.Name);
+                    if (!string.IsNullOrWhiteSpace(t.Map?.Sheet)) set.Add(t.Map!.Sheet);
+                }
+        }
+        catch { }
+        return set;
+    }
+
     public IReadOnlyList<string>? OptionsFor(string dataSet, string caption, IEnumerable<string> existing)
     {
         var c = caption.Trim();

@@ -53,8 +53,17 @@ public sealed partial class CompanyReportViewModel : ObservableObject
     /// <summary>Shown inside the Reports page (no Back button).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowBack))]
+    [NotifyPropertyChangedFor(nameof(ShowPdf))]
     private bool _embedded;
     public bool ShowBack => !Embedded;
+    /// <summary>The Reports page has its own Export Report button.</summary>
+    public bool ShowPdf => !Embedded;
+
+    /// <summary>Company's Activities section open (default) or folded away.</summary>
+    [ObservableProperty] private bool _activitiesExpanded = true;
+
+    [RelayCommand]
+    private void ToggleActivities() => ActivitiesExpanded = !ActivitiesExpanded;
     public string TypeText => Type == "SUPPLIERS" ? Loc.T("Nav.Suppliers") : Loc.T("Nav.Clients");
     private CompanyReport? _report;
 
@@ -157,7 +166,8 @@ public sealed partial class CompanyReportViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            await Task.Run(() => ExcelPdf.Export(line.ResolvedPath, dest));
+            var sheets = _main.InvoiceSheetNames();
+            await Task.Run(() => ExcelPdf.Export(line.ResolvedPath, dest, sheets));
             Status = Loc.F("Hist.PdfSaved", dest);
         }
         catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }

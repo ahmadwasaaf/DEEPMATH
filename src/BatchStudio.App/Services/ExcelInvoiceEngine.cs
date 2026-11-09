@@ -156,8 +156,23 @@ public static class ExcelInvoiceEngine
             app.Calculate();
 
             // ---- copy the invoice to its own workbook, exactly like ArchiveEngine
+            // the new workbook is found by comparing the open workbooks before / after the copy:
+            // in a hidden Excel, ActiveWorkbook can still be the source workbook (would archive the whole system file)
+            var before = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (dynamic b in app.Workbooks) before.Add((string)b.Name);
             ws.Copy();
-            outWb = app.ActiveWorkbook;
+            foreach (dynamic b in app.Workbooks)
+                if (!before.Contains((string)b.Name)) { outWb = b; break; }
+            if (outWb == null) throw new InvalidOperationException("Excel did not create the invoice workbook.");
+            // only the invoice sheet may stay in the archived file
+            for (int i = (int)outWb.Worksheets.Count; i >= 1; i--)
+            {
+                dynamic sh = outWb.Worksheets[i];
+                if (string.Equals((string)sh.Name, (string)ws.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                try { sh.Visible = -1; sh.Delete(); } catch { }
+            }
+            if ((int)outWb.Worksheets.Count != 1 || (int)outWb.Sheets.Count != 1)
+                throw new InvalidOperationException("The invoice workbook has more than one sheet.");
             dynamic outWs = outWb.Worksheets[1];
             try { for (int i = (int)outWs.OLEObjects().Count; i >= 1; i--) outWs.OLEObjects(i).Delete(); } catch { }
             try

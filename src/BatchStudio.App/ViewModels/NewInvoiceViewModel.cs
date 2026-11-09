@@ -582,7 +582,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         {
             var source = SavedPath;
             var dest = InvoiceService.DesktopPdfPath(_draft?.PartyName ?? SelectedParty?.Name ?? "", _draft?.Total);
-            var pdf = await Task.Run(() => ExcelPdf.Export(source, dest));
+            var sheets = main.InvoiceSheetNames();
+            var pdf = await Task.Run(() => ExcelPdf.Export(source, dest, sheets));
             Status = Loc.F("Hist.PdfSaved", pdf);
         }
         catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
