@@ -45,6 +45,10 @@
                 <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <Border Style="{StaticResource Card}" MinWidth="300">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource Rep.Total}" Style="{StaticResource Muted}" FontSize="11" />
@@ -62,7 +66,22 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
-            <Border Grid.Column="2" Style="{StaticResource Card}">
+            <Border>
+                <!-- inside the Reports page (narrow) the activities go below the figures -->
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource Card}">
+                        <Setter Property="Grid.Column" Value="2" />
+                        <Setter Property="Grid.Row" Value="0" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Embedded}" Value="True">
+                                <Setter Property="Grid.Column" Value="0" />
+                                <Setter Property="Grid.ColumnSpan" Value="3" />
+                                <Setter Property="Grid.Row" Value="1" />
+                                <Setter Property="Margin" Value="0,12,0,0" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
                         <Button DockPanel.Dock="Right" Command="{Binding SaveDescriptionCommand}" IsEnabled="{Binding DescriptionDirty}">
