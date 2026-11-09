@@ -99,8 +99,8 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseInvoices"), Value = r.Invoices.ToString("N0", inv), Tip = "" });
             Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseValue"), Value = Compact(r.Total), Tip = r.Total.ToString("N2", inv) });
-            if (topS != null) Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseTopSupplier"), Value = topS.Name, Tip = topS.Amount.ToString("N2", inv) });
-            if (topC != null) Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseTopClient"), Value = topC.Name, Tip = topC.Amount.ToString("N2", inv) });
+            if (topS != null) Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseTopSupplier"), Value = topS.Name, Tip = $"{topS.Name} · {topS.Amount.ToString("N2", inv)}" });
+            if (topC != null) Ticker.Add(new TickerItem { Glyph = "", Label = Loc.T("Home.PulseTopClient"), Value = topC.Name, Tip = $"{topC.Name} · {topC.Amount.ToString("N2", inv)}" });
         }
         catch { }
         TickerChanged?.Invoke();

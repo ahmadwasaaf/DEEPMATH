@@ -23,10 +23,9 @@ public partial class HomeView : UserControl
             _clock.Start();
             Hook(DataContext as HomeViewModel);
             StartPulse();
-            Dispatcher.BeginInvoke(RestartTicker, DispatcherPriority.Loaded);
         };
         Unloaded += (_, _) => { _clock.Stop(); Hook(null); };
-        DataContextChanged += (_, e) => { if (IsLoaded) { Hook(e.NewValue as HomeViewModel); RestartTicker(); } };
+        DataContextChanged += (_, e) => { if (IsLoaded) Hook(e.NewValue as HomeViewModel); };
     }
 
     private void Hook(HomeViewModel? vm)
@@ -36,7 +35,7 @@ public partial class HomeView : UserControl
         if (_vm != null) _vm.TickerChanged += OnTickerChanged;
     }
 
-    private void OnTickerChanged() => Dispatcher.BeginInvoke(RestartTicker, DispatcherPriority.Loaded);
+    private void OnTickerChanged() { }
 
     // ---------------------------------------------------------------- lock-screen clock
     private void UpdateClock()
@@ -46,41 +45,6 @@ public partial class HomeView : UserControl
         ClockTime.Text = now.ToString("HH:mm", CultureInfo.InvariantCulture);
         ClockSeconds.Text = now.ToString("ss", CultureInfo.InvariantCulture);
         ClockDate.Text = now.ToString("dddd, d MMMM yyyy", culture);
-    }
-
-    // ---------------------------------------------------------------- news ticker
-    private void OnTickerSizeChanged(object sender, SizeChangedEventArgs e) => RestartTicker();
-
-    /// <summary>
-    /// The indicators sit side by side; when they do not fit, the strip glides slowly to the end and back
-    /// (a calm pan instead of fast scrolling text).
-    /// </summary>
-    private void RestartTicker()
-    {
-        TickerShift.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, null);
-        TickerShift.X = 0;
-        Canvas.SetLeft(TickerStrip, 0);
-        TickerStrip.Width = double.NaN;
-        TickerStrip.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        double content = TickerStrip.DesiredSize.Width;
-        double view = TickerHost.ActualWidth;
-        if (content <= 0 || view <= 0) return;
-        // fits: the indicators share the whole width of the card
-        if (content <= view)
-        {
-            TickerStrip.Width = view;
-            return;
-        }
-        double travel = content - view;
-        const double pixelsPerSecond = 25;
-        var glide = TimeSpan.FromSeconds(travel / pixelsPerSecond);
-        var pause = TimeSpan.FromSeconds(2.5);
-        var anim = new DoubleAnimationUsingKeyFrames { RepeatBehavior = RepeatBehavior.Forever };
-        anim.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(pause)));
-        anim.KeyFrames.Add(new EasingDoubleKeyFrame(-travel, KeyTime.FromTimeSpan(pause + glide), new SineEase { EasingMode = EasingMode.EaseInOut }));
-        anim.KeyFrames.Add(new LinearDoubleKeyFrame(-travel, KeyTime.FromTimeSpan(pause + glide + pause)));
-        anim.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(pause + glide + pause + glide), new SineEase { EasingMode = EasingMode.EaseInOut }));
-        TickerShift.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, anim);
     }
 
     private void StartPulse()
