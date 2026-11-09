@@ -144,19 +144,27 @@
                         <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" Header="{StaticResource Col.InvCount}" Binding="{Binding Count}" Width="Auto" MinWidth="80" />
                         <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Type}" Binding="{Binding Type}" Width="Auto" MinWidth="90" />
                         <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Category}" Binding="{Binding Category}" Width="Auto" MinWidth="120" />
-                        <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="Auto">
+                        <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="190">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <StackPanel Orientation="Horizontal" Margin="4,0">
-                                        <Button Command="{Binding DataContext.ViewReportCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"
-                                                Padding="8,2" Margin="0,0,6,0" ToolTip="{DynamicResource Rep.View}">
-                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8A1;" FontSize="12" />
-                                        </Button>
-                                        <Button Command="{Binding DataContext.ExportReportCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"
-                                                Padding="8,2" ToolTip="{DynamicResource Rep.Export}">
-                                            <TextBlock Style="{StaticResource Icon}" Text="&#xEA90;" FontSize="12" />
-                                        </Button>
-                                    </StackPanel>
+                                    <Grid Margin="4,0" VerticalAlignment="Center">
+                                        <ComboBox x:Name="Act" SelectionChanged="OnActionChosen" HorizontalAlignment="Stretch" MinHeight="28" Padding="10,3">
+                                            <ComboBoxItem Tag="report" Content="{DynamicResource Act.ViewReport}" />
+                                            <ComboBoxItem Tag="exportreport" Content="{DynamicResource Act.ExportReport}" />
+                                        </ComboBox>
+                                        <TextBlock Text="{DynamicResource Col.Actions}" IsHitTestVisible="False" VerticalAlignment="Center" Margin="11,0,26,0" Opacity="0.75">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedIndex, ElementName=Act}" Value="-1">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

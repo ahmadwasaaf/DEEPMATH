@@ -154,16 +154,23 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
     private Party? FindParty(string name) =>
         _parties.FirstOrDefault(p => string.Equals(p.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>The company's DEFAULT TEMPLATE when linked, otherwise the first template for suppliers / clients (like TemplateRoute).</summary>
+    private string TemplateFor(Party p)
+    {
+        if (!string.IsNullOrWhiteSpace(p.DefaultTemplate))
+        {
+            var t = _templates.FirstOrDefault(x => string.Equals(x.Name, p.DefaultTemplate.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (t != null) return t.Name;
+        }
+        return TemplateNames.FirstOrDefault() ?? "";
+    }
+
     /// <summary>A party was picked on a row: its default template and category are shown, items / date get the defaults.</summary>
     public void OnPartyPicked(MassRowViewModel row)
     {
         var p = FindParty(row.PartyName);
         if (p == null) { row.CategoryText = ""; Recount(); return; }
-        var tpl = !string.IsNullOrWhiteSpace(p.DefaultTemplate)
-            ? TemplateNames.FirstOrDefault(t => string.Equals(t, p.DefaultTemplate.Trim(), StringComparison.OrdinalIgnoreCase))
-              ?? _templates.FirstOrDefault(t => string.Equals(t.Name, p.DefaultTemplate.Trim(), StringComparison.OrdinalIgnoreCase))?.Name
-            : null;
-        row.Template = tpl ?? (row.Template.Length > 0 ? row.Template : TemplateNames.FirstOrDefault() ?? "");
+        row.Template = TemplateFor(p);
         row.CategoryText = InvoiceService.CategoryFor(p, _categories)?.Text ?? "";
         if (row.CountText.Trim().Length == 0) row.CountText = DefaultCount;
         row.Date ??= DefaultDate;
@@ -210,6 +217,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
             if (r.IsEmpty) { r.Status = r.State = ""; continue; }
             string? err = null;
             var p = FindParty(r.PartyName);
+            if (p != null) r.Template = TemplateFor(p);
             var tpl = _templates.FirstOrDefault(t => string.Equals(t.Name, r.Template.Trim(), StringComparison.OrdinalIgnoreCase));
             CategoryInfo? cat = p != null ? InvoiceService.CategoryFor(p, _categories) : null;
             decimal amount = 0;

@@ -280,8 +280,8 @@
     <sys:String x:Key="Nav.Mass">فواتير بالجملة</sys:String>
     <sys:String x:Key="Mass.Title">MASS INVOICE</sys:String>
     <sys:String x:Key="Mass.Subtitle">حتى 50 فاتورة مرة واحدة: اختر الشركات واكتب المبالغ وعدد الأصناف ثم اضغط إنشاء.</sys:String>
-    <sys:String x:Key="Mass.Supplier">المورد</sys:String>
-    <sys:String x:Key="Mass.Client">العميل</sys:String>
+    <sys:String x:Key="Mass.Supplier">الموردين</sys:String>
+    <sys:String x:Key="Mass.Client">العملاء</sys:String>
     <sys:String x:Key="Mass.Template">القالب</sys:String>
     <sys:String x:Key="Mass.Category">التصنيف</sys:String>
     <sys:String x:Key="Mass.Amount">إجمالي المبلغ</sys:String>
@@ -297,7 +297,7 @@
     <sys:String x:Key="Mass.SwitchClears">الصفوف فيها بيانات، والتبديل هيمسحها. متابعة؟</sys:String>
     <sys:String x:Key="Mass.ClearAsk">مسح كل الصفوف؟</sys:String>
     <sys:String x:Key="Mass.ErrParty">غير موجود في القائمة: {0}</sys:String>
-    <sys:String x:Key="Mass.ErrTemplate">اختر قالبًا مربوطًا.</sys:String>
+    <sys:String x:Key="Mass.ErrTemplate">الشركة ليس لها قالب صالح (DEFAULT TEMPLATE).</sys:String>
     <sys:String x:Key="Mass.ErrCategory">الشركة ليس لها تصنيف فعّال.</sys:String>
     <sys:String x:Key="Mass.Empty">املأ صفًا واحدًا على الأقل.</sys:String>
     <sys:String x:Key="Mass.FixRows">{0} صف محتاج تعديل (انظر الحالة). لم يتم إنشاء أي فاتورة.</sys:String>

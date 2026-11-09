@@ -280,8 +280,8 @@
     <sys:String x:Key="Nav.Mass">Mass Invoice</sys:String>
     <sys:String x:Key="Mass.Title">MASS INVOICE</sys:String>
     <sys:String x:Key="Mass.Subtitle">Up to 50 invoices in one go: pick the companies, enter totals and item counts, then Generate.</sys:String>
-    <sys:String x:Key="Mass.Supplier">SUPPLIER</sys:String>
-    <sys:String x:Key="Mass.Client">CLIENT</sys:String>
+    <sys:String x:Key="Mass.Supplier">SUPPLIERS</sys:String>
+    <sys:String x:Key="Mass.Client">CLIENTS</sys:String>
     <sys:String x:Key="Mass.Template">TEMPLATE</sys:String>
     <sys:String x:Key="Mass.Category">CATEGORY</sys:String>
     <sys:String x:Key="Mass.Amount">TOTAL AMOUNT</sys:String>
@@ -297,7 +297,7 @@
     <sys:String x:Key="Mass.SwitchClears">The rows contain data. Switching clears them. Continue?</sys:String>
     <sys:String x:Key="Mass.ClearAsk">Clear all rows?</sys:String>
     <sys:String x:Key="Mass.ErrParty">Not found in the list: {0}</sys:String>
-    <sys:String x:Key="Mass.ErrTemplate">Choose a linked template.</sys:String>
+    <sys:String x:Key="Mass.ErrTemplate">The company has no usable template (DEFAULT TEMPLATE).</sys:String>
     <sys:String x:Key="Mass.ErrCategory">The company has no active category.</sys:String>
     <sys:String x:Key="Mass.Empty">Fill at least one row first.</sys:String>
     <sys:String x:Key="Mass.FixRows">{0} row(s) need attention (see STATUS). Nothing was created.</sys:String>

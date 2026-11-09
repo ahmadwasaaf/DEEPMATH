@@ -16,6 +16,9 @@ public sealed partial class NavItem : ObservableObject
     public required Func<object?> Page { get; init; }
     public string Title => Loc.T(Key);
     public void Refresh() => OnPropertyChanged(nameof(Title));
+
+    /// <summary>Small number shown at the right of the item (records / invoices / templates); empty = none.</summary>
+    [ObservableProperty] private string _count = "";
 }
 
 public sealed partial class MainViewModel : ObservableObject
@@ -42,6 +45,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     private WorkbookWatcher? _watcher;
     private System.Windows.Threading.DispatcherTimer? _poll;
+    private System.Windows.Threading.DispatcherTimer? _countTimer;
+    private DateTime _historyStamp, _templatesChecked;
+    private int _historyCount = -1, _templateCount = -1;
     private bool _switching;
 
     /// <summary>The open entity's BATCH STUDIO workbook (null when none is open).</summary>
@@ -154,10 +160,54 @@ public sealed partial class MainViewModel : ObservableObject
         CurrentPage = Home;
         Dashboard.Reset();
         Dashboard.Refresh();
+
+        _historyStamp = default; _templatesChecked = default; _historyCount = _templateCount = -1;
+        _countTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _countTimer.Tick += (_, _) => UpdateCounts();
+        _countTimer.Start();
+        UpdateCounts();
+    }
+
+    /// <summary>Sidebar numbers: records of each list, invoices in INVOICE HISTORY, linked templates.</summary>
+    public void UpdateCounts(bool force = false)
+    {
+        if (Root == null) { foreach (var n in Nav) n.Count = ""; return; }
+        static string N(int c) => c < 0 ? "" : c.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+        foreach (var (key, nav) in new[] { ("suppliers", "Nav.Suppliers"), ("clients", "Nav.Clients"), ("items", "Nav.Items"), ("categories", "Nav.Categories") })
+        {
+            var item = Nav.FirstOrDefault(n => n.Key == nav);
+            if (item == null) continue;
+            var page = DataPages.FirstOrDefault(p => p.Session.Definition.Key == key);
+            item.Count = page == null ? "" : N(page.Session.Current.Rows.Count(r => r.Any(c => !string.IsNullOrWhiteSpace(c))));
+        }
+        try
+        {
+            var path = DataSets.InvoiceHistory.FullPath(Root);
+            var stamp = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+            if (force || stamp != _historyStamp)
+            {
+                _historyStamp = stamp;
+                _historyCount = File.Exists(path) ? BatchStudio.Core.Invoices.InvoiceHistoryBook.Read(path).Count : 0;
+            }
+        }
+        catch { }
+        try
+        {
+            if (force || DateTime.UtcNow - _templatesChecked > TimeSpan.FromSeconds(15))
+            {
+                _templatesChecked = DateTime.UtcNow;
+                _templateCount = BatchStudio.Core.Templates.TemplateRegistry.Scan(Root).Count(t => t.Map != null);
+            }
+        }
+        catch { }
+        if (Nav.FirstOrDefault(n => n.Key == "Nav.History") is { } h) h.Count = N(_historyCount);
+        if (Nav.FirstOrDefault(n => n.Key == "Nav.Templates") is { } t) t.Count = N(_templateCount);
     }
 
     private void StopWatching()
     {
+        _countTimer?.Stop();
+        _countTimer = null;
         _poll?.Stop();
         _poll = null;
         _watcher?.Dispose();
@@ -275,6 +325,7 @@ public sealed partial class MainViewModel : ObservableObject
         Home.Refresh();
         History.Reload();
         Dashboard.Refresh();
+        UpdateCounts(force: true);
     }
 
     public CompanyReportViewModel? BuildCompanyReport(string company, string? type, BatchStudio.Core.Reports.DashboardFilter filter, object? returnPage = null)
