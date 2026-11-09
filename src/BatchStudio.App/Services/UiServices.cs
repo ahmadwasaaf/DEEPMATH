@@ -47,10 +47,42 @@ public static class ThemeService
         AccentService.Apply(Accent, theme == AppTheme.Light);
     }
 
+    /// <summary>
+    /// Changes the accent while the program runs. The Fluent theme creates its control brushes once from the accent,
+    /// so its dictionaries are reloaded after the new accent is set - every open control then picks up the new colour.
+    /// </summary>
     public static void ApplyAccent(string accent)
     {
         Accent = accent;
-        AccentService.Apply(accent, Current == AppTheme.Light);
+        bool light = Current == AppTheme.Light;
+        AccentService.Apply(accent, light);
+        var app = Application.Current;
+        if (app == null) return;
+        int reloaded = ReloadFluent(app.Resources);
+        foreach (Window w in app.Windows) reloaded += ReloadFluent(w.Resources);
+        if (reloaded == 0)
+        {
+            // fallback: switching the theme mode rebuilds the theme dictionaries
+#pragma warning disable WPF0001
+            app.ThemeMode = light ? ThemeMode.Dark : ThemeMode.Light;
+            app.ThemeMode = light ? ThemeMode.Light : ThemeMode.Dark;
+#pragma warning restore WPF0001
+        }
+        AccentService.Apply(accent, light);
+    }
+
+    private static int ReloadFluent(ResourceDictionary res)
+    {
+        int n = 0;
+        var dicts = res.MergedDictionaries;
+        for (int i = 0; i < dicts.Count; i++)
+        {
+            var src = dicts[i].Source;
+            if (src == null || !src.OriginalString.Contains("Fluent", StringComparison.OrdinalIgnoreCase)) continue;
+            dicts[i] = new ResourceDictionary { Source = src };
+            n++;
+        }
+        return n;
     }
 }
 
