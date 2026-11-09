@@ -42,7 +42,9 @@ public partial class HomeView : UserControl
     {
         var now = DateTime.Now;
         var culture = LanguageService.CurrentFlow == FlowDirection.RightToLeft ? new CultureInfo("ar-EG") : new CultureInfo("en-US");
-        ClockTime.Text = now.ToString("HH:mm", CultureInfo.InvariantCulture);
+        // 12-hour clock: 9:11 with AM / PM (ص / م in Arabic)
+        ClockTime.Text = now.ToString("h:mm", CultureInfo.InvariantCulture);
+        ClockAmPm.Text = now.ToString("tt", culture);
         ClockSeconds.Text = now.ToString("ss", CultureInfo.InvariantCulture);
         ClockDate.Text = now.ToString("dddd, d MMMM yyyy", culture);
     }

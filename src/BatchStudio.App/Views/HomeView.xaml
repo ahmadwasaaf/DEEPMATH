@@ -24,7 +24,10 @@
                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" FlowDirection="LeftToRight">
                         <TextBlock x:Name="ClockTime" Text="00:00" FontSize="58" FontWeight="Light" FontFamily="Segoe UI Variable Display, Segoe UI" />
-                        <TextBlock x:Name="ClockSeconds" Text="00" FontSize="20" FontWeight="Light" Opacity="0.6" Margin="6,0,0,12" VerticalAlignment="Bottom" />
+                        <StackPanel Margin="8,0,0,12" VerticalAlignment="Bottom">
+                            <TextBlock x:Name="ClockAmPm" Text="AM" FontSize="15" FontWeight="SemiBold" Opacity="0.75" />
+                            <TextBlock x:Name="ClockSeconds" Text="00" FontSize="18" FontWeight="Light" Opacity="0.6" />
+                        </StackPanel>
                     </StackPanel>
                     <TextBlock x:Name="ClockDate" Text="" FontSize="14" HorizontalAlignment="Center" Style="{StaticResource Muted}" Margin="0,-6,0,0" />
                 </StackPanel>
