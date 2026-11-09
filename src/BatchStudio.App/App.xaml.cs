@@ -14,6 +14,8 @@ public partial class App : Application
         DispatcherUnhandledException += OnUnhandled;
         // every change to the BATCH STUDIO workbook is written by Microsoft Excel itself
         BatchStudio.Core.Workbook.Workspace.EditorFactory = Services.ExcelWorkbookEditor.Open;
+        // invoices are written by Excel from the workbook's template sheet (shapes, heights, theme as in Excel)
+        BatchStudio.Core.Invoices.InvoiceService.FileWriter = Services.ExcelInvoiceEngine.Fill;
 
         var settings = SettingsStore.Load();
         ThemeService.Apply(settings.Theme);

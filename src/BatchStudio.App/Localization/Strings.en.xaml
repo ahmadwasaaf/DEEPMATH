@@ -276,4 +276,5 @@
     <sys:String x:Key="Theme.Saved">Theme colour saved in the workbook (CLIENT THEME MEMORY).</sys:String>
     <sys:String x:Key="Theme.Cleared">Theme colour removed - not assigned.</sys:String>
     <sys:String x:Key="Theme.Pick">Pick a colour</sys:String>
+    <sys:String x:Key="Inv.NoExcelFormat">Note: Excel could not write the invoice ({0}); the simple format was used.</sys:String>
 </ResourceDictionary>

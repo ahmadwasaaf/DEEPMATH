@@ -276,4 +276,5 @@
     <sys:String x:Key="Theme.Saved">تم حفظ لون الثيم في الملف (CLIENT THEME MEMORY).</sys:String>
     <sys:String x:Key="Theme.Cleared">تمت إزالة لون الثيم - غير معيّن.</sys:String>
     <sys:String x:Key="Theme.Pick">اختيار لون</sys:String>
+    <sys:String x:Key="Inv.NoExcelFormat">ملاحظة: تعذّر على Excel كتابة الفاتورة ({0})؛ تم استخدام التنسيق البسيط.</sys:String>
 </ResourceDictionary>

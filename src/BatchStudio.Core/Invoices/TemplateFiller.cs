@@ -21,6 +21,10 @@ public sealed class InvoiceDraft
     public DateTime Date { get; set; } = DateTime.Today;
     public decimal Target { get; set; }
     public List<InvoiceLine> Lines { get; set; } = [];
+    /// <summary>The BATCH STUDIO workbook the template sheet comes from (lets Excel write the invoice as-is).</summary>
+    public string? WorkbookPath { get; set; }
+    /// <summary>Supplier theme colour (VBA colour number) from CLIENT THEME MEMORY, or null.</summary>
+    public int? ThemeRgb { get; set; }
 
     public decimal? VatRate => Map.VatRate is > 0 ? (decimal)Map.VatRate.Value : null;
     public InvoiceCurrency Currency => Map.EffectiveCurrency == "SAR" ? InvoiceCurrency.SAR : InvoiceCurrency.USD;

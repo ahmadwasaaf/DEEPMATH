@@ -214,6 +214,10 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         NetText = VatText = TotalText = DifferenceText = Words = "";
     }
 
+    /// <summary>Supplier theme colour for the selected template (suppliers only, like Theme.RestoreClientTheme).</summary>
+    private int? ThemeFor(string? supplier) =>
+        IsClients || string.IsNullOrWhiteSpace(supplier) || SelectedTemplate == null ? null : main.ThemeFor(supplier, SelectedTemplate.Name);
+
     // ------------------------------------------------------------------ Smart Invoice Repair
     /// <summary>
     /// Restores an archived invoice for repair (History → Open Invoice → Edit): its rows are protected; a new total and
@@ -281,6 +285,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             CategoryText = src?.CategoryText ?? SelectedCategory?.Text,
             Target = target,
             Lines = lines,
+            WorkbookPath = main.Workspace?.WorkbookPath,
+            ThemeRgb = ThemeFor(src?.PartyName is { Length: > 0 } tn ? tn : party?.Name),
         };
         int locked = _repair?.Lines.Count ?? 0;
         Lines.Clear();
@@ -486,6 +492,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
                 CategoryText = SelectedCategory.Text,
                 Target = amount,
                 Lines = lines,
+                WorkbookPath = main.Workspace?.WorkbookPath,
+                ThemeRgb = ThemeFor(SelectedParty?.Name),
             };
             Lines.Clear();
             foreach (var l in lines) Lines.Add(new LineViewModel(this, l));
@@ -545,7 +553,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             IsBusy = true;
             Status = Loc.T("Status.SavingWorkbook");
             SavedPath = await Task.Run(() => InvoiceService.Archive(ws, draft, keep));
-            Status = Loc.T("Inv.Saved");
+            Status = Loc.T("Inv.Saved") + (ExcelInvoiceEngine.LastFallbackReason is { } why ? "\n" + Loc.F("Inv.NoExcelFormat", why) : "");
             main.OnHistoryChanged();
         }
         catch (FileLockedException ex) { Status = Loc.F("Inv.HistoryLocked", Path.GetFileName(ex.FilePath)); }

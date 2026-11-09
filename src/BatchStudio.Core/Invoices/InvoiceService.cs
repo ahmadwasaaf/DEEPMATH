@@ -192,7 +192,7 @@ public static class InvoiceService
 
         var tmp = Path.Combine(Path.GetTempPath(), $"BS_{Guid.NewGuid():N}.xlsx");
         var rollback = full + $".BS_REPLACE_{DateTime.Now:yyyyMMddHHmmss}.bak";
-        TemplateFiller.Fill(d, tmp);
+        FileWriter(d, tmp);
         try
         {
             File.Move(full, rollback);
@@ -243,12 +243,15 @@ public static class InvoiceService
         return full;
     }
 
+    /// <summary>Writes the invoice file. The app replaces this with Microsoft Excel (exact template formatting).</summary>
+    public static Action<InvoiceDraft, string> FileWriter { get; set; } = TemplateFiller.Fill;
+
     private static void WriteInvoiceFile(InvoiceDraft d, string full)
     {
         var tmp = Path.Combine(Path.GetTempPath(), $"BS_{Guid.NewGuid():N}.xlsx");
         try
         {
-            TemplateFiller.Fill(d, tmp);
+            FileWriter(d, tmp);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);
             File.Move(tmp, full);
         }

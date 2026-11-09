@@ -50,7 +50,7 @@
                     </Button>
                 </StackPanel>
 
-                <TextBlock DockPanel.Dock="Bottom" Text="v0.6.1 · smart repair" Style="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" />
+                <TextBlock DockPanel.Dock="Bottom" Text="v0.7.0 · excel engine" Style="{StaticResource Muted}" FontSize="11" Margin="4,8,0,0" />
 
                 <ListBox ItemsSource="{Binding Nav}" SelectedItem="{Binding SelectedNav}"
                          Background="Transparent" BorderThickness="0"
