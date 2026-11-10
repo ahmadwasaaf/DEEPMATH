@@ -76,11 +76,11 @@
                                          Visibility="{Binding DataContext.HasMany, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource BankBoolToVis}}" />
                             <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         </DockPanel>
-                        <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True"
+                        <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" Padding="11,9,11,9" AcceptsReturn="True"
                                  MaxHeight="260" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
                                  Visibility="{Binding IsCollapsed, Converter={StaticResource BankInverseBoolToVis}}" />
                         <!-- closed: one line; a click opens it -->
-                        <Border CornerRadius="4" Padding="11,7" Cursor="Hand" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        <Border CornerRadius="4" Padding="11,9" Cursor="Hand" Background="{DynamicResource ControlFillColorDefaultBrush}"
                                 BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1"
                                 Visibility="{Binding IsCollapsed, Converter={StaticResource BankBoolToVis}}">
                             <Border.InputBindings>

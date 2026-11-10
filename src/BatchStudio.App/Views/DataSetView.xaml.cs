@@ -12,6 +12,7 @@ public partial class DataSetView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => ApplyLayout();
+        GridLook.NoCellFrame(Grid);
         ListWidth.Attach(ListSplitter, ListColumn, () => DataContext is DataSetViewModel { CompactGrid: true } vm ? "list." + vm.Session.Definition.Key : null, DefaultListWidth);
         // the search box keeps its width but never overlaps the toolbar buttons
         SearchHost.SizeChanged += (_, _) => SearchBox.Width = Math.Max(0, Math.Min(300, SearchHost.ActualWidth));

@@ -154,10 +154,10 @@
                                 <DataTemplate DataType="{x:Type vm:FieldEditViewModel}">
                                     <StackPanel Margin="0,0,6,12">
                                         <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4" />
-                                        <TextBox Text="{Binding Value, UpdateSourceTrigger=LostFocus}" TextWrapping="Wrap"
+                                        <TextBox Text="{Binding Value, UpdateSourceTrigger=LostFocus}" TextWrapping="Wrap" Padding="11,9,11,9" VerticalContentAlignment="Top"
                                                  AcceptsReturn="{Binding IsLong}" MaxHeight="260" VerticalScrollBarVisibility="Auto"
                                                  Visibility="{Binding IsText, Converter={StaticResource BoolToVis}}" />
-                                        <ComboBox ItemsSource="{Binding Options}" Text="{Binding Value, UpdateSourceTrigger=Explicit}" svc:ComboSearch.IsEnabled="True" HorizontalAlignment="Stretch"
+                                        <ComboBox ItemsSource="{Binding Options}" Text="{Binding Value, UpdateSourceTrigger=Explicit}" svc:ComboSearch.IsEnabled="True" HorizontalAlignment="Stretch" MinHeight="38" VerticalContentAlignment="Center"
                                                   Visibility="{Binding IsChoice, Converter={StaticResource BoolToVis}}" />
                                     </StackPanel>
                                 </DataTemplate>
@@ -167,7 +167,7 @@
                                             <Run Text="{Binding Caption, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding Note, Mode=OneWay}" />
                                         </TextBlock>
                                         <DockPanel IsEnabled="{Binding Supported}">
-                                            <Button DockPanel.Dock="Right" Command="{Binding PickCommand}" Margin="8,0,0,0" Padding="0" Width="64" MinHeight="32"
+                                            <Button DockPanel.Dock="Right" Command="{Binding PickCommand}" Margin="8,0,0,0" Padding="0" Width="64" MinHeight="38"
                                                     ToolTip="{DynamicResource Theme.Pick}">
                                                 <Grid Width="60" Height="26">
                                                     <Border CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Background="{Binding Swatch}" />
@@ -176,7 +176,7 @@
                                                 </Grid>
                                             </Button>
                                             <Grid>
-                                                <TextBox x:Name="ThemeHex" Text="{Binding Hex, UpdateSourceTrigger=PropertyChanged}" FlowDirection="LeftToRight" FontFamily="Consolas" FontSize="14"
+                                                <TextBox x:Name="ThemeHex" Text="{Binding Hex, UpdateSourceTrigger=PropertyChanged}" MinHeight="38" Padding="11,0,11,0" FlowDirection="LeftToRight" FontFamily="Consolas" FontSize="14"
                                                          VerticalContentAlignment="Center" LostFocus="OnThemeLostFocus" KeyDown="OnThemeKeyDown" />
                                                 <TextBlock Text="Not Assigned Yet" Margin="12,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.5" FlowDirection="LeftToRight">
                                                     <TextBlock.Style>

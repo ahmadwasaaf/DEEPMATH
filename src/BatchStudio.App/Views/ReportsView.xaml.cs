@@ -10,6 +10,7 @@ public partial class ReportsView : UserControl
     public ReportsView()
     {
         InitializeComponent();
+        GridLook.NoCellFrame(List);
         ListWidth.Attach(ListSplitter, ListColumn, () => "list.reports", 330);
         SearchHost.SizeChanged += (_, _) => SearchBox.Width = Math.Max(0, Math.Min(300, SearchHost.ActualWidth));
     }
