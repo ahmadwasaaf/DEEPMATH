@@ -22,6 +22,18 @@ public partial class MassInvoiceView : UserControl
         };
     }
 
+    /// <summary>The typed / picked name stops before the X and + icons on the right of the box.</summary>
+    private void OnPartyComboLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ComboBox box) return;
+        box.ApplyTemplate();
+        if (box.Template?.FindName("PART_EditableTextBox", box) is FrameworkElement tb)
+        {
+            var m = tb.Margin;
+            if (m.Right < 60) tb.Margin = new Thickness(m.Left, m.Top, m.Right + 56, m.Bottom);
+        }
+    }
+
     private void OnAmountLostFocus(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: MassRowViewModel row }) row.FormatAmount();

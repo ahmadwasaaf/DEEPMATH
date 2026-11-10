@@ -119,7 +119,7 @@
                             <DataTemplate>
                                 <Grid>
                                     <ComboBox ItemsSource="{Binding PartyOptions}" Text="{Binding PartyName, UpdateSourceTrigger=Explicit}" svc:ComboSearch.IsEnabled="True" FlowDirection="LeftToRight"
-                                          HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,2" MaxDropDownHeight="320" Padding="11,5,62,6"
+                                          HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="2,2" MaxDropDownHeight="320" Loaded="OnPartyComboLoaded"
                                           IsEnabled="{Binding DataContext.IsBusy, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBool}}">
                                         <ComboBox.ItemTemplate>
                                             <DataTemplate>
