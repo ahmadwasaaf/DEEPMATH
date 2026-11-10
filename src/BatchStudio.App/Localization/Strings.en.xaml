@@ -370,6 +370,7 @@
     <sys:String x:Key="Theme.Pending">The colour is saved with the supplier.</sys:String>
     <sys:String x:Key="Bank.Count">{0} accounts</sys:String>
     <sys:String x:Key="Bank.DefaultIs">Bank {0} is printed on invoices</sys:String>
+    <sys:String x:Key="Bank.Toggle">Open / close this account</sys:String>
     <sys:String x:Key="Bank.ShowAll">Show / hide the other bank accounts</sys:String>
     <sys:String x:Key="Bank.Add">Add another bank account</sys:String>
     <sys:String x:Key="Bank.Remove">Remove this bank account</sys:String>

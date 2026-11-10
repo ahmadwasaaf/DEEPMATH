@@ -4,53 +4,77 @@
     <BooleanToVisibilityConverter x:Key="BankBoolToVis" />
 
 
-    <!-- a supplier's bank accounts: Banking Details, Banking Details 2, 3 ... (the radio button = the account printed on invoices) -->
+    <!-- a supplier's bank accounts: Banking Details, Banking Details 2, 3 ... (the radio button = the account printed on invoices).
+         Every account has its own arrow (open / close just that account) and "+" (a new account at the bottom). -->
     <DataTemplate DataType="{x:Type vm:BankGroupViewModel}">
         <ItemsControl ItemsSource="{Binding Accounts}" Focusable="False">
             <ItemsControl.ItemTemplate>
                 <DataTemplate DataType="{x:Type vm:BankAccountViewModel}">
-                    <StackPanel Margin="0,0,6,12" Visibility="{Binding IsVisible, Converter={StaticResource BankBoolToVis}}">
+                    <StackPanel Margin="0,0,6,12">
                         <DockPanel Margin="0,0,0,4">
-                            <!-- first account: number of accounts, arrow, + -->
-                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Visibility="{Binding IsFirst, Converter={StaticResource BankBoolToVis}}">
-                                <Border CornerRadius="9" Padding="8,1" VerticalAlignment="Center" Background="{DynamicResource BrandSoftBrush}"
-                                        ToolTip="{Binding DataContext.DefaultText, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        Visibility="{Binding DataContext.HasMany, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource BankBoolToVis}}">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Border CornerRadius="9" Padding="8,1" Margin="0,0,4,0" VerticalAlignment="Center" Background="{DynamicResource BrandSoftBrush}"
+                                        ToolTip="{Binding DataContext.DefaultText, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding IsFirst}" Value="True" />
+                                                        <Condition Binding="{Binding DataContext.HasMany, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
                                     <TextBlock Text="{Binding DataContext.CountText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11"
                                                Foreground="{DynamicResource BrandBrush}" FontWeight="SemiBold" />
                                 </Border>
-                                <Button Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False" ToolTip="{DynamicResource Bank.ShowAll}"
-                                        Command="{Binding DataContext.ToggleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                        Visibility="{Binding DataContext.HasMany, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource BankBoolToVis}}">
+                                <!-- delete (accounts 2, 3 ...), arrow (this account), + (new account at the bottom) -->
+                                <Button Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False"
+                                        ToolTip="{DynamicResource Bank.Remove}" Command="{Binding RemoveCommand}"
+                                        Visibility="{Binding CanRemove, Converter={StaticResource BankBoolToVis}}">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="11" />
+                                </Button>
+                                <Button Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False"
+                                        ToolTip="{DynamicResource Bank.Toggle}" Command="{Binding ToggleCommand}">
                                     <TextBlock FontSize="11">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
-                                                <Setter Property="Text" Value="&#xE70D;" />
+                                                <Setter Property="Text" Value="&#xE70E;" />
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding DataContext.IsExpanded, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True">
-                                                        <Setter Property="Text" Value="&#xE70E;" />
+                                                    <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                                        <Setter Property="Text" Value="&#xE70D;" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </TextBlock.Style>
                                     </TextBlock>
                                 </Button>
-                                <Button Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False" ToolTip="{DynamicResource Bank.Add}"
-                                        Command="{Binding DataContext.AddCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
+                                <Button Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False"
+                                        ToolTip="{DynamicResource Bank.Add}" Command="{Binding AddCommand}">
                                     <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="11" />
                                 </Button>
                             </StackPanel>
-                            <Button DockPanel.Dock="Right" Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False" ToolTip="{DynamicResource Bank.Remove}" Command="{Binding RemoveCommand}"
-                                    Visibility="{Binding CanRemove, Converter={StaticResource BankBoolToVis}}">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="11" />
-                            </Button>
                             <RadioButton IsChecked="{Binding IsDefault}" MinWidth="0" Margin="0,0,2,0" VerticalAlignment="Center" Focusable="False"
                                          ToolTip="{DynamicResource Bank.UseOnInvoice}"
                                          Visibility="{Binding DataContext.HasMany, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource BankBoolToVis}}" />
                             <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                         </DockPanel>
                         <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}" TextWrapping="Wrap" AcceptsReturn="True"
-                                 MaxHeight="260" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top" />
+                                 MaxHeight="260" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                 Visibility="{Binding IsCollapsed, Converter={StaticResource InverseBoolToVis}}" />
+                        <!-- closed: one line; a click opens it -->
+                        <Border CornerRadius="4" Padding="11,7" Cursor="Hand" Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1"
+                                Visibility="{Binding IsCollapsed, Converter={StaticResource BankBoolToVis}}">
+                            <Border.InputBindings>
+                                <MouseBinding MouseAction="LeftClick" Command="{Binding ToggleCommand}" />
+                            </Border.InputBindings>
+                            <TextBlock Text="{Binding Preview}" TextTrimming="CharacterEllipsis" Opacity="0.75" />
+                        </Border>
                     </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

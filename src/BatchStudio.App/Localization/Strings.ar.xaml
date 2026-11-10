@@ -370,6 +370,7 @@
     <sys:String x:Key="Theme.Pending">اللون هيتحفظ مع المورد.</sys:String>
     <sys:String x:Key="Bank.Count">{0} حسابات</sys:String>
     <sys:String x:Key="Bank.DefaultIs">حساب Bank {0} هو اللي بيتطبع في الفواتير</sys:String>
+    <sys:String x:Key="Bank.Toggle">فتح / غلق هذا الحساب</sys:String>
     <sys:String x:Key="Bank.ShowAll">إظهار / إخفاء باقي الحسابات البنكية</sys:String>
     <sys:String x:Key="Bank.Add">إضافة حساب بنكي آخر</sys:String>
     <sys:String x:Key="Bank.Remove">حذف هذا الحساب البنكي</sys:String>

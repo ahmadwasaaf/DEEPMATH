@@ -30,6 +30,7 @@ public sealed partial class BankAccountViewModel : ObservableObject
             if (Value == value) return;
             _group.Set(Header, value);
             OnPropertyChanged();
+            OnPropertyChanged(nameof(Preview));
             _group.RaiseChanged();
         }
     }
@@ -41,23 +42,44 @@ public sealed partial class BankAccountViewModel : ObservableObject
         set { if (value) _group.SetDefault(Number); }
     }
 
-    public bool IsVisible => _group.IsExpanded || IsFirst;
     public bool CanRemove => !IsFirst;
+
+    /// <summary>Each account opens / closes on its own (arrow), so one account can be read among several.</summary>
+    [ObservableProperty] private bool _isCollapsed;
+
+    /// <summary>One line shown while the account is closed (its first lines, joined).</summary>
+    public string Preview
+    {
+        get
+        {
+            var lines = Value.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(l => !l.StartsWith("PAYMENT", StringComparison.OrdinalIgnoreCase)).Take(3);
+            var text = string.Join("  ·  ", lines);
+            return text.Length > 0 ? text : "—";
+        }
+    }
+
+    [RelayCommand]
+    private void Toggle() => IsCollapsed = !IsCollapsed;
 
     [RelayCommand]
     private void Remove() => _group.Remove(this);
 
+    /// <summary>"+" on any account: a new account at the bottom.</summary>
+    [RelayCommand]
+    private void Add() => _group.AddCommand.Execute(null);
+
     internal void Refresh()
     {
         OnPropertyChanged(nameof(IsDefault));
-        OnPropertyChanged(nameof(IsVisible));
         OnPropertyChanged(nameof(IsFirst));
         OnPropertyChanged(nameof(CanRemove));
     }
 }
 
 /// <summary>
-/// The bank accounts of a supplier (Banking Details 1, 2, 3 ...): the arrow shows / hides the extra accounts, "+" adds one,
+/// The bank accounts of a supplier (Banking Details 1, 2, 3 ...): each account's arrow opens / closes that account, "+" adds one
+/// at the bottom,
 /// the radio button picks the account printed on invoices (DEFAULT BANK). Reads and writes through the record's columns,
 /// so the same group works on the Suppliers page (a table row) and in New Invoice (a copy of the record).
 /// </summary>
@@ -67,7 +89,6 @@ public sealed partial class BankGroupViewModel : ObservableObject
     private readonly Action<string, string> _set;
 
     public ObservableCollection<BankAccountViewModel> Accounts { get; } = [];
-    [ObservableProperty] private bool _isExpanded;
     public int DefaultNumber { get; private set; } = 1;
     public int FirstNumber => Accounts.Count > 0 ? Accounts[0].Number : 1;
     public bool HasMany => Accounts.Count > 1;
@@ -93,37 +114,26 @@ public sealed partial class BankGroupViewModel : ObservableObject
             Accounts.Add(new BankAccountViewModel(this, account.Number, header));
         }
         DefaultNumber = SupplierBanks.DefaultNumber(headers, row, SupplierBanks.Accounts(headers, row));
-        _isExpanded = expanded && Accounts.Count > 1;
+        // several accounts: the one printed on invoices is open, the others show one line (unless all are asked open)
+        if (!expanded)
+            foreach (var a in Accounts) a.IsCollapsed = Accounts.Count > 1 && a.Number != DefaultNumber;
     }
 
     internal string Get(string header) => _get(header);
     internal void Set(string header, string value) => _set(header, value);
     internal void RaiseChanged() => Changed?.Invoke();
 
-    partial void OnIsExpandedChanged(bool value)
-    {
-        foreach (var a in Accounts) a.Refresh();
-    }
-
-    [RelayCommand]
-    private void Toggle() => IsExpanded = !IsExpanded;
-
-    /// <summary>"+": a new empty account with the next free number, shown and ready to type in.</summary>
+    /// <summary>"+": a new empty account after the last one (always at the bottom), open and ready to type in.</summary>
     [RelayCommand]
     private void Add()
     {
-        int n = 2;
-        while (Accounts.Any(a => a.Number == n)) n++;
+        int n = Accounts.Count == 0 ? 2 : Math.Max(2, Accounts.Max(a => a.Number) + 1);
         if (n > SupplierBanks.MaxAccounts) return;
         // the DEFAULT BANK column comes before the extra account columns in the sheet
         _set(SupplierBanks.DefaultHeader, _get(SupplierBanks.DefaultHeader));
         var header = SupplierBanks.HeaderFor(n);
         _set(header, _get(header));
-        var account = new BankAccountViewModel(this, n, header);
-        int at = 0;
-        while (at < Accounts.Count && Accounts[at].Number < n) at++;
-        Accounts.Insert(at, account);
-        IsExpanded = true;
+        Accounts.Add(new BankAccountViewModel(this, n, header));
         Notify();
     }
 
