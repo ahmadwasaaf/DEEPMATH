@@ -93,8 +93,59 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [ObservableProperty] private bool _hasLines;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _partyDetails = "";
-    /// <summary>All fields of the selected supplier / client, editable in the expanded details panel.</summary>
-    public ObservableCollection<NewFieldViewModel> PartyFields { get; } = [];
+    /// <summary>All fields of the selected supplier / client, editable in the expanded details panel
+    /// (<see cref="NewFieldViewModel"/>s and, for suppliers, the <see cref="BankGroupViewModel"/>).</summary>
+    public ObservableCollection<object> PartyFields { get; } = [];
+    private BankGroupViewModel? _partyBanks;
+    private Dictionary<string, string> _partyExtra = new(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, string> _partyExtraOriginal = new(StringComparer.OrdinalIgnoreCase);
+
+    // ---- bank account of this invoice ("< Bank 2 >"): the supplier's default, switchable per invoice
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(BankLabel), nameof(CanPrevBank), nameof(CanNextBank), nameof(BankTip))]
+    private int _bankNumber = 1;
+    public string BankLabel => Loc.F("Bank.Label", BankNumber);
+    public bool HasManyBanks => !IsClients && SelectedParty is { HasManyBanks: true } && !IsRepair;
+    public bool ShowBankPager => !IsClients;
+    private List<int> BankNumbers => SelectedParty?.Banks.Where(b => b.Text.Trim().Length > 0).Select(b => b.Number).ToList() ?? [];
+    public bool CanPrevBank => HasManyBanks && BankNumbers.IndexOf(BankNumber) > 0;
+    public bool CanNextBank => HasManyBanks && BankNumbers.IndexOf(BankNumber) is var i && i >= 0 && i < BankNumbers.Count - 1;
+    public string BankTip
+    {
+        get
+        {
+            if (SelectedParty?.BankText(BankNumber) is not { Length: > 0 } text) return Loc.T("Bank.None");
+            var lines = text.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var head = string.Join("\n", lines.Take(4));
+            return (BankNumber == SelectedParty.DefaultBank ? Loc.T("Bank.IsDefault") + "\n" : "") + head + (lines.Length > 4 ? "\n…" : "");
+        }
+    }
+
+    [RelayCommand]
+    private void PrevBank() => StepBank(-1);
+
+    [RelayCommand]
+    private void NextBank() => StepBank(1);
+
+    private void StepBank(int step)
+    {
+        var list = BankNumbers;
+        int i = list.IndexOf(BankNumber) + step;
+        if (i < 0 || i >= list.Count) return;
+        BankNumber = list[i];
+        // the generated items stay; the invoice just prints the other account
+        if (_draft != null && _repair == null) _draft.Bank = SelectedParty?.BankText(BankNumber);
+    }
+
+    private void ResetBank()
+    {
+        BankNumber = SelectedParty?.DefaultBank ?? 1;
+        OnPropertyChanged(nameof(HasManyBanks));
+        OnPropertyChanged(nameof(ShowBankPager));
+        OnPropertyChanged(nameof(CanPrevBank));
+        OnPropertyChanged(nameof(CanNextBank));
+        OnPropertyChanged(nameof(BankTip));
+    }
     /// <summary>Supplier theme colour (CLIENT THEME MEMORY) for the selected template; null for clients.</summary>
     [ObservableProperty] private ThemeFieldViewModel? _partyTheme;
     [ObservableProperty] private bool _detailsExpanded;
@@ -114,14 +165,18 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [ObservableProperty] private bool _isAddingParty;
     [ObservableProperty] private string _newPartyTitle = "";
     [ObservableProperty] private string _newPartyError = "";
-    public ObservableCollection<NewFieldViewModel> NewPartyFields { get; } = [];
+    /// <summary>The new supplier / client form: fields, the supplier's bank accounts and theme.</summary>
+    public ObservableCollection<object> NewPartyFields { get; } = [];
+    private BankGroupViewModel? _newBanks;
+    private readonly Dictionary<string, string> _newBankValues = new(StringComparer.OrdinalIgnoreCase);
+    private ThemeFieldViewModel? _newTheme;
 
     // Smart Invoice Repair
     private RepairSource? _repair;
     private string _repairNo = "";
     private bool _suspendClear;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsNormal), nameof(GenerateText), nameof(CanEditParty))]
+    [NotifyPropertyChangedFor(nameof(IsNormal), nameof(GenerateText), nameof(CanEditParty), nameof(HasManyBanks), nameof(CanPrevBank), nameof(CanNextBank))]
     private bool _isRepair;
     [ObservableProperty] private string _repairInfo = "";
     public bool IsNormal => !IsRepair;
@@ -179,7 +234,11 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             PartyTheme = new ThemeFieldViewModel(main, p.Name, ThemeTemplateName(p));
     }
 
-    partial void OnIsClientsChanged(bool value) => FillParties();
+    partial void OnIsClientsChanged(bool value)
+    {
+        FillParties();
+        ResetBank();
+    }
 
     private void FillParties()
     {
@@ -192,6 +251,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     partial void OnSelectedPartyChanged(Party? value)
     {
         ClearLines();
+        if (!_suspendClear || value != null) ResetBank();
         if (value == null) { if (!_suspendClear) { PartyDetails = ""; LoadPartyFields(null); } return; }
         // collapsed view: name, native name, category; everything else in the expandable panel
         var parts = new List<string> { value.Name };
@@ -220,27 +280,46 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     // ------------------------------------------------------------------ party details (expand / edit / save)
     private void LoadPartyFields(Party? party)
     {
-        foreach (var f in PartyFields) f.PropertyChanged -= OnPartyFieldChanged;
+        foreach (var f in PartyFields.OfType<NewFieldViewModel>()) f.PropertyChanged -= OnPartyFieldChanged;
+        if (_partyBanks != null) _partyBanks.Changed -= OnPartyBanksChanged;
         PartyFields.Clear();
+        _partyBanks = null;
+        _partyExtra = new(StringComparer.OrdinalIgnoreCase);
+        _partyExtraOriginal = new(StringComparer.OrdinalIgnoreCase);
         PartyDirty = false;
         _partyId = null;
         _partyOriginal = [];
         var page = PartyPage;
         if (party != null && page != null && party.Id.Length > 0 && page.RecordValues(party.Id) is { } values)
         {
-            var headers = page.Session.Current.Headers;
+            var headers = page.Headers;
+            bool suppliers = !IsClients;
             _partyId = party.Id;
             _partyOriginal = values;
             for (int i = 1; i < headers.Count && i < values.Length; i++)
             {
                 var h = headers[i];
+                if (suppliers && SupplierBanks.IsBankHeader(headers, i))
+                {
+                    // all bank accounts as one group (expanded: this is where the account printed on invoices is chosen)
+                    if (_partyBanks == null)
+                    {
+                        for (int j = 0; j < headers.Count && j < values.Length; j++)
+                            if (SupplierBanks.IsBankHeader(headers, j)) _partyExtra[headers[j]] = values[j];
+                        _partyExtraOriginal = new(_partyExtra, StringComparer.OrdinalIgnoreCase);
+                        _partyBanks = new BankGroupViewModel(headers, k => _partyExtra.TryGetValue(k, out var v) ? v : "",
+                            (k, v) => _partyExtra[k] = v, expanded: true);
+                        _partyBanks.Changed += OnPartyBanksChanged;
+                        PartyFields.Add(_partyBanks);
+                    }
+                    continue;
+                }
                 var options = main.OptionsFor(page.Session.Definition.Key, h, []);
                 if (options != null && values[i].Length > 0 && !options.Contains(values[i])) options = [values[i], .. options];
                 var f = new NewFieldViewModel
                 {
                     Caption = h, Options = options, Value = values[i], Index = i,
-                    IsLong = h.Contains("Address", StringComparison.OrdinalIgnoreCase) || h.Contains("Bank", StringComparison.OrdinalIgnoreCase) ||
-                             h.Contains("Activit", StringComparison.OrdinalIgnoreCase),
+                    IsLong = IsLongField(h),
                 };
                 f.PropertyChanged += OnPartyFieldChanged;
                 PartyFields.Add(f);
@@ -252,6 +331,12 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             : null;
     }
 
+    private static bool IsLongField(string h) =>
+        h.Contains("Address", StringComparison.OrdinalIgnoreCase) || h.Contains("Bank", StringComparison.OrdinalIgnoreCase) ||
+        h.Contains("Activit", StringComparison.OrdinalIgnoreCase);
+
+    private void OnPartyBanksChanged() => UpdatePartyDirty();
+
     /// <summary>The template the theme is shown for: the selected one when it has themes, else the supplier's default.</summary>
     private string ThemeTemplateName(Party party)
     {
@@ -262,9 +347,12 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
 
     private void OnPartyFieldChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(NewFieldViewModel.Value)) return;
-        PartyDirty = PartyFields.Any(f => f.Index < _partyOriginal.Length && !string.Equals(f.Value, _partyOriginal[f.Index], StringComparison.Ordinal));
+        if (e.PropertyName == nameof(NewFieldViewModel.Value)) UpdatePartyDirty();
     }
+
+    private void UpdatePartyDirty() =>
+        PartyDirty = PartyFields.OfType<NewFieldViewModel>().Any(f => f.Index < _partyOriginal.Length && !string.Equals(f.Value, _partyOriginal[f.Index], StringComparison.Ordinal))
+                     || _partyExtra.Any(kv => !string.Equals(kv.Value, _partyExtraOriginal.TryGetValue(kv.Key, out var o) ? o : "", StringComparison.Ordinal));
 
     [RelayCommand]
     private void ToggleDetails() => DetailsExpanded = !DetailsExpanded;
@@ -276,8 +364,19 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         var page = PartyPage;
         if (page == null || _partyId == null || !PartyDirty) return;
         var values = (string[])_partyOriginal.Clone();
-        foreach (var f in PartyFields) if (f.Index < values.Length) values[f.Index] = f.Value.Trim();
-        var headers = page.Session.Current.Headers;
+        foreach (var f in PartyFields.OfType<NewFieldViewModel>()) if (f.Index < values.Length) values[f.Index] = Clean(f.Value);
+        // bank accounts: columns that are new (a second account ...) are added to the sheet
+        foreach (var (header, value) in _partyExtra)
+        {
+            var col = page.Headers.FindIndex(h => string.Equals(h, header, StringComparison.OrdinalIgnoreCase));
+            if (col < 0 && value.Trim().Length == 0 && !SupplierBanks.IsDefaultHeader(header)) continue;
+            page.EnsureColumn(header);
+            col = page.Headers.FindIndex(h => string.Equals(h, header, StringComparison.OrdinalIgnoreCase));
+            if (col >= values.Length) Array.Resize(ref values, page.Headers.Count);
+            for (int k = 0; k < values.Length; k++) values[k] ??= "";
+            values[col] = Clean(value);
+        }
+        var headers = page.Headers;
         int nameCol = headers.FindIndex(h => h.Contains("Name", StringComparison.OrdinalIgnoreCase) &&
                                              !h.Contains("Chinese", StringComparison.OrdinalIgnoreCase) && !h.Contains("Native", StringComparison.OrdinalIgnoreCase));
         if (nameCol < 0) nameCol = 1;
@@ -315,7 +414,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
                 _draft.PartyName = party.Name;
                 _draft.NativeName = party.NativeName;
                 _draft.Address = party.Address;
-                _draft.Bank = party.Bank;
+                _draft.Bank = party.BankText(BankNumber);
             }
         }
         Status = page.IsDirty ? page.Status : Loc.F("Inv.PartySaved", name);
@@ -398,7 +497,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             PartyName = src?.PartyName is { Length: > 0 } pn ? pn : party?.Name ?? "",
             NativeName = src?.NativeName ?? party?.NativeName,
             Address = src?.Address ?? party?.Address,
-            Bank = src?.Bank ?? party?.Bank,
+            Bank = src?.Bank ?? party?.BankText(BankNumber),
             CategoryText = src?.CategoryText ?? SelectedCategory?.Text,
             Target = target,
             Lines = lines,
@@ -490,34 +589,63 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     {
         var page = PartyPage;
         if (page == null) return;
-        var headers = page.Session.Current.Headers;
+        var headers = page.Headers;
         NewPartyFields.Clear();
+        _newBankValues.Clear();
+        _newBanks = null;
+        _newTheme = null;
         NewPartyError = "";
         NewPartyTitle = Loc.T(IsClients ? "Inv.NewClient" : "Inv.NewSupplier");
+        bool suppliers = !IsClients;
+        NewFieldViewModel? nameField = null, templateField = null;
         for (int i = 0; i < headers.Count; i++)
         {
             var h = headers[i];
+            if (suppliers && SupplierBanks.IsBankHeader(headers, i))
+            {
+                // bank accounts (1, + more) as on the Suppliers page
+                if (_newBanks == null)
+                {
+                    _newBanks = new BankGroupViewModel(headers, k => _newBankValues.TryGetValue(k, out var v) ? v : "",
+                        (k, v) => _newBankValues[k] = v, expanded: true);
+                    NewPartyFields.Add(_newBanks);
+                }
+                continue;
+            }
             var options = main.OptionsFor(page.Session.Definition.Key, h, []);
             string value = "";
             if (i == 0) value = page.NextId();
             else if (options != null && h.Contains("Category", StringComparison.OrdinalIgnoreCase) && SelectedCategory != null) value = SelectedCategory.Text;
             else if (options != null && h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase) && SelectedTemplate != null) value = SelectedTemplate.Name;
             if (options != null && value.Length > 0 && !options.Contains(value)) options = [value, .. options];
-            NewPartyFields.Add(new NewFieldViewModel
+            var field = new NewFieldViewModel { Caption = h, Options = options, Value = value, Index = i, IsLong = IsLongField(h) };
+            NewPartyFields.Add(field);
+            if (i == 1) nameField = field;
+            // suppliers: the theme comes right after DEFAULT TEMPLATE (saved with the new supplier)
+            if (suppliers && h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))
             {
-                Caption = h, Options = options, Value = value,
-                IsLong = h.Contains("Address", StringComparison.OrdinalIgnoreCase) || h.Contains("Bank", StringComparison.OrdinalIgnoreCase) ||
-                         h.Contains("Activit", StringComparison.OrdinalIgnoreCase),
-            });
+                templateField = field;
+                NewPartyFields.Add(_newTheme = new ThemeFieldViewModel(main, "", value, deferred: true));
+            }
         }
+        if (suppliers && _newTheme == null) NewPartyFields.Add(_newTheme = new ThemeFieldViewModel(main, "", SelectedTemplate?.Name ?? "INVOICE", deferred: true));
+        if (_newTheme is { } theme && templateField != null)
+            templateField.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(NewFieldViewModel.Value)) _ = theme.UpdateAsync(nameField?.Value ?? "", templateField.Value);
+            };
         IsAddingParty = true;
     }
+
+    private static string Clean(string? v) => (v ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Trim();
 
     [RelayCommand]
     private void CancelParty()
     {
         IsAddingParty = false;
         NewPartyFields.Clear();
+        _newBanks = null;
+        _newTheme = null;
     }
 
     [RelayCommand]
@@ -526,18 +654,32 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         var page = PartyPage;
         if (page == null) return;
         NewPartyError = "";
-        var values = NewPartyFields.Select(f => f.Value.Trim()).ToArray();
-        var headers = page.Session.Current.Headers;
+        var fields = NewPartyFields.OfType<NewFieldViewModel>().ToList();
+        var headers = page.Headers;
         int nameCol = headers.FindIndex(h => h.Contains("Name", StringComparison.OrdinalIgnoreCase) &&
                                              !h.Contains("Chinese", StringComparison.OrdinalIgnoreCase) && !h.Contains("Native", StringComparison.OrdinalIgnoreCase));
         if (nameCol < 0) nameCol = 1;
-        var name = nameCol < values.Length ? values[nameCol] : "";
-        if (values[0].Length == 0 || name.Length == 0) { NewPartyError = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
+        string ValueAt(int index) => fields.FirstOrDefault(f => f.Index == index) is { } f ? Clean(f.Value) : "";
+        var id = ValueAt(0);
+        var name = ValueAt(nameCol);
+        if (id.Length == 0 || name.Length == 0) { NewPartyError = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
         var existing = IsClients ? _clients : _suppliers;
         if (existing.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
         { NewPartyError = Loc.F("Inv.PartyExists", name); return; }
-        if (page.Session.Current.Rows.Any(r => string.Equals(r[0], values[0], StringComparison.OrdinalIgnoreCase)))
-        { NewPartyError = Loc.F("Inv.PartyIdExists", values[0]); return; }
+        if (page.Session.Current.Rows.Any(r => string.Equals(r[0], id, StringComparison.OrdinalIgnoreCase)))
+        { NewPartyError = Loc.F("Inv.PartyIdExists", id); return; }
+
+        // extra bank accounts may need new columns
+        foreach (var (header, value) in _newBankValues)
+            if (value.Trim().Length > 0 || SupplierBanks.IsDefaultHeader(header)) page.EnsureColumn(header);
+        headers = page.Headers;
+        var values = new string[headers.Count];
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = ValueAt(i);
+            if (_newBankValues.TryGetValue(headers[i], out var bank)) values[i] = Clean(bank);
+        }
+        string template = fields.FirstOrDefault(f => f.Caption.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))?.Value ?? SelectedTemplate?.Name ?? "INVOICE";
 
         IsBusy = true;
         Status = Loc.T("Status.SavingWorkbook");
@@ -545,13 +687,19 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         {
             page.AddRecord(values);
             await page.SaveAsync();
+            // the theme picked in the form goes to CLIENT THEME MEMORY with the new supplier
+            if (!IsClients && _newTheme != null) await _newTheme.FlushAsync(name, template);
         }
+        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
         finally { IsBusy = false; }
 
         IsAddingParty = false;
         NewPartyFields.Clear();
+        _newBanks = null;
+        _newTheme = null;
         Refresh();
         SelectedParty = Parties.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (Status.StartsWith(Loc.T("Status.Error"), StringComparison.Ordinal)) return;
         Status = page.IsDirty ? page.Status : Loc.F("Inv.PartyAdded", name);
     }
 
@@ -605,7 +753,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
                 PartyName = party.Name,
                 NativeName = party.NativeName,
                 Address = party.Address,
-                Bank = party.Bank,
+                Bank = party.BankText(BankNumber),
                 CategoryText = SelectedCategory.Text,
                 Target = amount,
                 Lines = lines,

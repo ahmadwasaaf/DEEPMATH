@@ -109,6 +109,9 @@
                 <ColumnDefinition x:Name="DetailsColumn" Width="360" />
             </Grid.ColumnDefinitions>
 
+            <!-- drag the list's right edge to widen it (long names); double-click resets -->
+            <GridSplitter x:Name="ListSplitter" Grid.Column="1" Style="{StaticResource ListSplitter}" ToolTip="{DynamicResource Common.DragWidth}" />
+
             <DataGrid x:Name="Grid" Grid.Column="0" ItemsSource="{Binding View}" SelectedItem="{Binding SelectedRow}"
                       AutoGenerateColumns="True" AutoGeneratingColumn="OnAutoGeneratingColumn"
                       CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single"

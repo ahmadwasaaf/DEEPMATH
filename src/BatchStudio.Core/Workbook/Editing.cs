@@ -32,6 +32,8 @@ public interface ISheetEditor
     void SetFontColor(int r, int c, int red, int green, int blue);
     /// <summary>Copies values and formatting of columns c1..c2 of a row to another row (and its height).</summary>
     void CopyRow(int fromRow, int toRow, int c1, int c2);
+    /// <summary>Gives a new column the look of another (formatting and width), without its values.</summary>
+    void CopyColumnFormat(int fromCol, int toCol);
     void DeleteRow(int r);
     void ShowRow(int r);
     /// <summary>First print area as (r1, c1, r2, c2), or null.</summary>
@@ -225,6 +227,13 @@ public sealed class ClosedXmlWorkbookEditor : IWorkbookEditor
                 ws.Cell(toRow, c).Value = src.HasFormula ? src.CachedValue : src.Value;
             }
             ws.Row(toRow).Height = ws.Row(fromRow).Height;
+        }
+
+        public void CopyColumnFormat(int fromCol, int toCol)
+        {
+            int last = ws.LastRowUsed(XLCellsUsedOptions.All)?.RowNumber() ?? 1;
+            for (int r = 1; r <= last; r++) ws.Cell(r, toCol).Style = ws.Cell(r, fromCol).Style;
+            ws.Column(toCol).Width = ws.Column(fromCol).Width;
         }
 
         public void DeleteRow(int r) => ws.Row(r).Delete();

@@ -360,4 +360,24 @@
     <sys:String x:Key="Set.AccentColors">Colours</sys:String>
     <sys:String x:Key="Set.AccentCustom">Custom colour</sys:String>
     <sys:String x:Key="Home.InvoicesTile">Invoices</sys:String>
+    <sys:String x:Key="Common.DragWidth">Drag to widen the list · double-click to reset</sys:String>
+    <sys:String x:Key="Common.OK">OK</sys:String>
+    <sys:String x:Key="Color.Title">Choose a colour</sys:String>
+    <sys:String x:Key="Color.New">New</sys:String>
+    <sys:String x:Key="Color.Current">Current (click to go back)</sys:String>
+    <sys:String x:Key="Color.Palette">Colours</sys:String>
+    <sys:String x:Key="Color.Recent">Recent</sys:String>
+    <sys:String x:Key="Theme.Pending">The colour is saved with the supplier.</sys:String>
+    <sys:String x:Key="Bank.Count">{0} accounts</sys:String>
+    <sys:String x:Key="Bank.DefaultIs">Bank {0} is printed on invoices</sys:String>
+    <sys:String x:Key="Bank.ShowAll">Show / hide the other bank accounts</sys:String>
+    <sys:String x:Key="Bank.Add">Add another bank account</sys:String>
+    <sys:String x:Key="Bank.Remove">Remove this bank account</sys:String>
+    <sys:String x:Key="Bank.UseOnInvoice">Print this account on invoices (save to keep it)</sys:String>
+    <sys:String x:Key="Bank.RemoveConfirm">Remove bank account {0}?</sys:String>
+    <sys:String x:Key="Bank.Label">Bank {0}</sys:String>
+    <sys:String x:Key="Bank.None">No bank details</sys:String>
+    <sys:String x:Key="Bank.IsDefault">Default account</sys:String>
+    <sys:String x:Key="Bank.Prev">Previous bank account</sys:String>
+    <sys:String x:Key="Bank.Next">Next bank account</sys:String>
 </ResourceDictionary>

@@ -17,6 +17,9 @@ public partial class App : Application
         // invoices are written by Excel from the workbook's template sheet (shapes, heights, theme as in Excel)
         BatchStudio.Core.Invoices.InvoiceService.FileWriter = Services.ExcelInvoiceEngine.Fill;
 
+        // Alt+Enter / Shift+Enter: a new line inside the text fields, like Excel
+        TextNewLine.Register();
+
         var settings = SettingsStore.Load();
         ThemeService.Accent = string.IsNullOrWhiteSpace(settings.Accent) ? "auto" : settings.Accent;
         ThemeService.Apply(settings.Theme);
@@ -49,7 +52,21 @@ public partial class App : Application
                 if (style != null) BatchStudio.App.Controls.BackgroundFx.Settings = new BatchStudio.Core.Entities.BackgroundSettings { Style = style };
                 arg = "home";
             }
-            var key = arg is "newinvoice" or "newparty" or "newinvoice-details" ? "Nav.NewInvoice" : arg == "reportview" ? "Nav.Reports" : arg == "mass" ? "Nav.Mass" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
+            // screenshot checks of this version: a wider name list, bank accounts, the colour picker (not saved)
+            if (arg == "suppliers-wide") { vm.Settings.ListWidths["list.suppliers"] = 560; arg = "suppliers"; }
+            bool banks = arg == "suppliers-banks";
+            if (banks) arg = "suppliers";
+            if (arg == "colorpicker")
+            {
+                arg = "settings";
+                Dispatcher.BeginInvoke(() =>
+                {
+                    var w = new Views.ColorPickerWindow(System.Windows.Media.Color.FromRgb(0x00, 0x20, 0x60)) { Owner = window };
+                    w.Show();
+                }, DispatcherPriority.ContextIdle);
+            }
+            if (arg == "newinvoice-banks") ScreenshotBanks(vm);
+            var key = arg is "newinvoice" or "newparty" or "newinvoice-details" or "newinvoice-banks" ? "Nav.NewInvoice" : arg == "reportview" ? "Nav.Reports" : arg == "mass" ? "Nav.Mass" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
             var nav = vm.Nav.FirstOrDefault(n => n.Key == key);
             if (nav != null) vm.SelectedNav = nav;
             if (arg == "newparty") vm.NewInvoice.AddPartyCommand.Execute(null);
@@ -60,7 +77,47 @@ public partial class App : Application
                 vm.NewInvoice.SelectedParty = vm.NewInvoice.Parties.FirstOrDefault();
                 vm.NewInvoice.DetailsExpanded = true;
             }
+            if (arg == "newinvoice-banks")
+            {
+                vm.NewInvoice.Refresh();
+                vm.NewInvoice.SelectedParty = vm.NewInvoice.Parties.FirstOrDefault(p => p.HasManyBanks) ?? vm.NewInvoice.Parties.FirstOrDefault();
+                vm.NewInvoice.DetailsExpanded = true;
+            }
+            if (banks && vm.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "suppliers") is { } sp)
+            {
+                sp.SelectedRow = sp.View?.Cast<System.Data.DataRowView>().FirstOrDefault();
+                if (sp.Fields.OfType<BankGroupViewModel>().FirstOrDefault() is { } g)
+                {
+                    g.AddCommand.Execute(null);
+                    var added = g.Accounts.Last();
+                    added.Value = "PAYMENT & BANKING INSTRUCTIONS\nBENEFICIARY BANK: SECOND DEMO BANK\nSWIFT BIC: DEMOCNSH\nBENEFICIARY ACCOUNT NO.: 6222 0000 1111";
+                    added.IsDefault = true;
+                }
+            }
         }
+    }
+
+    /// <summary>Screenshot check: the first supplier gets a second bank account (in memory only) printed by default.</summary>
+    private static void ScreenshotBanks(MainViewModel vm)
+    {
+        var page = vm.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "suppliers");
+        if (page == null) return;
+        var t = page.Session.Current.Clone();
+        if (t.Rows.Count == 0) return;
+        t.Headers.Add(BatchStudio.Core.Invoices.SupplierBanks.DefaultHeader);
+        t.Headers.Add(BatchStudio.Core.Invoices.SupplierBanks.HeaderFor(2));
+        for (int r = 0; r < t.Rows.Count; r++)
+        {
+            var row = t.Rows[r];
+            Array.Resize(ref row, t.Headers.Count);
+            for (int c = 0; c < row.Length; c++) row[c] ??= "";
+            t.Rows[r] = row;
+        }
+        var first = t.Rows.OrderBy(x => x.Length > 1 ? x[1] : "", StringComparer.CurrentCultureIgnoreCase).First();
+        first[^2] = "2";
+        first[^1] = "PAYMENT & BANKING INSTRUCTIONS\nBENEFICIARY BANK: SECOND DEMO BANK\nSWIFT BIC: DEMOCNSH\nBENEFICIARY ACCOUNT NO.: 6222 0000 1111";
+        page.Session.SetCurrent(t);
+        page.ShowCurrent();
     }
 
     private static void OnUnhandled(object sender, DispatcherUnhandledExceptionEventArgs e)

@@ -263,6 +263,14 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
             ws.Rows[toRow].RowHeight = ws.Rows[fromRow].RowHeight;
         });
 
+        public void CopyColumnFormat(int fromCol, int toCol) => Retry(() =>
+        {
+            // copy the whole column (formats, width), then drop the copied values
+            ws.Columns[fromCol].Copy(ws.Columns[toCol]);
+            ws.Columns[toCol].ClearContents();
+            ws.Columns[toCol].ColumnWidth = ws.Columns[fromCol].ColumnWidth;
+        });
+
         public void DeleteRow(int r) => Retry(() => { ws.Rows[r].Delete(); });
         public void ShowRow(int r) => Retry(() => { ws.Rows[r].Hidden = false; });
 

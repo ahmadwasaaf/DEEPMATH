@@ -3,6 +3,7 @@ using System.Data;
 using System.Windows.Threading;
 using BatchStudio.App.Services;
 using BatchStudio.Core.Data;
+using BatchStudio.Core.Invoices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -151,18 +152,24 @@ public sealed partial class DataSetViewModel : ObservableObject
 
     private static string ColName(int i) => "c" + i;
 
+    /// <summary>Shows <see cref="DataSetSession.Current"/> again (after it was replaced in memory).</summary>
+    public void ShowCurrent() => BuildTable(Session.Current);
+
     private TableData ToTableData()
     {
         var t = new TableData { KeyColumn = 0 };
-        t.Headers.AddRange(Session.Current.Headers);
-        t.Kinds.AddRange(Session.Current.Kinds);
+        // the table's own columns: new ones (a supplier's second bank account ...) are added to the sheet on save
+        if (Table != null) foreach (DataColumn c in Table.Columns) t.Headers.Add(c.Caption);
+        else t.Headers.AddRange(Session.Current.Headers);
+        t.Kinds.AddRange(Session.Current.Kinds.Take(t.Headers.Count));
         while (t.Kinds.Count < t.Headers.Count) t.Kinds.Add(ColumnKind.Text);
         if (Table == null) return t;
         foreach (DataRow r in Table.Rows)
         {
             if (r.RowState == DataRowState.Deleted) continue;
             var arr = new string[t.Headers.Count];
-            for (int i = 0; i < arr.Length; i++) arr[i] = (r[i] as string ?? "").Trim();
+            // line breaks are stored like Alt+Enter in Excel (LF)
+            for (int i = 0; i < arr.Length; i++) arr[i] = (r[i] as string ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Trim();
             if (arr.All(string.IsNullOrEmpty)) continue;
             t.Rows.Add(arr);
         }
@@ -199,16 +206,73 @@ public sealed partial class DataSetViewModel : ObservableObject
     {
         Fields.Clear();
         if (value == null || Table == null) return;
-        foreach (DataColumn c in Table.Columns)
+        bool suppliers = Session.Definition.Key == "suppliers";
+        var headers = Table.Columns.Cast<DataColumn>().Select(c => c.Caption).ToList();
+        ThemeFieldViewModel? theme = null;
+        FieldEditViewModel? nameField = null, templateField = null;
+        bool banksAdded = false;
+        for (int i = 0; i < Table.Columns.Count; i++)
         {
-            var col = c;
-            Fields.Add(new FieldEditViewModel(value, c, _main.HasOptions(Session.Definition.Key, c.Caption),
-                () => _main.OptionsFor(Session.Definition.Key, col.Caption, ColumnValues(col))));
+            var col = Table.Columns[i];
+            // suppliers: all bank accounts (1, 2, 3 ... and DEFAULT BANK) are one group
+            if (suppliers && SupplierBanks.IsBankHeader(headers, i))
+            {
+                if (!banksAdded) Fields.Add(BankGroupFor(value, headers));
+                banksAdded = true;
+                continue;
+            }
+            var field = new FieldEditViewModel(value, col, _main.HasOptions(Session.Definition.Key, col.Caption),
+                () => _main.OptionsFor(Session.Definition.Key, col.Caption, ColumnValues(col)));
+            Fields.Add(field);
+            if (i == 1) nameField = field;
             // suppliers: the client theme colour sits right after DEFAULT TEMPLATE
-            if (Session.Definition.Key == "suppliers" && c.Caption.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))
-                Fields.Add(ThemeFieldFor(value));
+            if (suppliers && col.Caption.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))
+            {
+                templateField = field;
+                Fields.Add(theme = ThemeFieldFor(value));
+            }
         }
-        if (Session.Definition.Key == "suppliers" && !Fields.OfType<ThemeFieldViewModel>().Any()) Fields.Add(ThemeFieldFor(value));
+        if (suppliers && theme == null) Fields.Add(theme = ThemeFieldFor(value));
+        if (theme != null)
+        {
+            // a new record: the theme follows the name as it is typed (a colour picked before is saved with it);
+            // any record: another DEFAULT TEMPLATE shows that template's colour
+            bool isNew = theme.Supplier.Length == 0;
+            void Follow(object? _, System.ComponentModel.PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName != nameof(FieldEditViewModel.Value)) return;
+                var name = isNew ? nameField?.Value ?? "" : theme.Supplier;
+                _ = theme.UpdateAsync(name, templateField?.Value ?? theme.Template);
+            }
+            if (nameField != null && isNew) nameField.PropertyChanged += Follow;
+            if (templateField != null) templateField.PropertyChanged += Follow;
+        }
+    }
+
+    private BankGroupViewModel BankGroupFor(DataRowView row, IReadOnlyList<string> headers)
+    {
+        string Get(string header) => Table!.Columns.Cast<DataColumn>().FirstOrDefault(c => string.Equals(c.Caption, header, StringComparison.OrdinalIgnoreCase)) is { } c
+            ? row[c.ColumnName] as string ?? "" : "";
+        void Set(string header, string value)
+        {
+            var name = EnsureColumn(header);
+            if ((row[name] as string ?? "") == value) return;
+            row.BeginEdit();
+            row[name] = value;
+            row.EndEdit();
+        }
+        return new BankGroupViewModel(headers, Get, Set, expanded: false);
+    }
+
+    /// <summary>Column for this header, added to the table when new (written to the sheet on save). Returns its name.</summary>
+    public string EnsureColumn(string header)
+    {
+        var existing = Table!.Columns.Cast<DataColumn>().FirstOrDefault(c => string.Equals(c.Caption, header, StringComparison.OrdinalIgnoreCase));
+        if (existing != null) return existing.ColumnName;
+        var col = new DataColumn(ColName(Table.Columns.Count), typeof(string)) { Caption = header, DefaultValue = "" };
+        Table.Columns.Add(col);
+        MarkDirty();
+        return col.ColumnName;
     }
 
     private ThemeFieldViewModel ThemeFieldFor(DataRowView row)
@@ -254,6 +318,9 @@ public sealed partial class DataSetViewModel : ObservableObject
     }
 
     public string NextId() => ToTableData().NextId(Session.Definition.IdPrefix);
+
+    /// <summary>Column headers of the record (the table's columns, including ones added since the last save).</summary>
+    public List<string> Headers => Table != null ? Table.Columns.Cast<DataColumn>().Select(c => c.Caption).ToList() : [.. Session.Current.Headers];
 
     /// <summary>Adds a record (values in header order) to the table; saved by the normal sync.</summary>
     public void AddRecord(string[] values)
@@ -483,15 +550,25 @@ public sealed partial class DataSetViewModel : ObservableObject
 /// <summary>
 /// Supplier theme colour (Client Theme Memory): hex code + swatch; empty = "Not Assigned Yet".
 /// Saved into CLIENT THEME MEMORY for the supplier's template (INVOICE / INV1), like ASSIGN THEME in Excel.
+/// For a supplier that has no name yet (a new record) the colour is kept and saved together with the supplier.
 /// </summary>
 public sealed partial class ThemeFieldViewModel : ObservableObject
 {
     private readonly MainViewModel _main;
     private int? _saved;
+    private int? _pending;
+    private bool _hasPending;
 
-    public string Supplier { get; }
-    public string Template { get; }
-    public bool Supported { get; }
+    /// <summary>New supplier form (New Invoice): the colour is written by <see cref="FlushAsync"/> after the supplier is saved.</summary>
+    public bool Deferred { get; }
+
+    [ObservableProperty]
+    private string _supplier;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Supported), nameof(Note))]
+    private string _template;
+
+    public bool Supported => BatchStudio.Core.Workbook.ThemeMemory.Supports(Template);
     public string Caption => "Theme";
     public string Note => Supported ? Loc.F("Theme.For", Template.ToUpperInvariant()) : Loc.T("Theme.NotSupported");
 
@@ -511,13 +588,13 @@ public sealed partial class ThemeFieldViewModel : ObservableObject
         }
     }
 
-    public ThemeFieldViewModel(MainViewModel main, string supplier, string template)
+    public ThemeFieldViewModel(MainViewModel main, string supplier, string template, bool deferred = false)
     {
         _main = main;
-        Supplier = supplier;
-        Template = template;
-        Supported = BatchStudio.Core.Workbook.ThemeMemory.Supports(template) && supplier.Length > 0;
-        _saved = Supported ? main.ThemeFor(supplier, template) : null;
+        _supplier = supplier.Trim();
+        _template = template.Trim().Length > 0 ? template.Trim() : "INVOICE";
+        Deferred = deferred;
+        _saved = Supported && _supplier.Length > 0 ? main.ThemeFor(_supplier, _template) : null;
         _hex = _saved is { } v ? BatchStudio.Core.Workbook.ThemeMemory.ToHex(v) : "";
     }
 
@@ -525,7 +602,8 @@ public sealed partial class ThemeFieldViewModel : ObservableObject
     private async Task PickAsync()
     {
         if (!Supported) return;
-        var picked = ColorPicker.Pick(_saved);
+        int? initial = BatchStudio.Core.Workbook.ThemeMemory.TryParseHex(Hex, out var cur) ? cur : _saved;
+        var picked = ColorPicker.Pick(initial);
         if (picked == null) return;
         Hex = BatchStudio.Core.Workbook.ThemeMemory.ToHex(picked.Value);
         await CommitAsync();
@@ -543,14 +621,58 @@ public sealed partial class ThemeFieldViewModel : ObservableObject
             rgb = v;
             Hex = BatchStudio.Core.Workbook.ThemeMemory.ToHex(v);
         }
+        if (Deferred || Supplier.Length == 0)
+        {
+            // no supplier yet: kept and saved with the supplier
+            _pending = rgb;
+            _hasPending = rgb != _saved;
+            Status = _hasPending && rgb != null ? Loc.T("Theme.Pending") : "";
+            return;
+        }
         if (rgb == _saved) { Status = ""; return; }
         Status = Loc.T("Status.SavingWorkbook");
         try
         {
             await _main.AssignTheme(Supplier, Template, rgb);
             _saved = rgb;
+            _hasPending = false;
             Status = rgb == null ? Loc.T("Theme.Cleared") : Loc.T("Theme.Saved");
         }
         catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+    }
+
+    /// <summary>The supplier's name or template changed in the details (a new record gets its name, another template is chosen).</summary>
+    public async Task UpdateAsync(string supplier, string template)
+    {
+        supplier = supplier.Trim();
+        template = template.Trim().Length > 0 ? template.Trim() : "INVOICE";
+        if (supplier == Supplier && string.Equals(template, Template, StringComparison.OrdinalIgnoreCase)) return;
+        Supplier = supplier;
+        Template = template;
+        if (Deferred) return;
+        if (_hasPending)
+        {
+            // a colour picked before the supplier had a name: saved now
+            Hex = _pending is { } p ? BatchStudio.Core.Workbook.ThemeMemory.ToHex(p) : "";
+            _saved = null;
+            await CommitAsync();
+            return;
+        }
+        _saved = Supported && Supplier.Length > 0 ? _main.ThemeFor(Supplier, Template) : null;
+        Hex = _saved is { } v ? BatchStudio.Core.Workbook.ThemeMemory.ToHex(v) : "";
+        Status = "";
+    }
+
+    /// <summary>New supplier saved: writes the colour picked in the form (if any) for this supplier and template.</summary>
+    public async Task FlushAsync(string supplier, string template)
+    {
+        Supplier = supplier.Trim();
+        Template = template.Trim().Length > 0 ? template.Trim() : "INVOICE";
+        if (BatchStudio.Core.Workbook.ThemeMemory.TryParseHex(Hex, out var typed)) { _pending = typed; _hasPending = true; }
+        if (!_hasPending || _pending == null || !Supported || Supplier.Length == 0) return;
+        await _main.AssignTheme(Supplier, Template, _pending);
+        _saved = _pending;
+        _hasPending = false;
+        Status = Loc.T("Theme.Saved");
     }
 }

@@ -85,6 +85,12 @@ jobs:
           Run 'English' 'Dark' $true 'newinvoice-details' '23-newinvoice-details'
           Run 'English' 'Dark' $true 'settings-accent' '24-accent-dark'
           Run 'English' 'Light' $true 'settings-accent' '25-accent-light'
+          Run 'English' 'Dark' $true 'suppliers-wide' '26-suppliers-wide'
+          Run 'English' 'Dark' $true 'suppliers-banks' '27-suppliers-banks'
+          Run 'English' 'Dark' $true 'newinvoice-banks' '28-newinvoice-banks'
+          Run 'English' 'Dark' $true 'colorpicker' '29-colorpicker'
+          Run 'English' 'Light' $true 'colorpicker' '30-colorpicker-light'
+          Run 'Arabic' 'Dark' $true 'suppliers-banks' '31-suppliers-banks-ar'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

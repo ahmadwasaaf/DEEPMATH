@@ -360,4 +360,24 @@
     <sys:String x:Key="Set.AccentColors">الألوان</sys:String>
     <sys:String x:Key="Set.AccentCustom">لون مخصص</sys:String>
     <sys:String x:Key="Home.InvoicesTile">الفواتير</sys:String>
+    <sys:String x:Key="Common.DragWidth">اسحب لتوسيع القائمة · دبل كليك للرجوع للعرض الأصلي</sys:String>
+    <sys:String x:Key="Common.OK">موافق</sys:String>
+    <sys:String x:Key="Color.Title">اختيار لون</sys:String>
+    <sys:String x:Key="Color.New">الجديد</sys:String>
+    <sys:String x:Key="Color.Current">الحالي (اضغط للرجوع له)</sys:String>
+    <sys:String x:Key="Color.Palette">الألوان</sys:String>
+    <sys:String x:Key="Color.Recent">الأخيرة</sys:String>
+    <sys:String x:Key="Theme.Pending">اللون هيتحفظ مع المورد.</sys:String>
+    <sys:String x:Key="Bank.Count">{0} حسابات</sys:String>
+    <sys:String x:Key="Bank.DefaultIs">حساب Bank {0} هو اللي بيتطبع في الفواتير</sys:String>
+    <sys:String x:Key="Bank.ShowAll">إظهار / إخفاء باقي الحسابات البنكية</sys:String>
+    <sys:String x:Key="Bank.Add">إضافة حساب بنكي آخر</sys:String>
+    <sys:String x:Key="Bank.Remove">حذف هذا الحساب البنكي</sys:String>
+    <sys:String x:Key="Bank.UseOnInvoice">اطبع هذا الحساب في الفواتير (احفظ عشان يتثبت)</sys:String>
+    <sys:String x:Key="Bank.RemoveConfirm">حذف الحساب البنكي رقم {0}؟</sys:String>
+    <sys:String x:Key="Bank.Label">Bank {0}</sys:String>
+    <sys:String x:Key="Bank.None">لا توجد بيانات بنكية</sys:String>
+    <sys:String x:Key="Bank.IsDefault">الحساب الافتراضي</sys:String>
+    <sys:String x:Key="Bank.Prev">الحساب البنكي السابق</sys:String>
+    <sys:String x:Key="Bank.Next">الحساب البنكي التالي</sys:String>
 </ResourceDictionary>

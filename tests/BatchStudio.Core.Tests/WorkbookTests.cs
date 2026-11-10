@@ -217,6 +217,72 @@ public class WorkbookTests
     }
 
     [Fact]
+    public void A_second_bank_account_adds_columns_and_becomes_the_invoice_bank()
+    {
+        var (dir, book) = SmallBook();
+        try
+        {
+            var ws = Workspace.Open(book, Path.Combine(dir, "state"));
+            var session = new DataSetSession(ws, DataSets.Suppliers);
+            session.Load();
+            var t = session.Current.Clone();
+            Assert.Equal(-1, SupplierBanks.BaseColumn(t.Headers));
+            t.Headers.Add(SupplierBanks.BaseHeader);
+            t.Headers.Add(SupplierBanks.DefaultHeader);
+            t.Headers.Add(SupplierBanks.HeaderFor(2));
+            foreach (var r in t.Rows.ToList())
+            {
+                int i = t.Rows.IndexOf(r);
+                var arr = r.Concat(new string[t.Headers.Count - r.Length]).Select(x => x ?? "").ToArray();
+                t.Rows[i] = arr;
+            }
+            t.Rows[0][t.Headers.Count - 3] = "FIRST BANK";
+            t.Rows[0][t.Headers.Count - 2] = "2";
+            t.Rows[0][t.Headers.Count - 1] = "SECOND BANK\nACCOUNT 2";
+            session.SetCurrent(t);
+            session.Save();
+
+            using (var wb = new XLWorkbook(book))
+            {
+                var s = wb.Worksheet("Suppliers");
+                int last = s.Row(1).LastCellUsed()!.Address.ColumnNumber;
+                Assert.Equal(SupplierBanks.HeaderFor(2), s.Cell(1, last).GetString());
+                Assert.Equal(SupplierBanks.DefaultHeader, s.Cell(1, last - 1).GetString());
+                Assert.Equal("SECOND BANK\nACCOUNT 2", s.Cell(2, last).GetString());
+            }
+            session.Load();
+            var party = InvoiceService.Suppliers(session.Current)[0];
+            Assert.Equal(2, party.DefaultBank);
+            Assert.True(party.HasManyBanks);
+            Assert.Equal("SECOND BANK\nACCOUNT 2", party.Bank);
+            Assert.Equal("FIRST BANK", party.BankText(1));
+            Assert.Equal("SECOND BANK\nACCOUNT 2", party.BankText(2));
+            // the second supplier has no extra account: account 1 is printed
+            var other = InvoiceService.Suppliers(session.Current)[1];
+            Assert.Equal(1, other.DefaultBank);
+            Assert.False(other.HasManyBanks);
+        }
+        finally { Clean(dir); }
+    }
+
+    [Fact]
+    public void Bank_headers_are_recognised()
+    {
+        string[] h = ["Supplier ID", "Supplier Name (English)", "Banking Details (full paragraph)", "Company’s Activities", "DEFAULT BANK",
+            "Banking Details (full paragraph) 2", "Banking Details (full paragraph) 3"];
+        Assert.Equal(2, SupplierBanks.BaseColumn(h));
+        Assert.Equal(new List<(int, int)> { (1, 2), (2, 5), (3, 6) }, SupplierBanks.Columns(h).Select(x => (x.Number, x.Column)).ToList());
+        Assert.True(SupplierBanks.IsBankHeader(h, 4));
+        Assert.False(SupplierBanks.IsBankHeader(h, 3));
+        string[] row = ["SUP-1", "A", "BANK ONE", "", "3", "", "BANK THREE"];
+        var acc = SupplierBanks.Accounts(h, row);
+        Assert.Equal(new[] { 1, 3 }, acc.Select(a => a.Number).ToArray());
+        Assert.Equal(3, SupplierBanks.DefaultNumber(h, row, acc));
+        row[6] = "";   // the default account is empty: account 1
+        Assert.Equal(1, SupplierBanks.DefaultNumber(h, row, SupplierBanks.Accounts(h, row)));
+    }
+
+    [Fact]
     public void Mass_invoice_archives_many_and_records_them_in_one_change()
     {
         var (dir, book) = SmallBook();

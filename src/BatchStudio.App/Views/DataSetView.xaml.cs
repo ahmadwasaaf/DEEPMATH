@@ -1,6 +1,7 @@
 using System.Data;
 using System.Windows;
 using System.Windows.Controls;
+using BatchStudio.App.Services;
 using BatchStudio.App.ViewModels;
 
 namespace BatchStudio.App.Views;
@@ -11,6 +12,7 @@ public partial class DataSetView : UserControl
     {
         InitializeComponent();
         DataContextChanged += (_, _) => ApplyLayout();
+        ListWidth.Attach(ListSplitter, ListColumn, () => DataContext is DataSetViewModel { CompactGrid: true } vm ? "list." + vm.Session.Definition.Key : null, DefaultListWidth);
         // the search box keeps its width but never overlaps the toolbar buttons
         SearchHost.SizeChanged += (_, _) => SearchBox.Width = Math.Max(0, Math.Min(300, SearchHost.ActualWidth));
     }
@@ -25,14 +27,27 @@ public partial class DataSetView : UserControl
         if (e.Key == System.Windows.Input.Key.Enter && (sender as FrameworkElement)?.DataContext is ThemeFieldViewModel t) t.CommitCommand.Execute(null);
     }
 
-    /// <summary>Suppliers / Clients: a narrow ID + name list and a wide details pane.</summary>
+    private const double DefaultListWidth = 330;
+
+    /// <summary>Suppliers / Clients: an ID + name list (its width dragged by the user) and a wide details pane.</summary>
     private void ApplyLayout()
     {
-        bool compact = DataContext is DataSetViewModel { CompactGrid: true };
-        ListColumn.Width = compact ? new GridLength(1, GridUnitType.Star) : new GridLength(1, GridUnitType.Star);
-        ListColumn.MaxWidth = compact ? 460 : double.PositiveInfinity;
-        ListColumn.MinWidth = compact ? 300 : 0;
-        DetailsColumn.Width = compact ? new GridLength(2, GridUnitType.Star) : new GridLength(360);
+        if (DataContext is DataSetViewModel { CompactGrid: true } vm)
+        {
+            ListColumn.Width = new GridLength(ListWidth.Get("list." + vm.Session.Definition.Key, DefaultListWidth));
+            ListColumn.MinWidth = 220;
+            ListColumn.MaxWidth = double.PositiveInfinity;
+            DetailsColumn.Width = new GridLength(1, GridUnitType.Star);
+            DetailsColumn.MinWidth = 320;
+        }
+        else
+        {
+            ListColumn.Width = new GridLength(1, GridUnitType.Star);
+            ListColumn.MinWidth = 200;
+            ListColumn.MaxWidth = double.PositiveInfinity;
+            DetailsColumn.Width = new GridLength(360);
+            DetailsColumn.MinWidth = 260;
+        }
     }
 
     /// <summary>Columns are named c0, c1… (safe binding paths); show the real Excel header instead.</summary>

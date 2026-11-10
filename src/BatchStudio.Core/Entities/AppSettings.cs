@@ -57,6 +57,11 @@ public sealed class AppSettings
     public string Accent { get; set; } = "auto";
     /// <summary>Last picked accent colours (newest first, up to 6).</summary>
     public List<string> RecentAccents { get; set; } = [];
+    /// <summary>Colours last picked in the colour picker (newest first, up to 10).</summary>
+    public List<string> RecentColors { get; set; } = [];
+
+    /// <summary>Width of the name list on the Suppliers / Clients / Reports pages (dragged by the user), per page.</summary>
+    public Dictionary<string, double> ListWidths { get; set; } = [];
 
     public EntityProfile? Active =>
         Entities.FirstOrDefault(e => string.Equals(e.Name, ActiveEntity, StringComparison.OrdinalIgnoreCase))

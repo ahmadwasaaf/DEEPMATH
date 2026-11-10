@@ -69,7 +69,10 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(AppSettings settings)
     {
         Settings = settings;
+        Current = this;
         Settings.Background ??= new();
+        Settings.ListWidths ??= [];
+        Settings.RecentColors ??= [];
         BatchStudio.App.Controls.BackgroundFx.Settings = Settings.Background;
         Home = new HomeViewModel(this);
         Templates = new TemplatesViewModel(this);
@@ -456,6 +459,9 @@ public sealed partial class MainViewModel : ObservableObject
         Setup.Reset();
         CurrentPage = Setup;
     }
+
+    /// <summary>The running program's view model (views use it for small UI preferences such as list widths).</summary>
+    public static MainViewModel? Current { get; private set; }
 
     public void SaveSettings()
     {

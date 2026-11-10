@@ -8,6 +8,16 @@ namespace BatchStudio.Core.Invoices;
 public sealed record Party(string Type, string Id, string Name, string? NativeName, string? Address, string? Bank,
     string? CategoryText, string? DefaultTemplate)
 {
+    /// <summary>All bank accounts of a supplier (account 1 first); <see cref="Bank"/> is the default one.</summary>
+    public IReadOnlyList<BankAccount> Banks { get; init; } = [];
+    /// <summary>Number of the account printed on invoices by default.</summary>
+    public int DefaultBank { get; init; } = 1;
+    public bool HasManyBanks => Banks.Count(b => b.Text.Trim().Length > 0) > 1;
+
+    /// <summary>Text of account <paramref name="number"/>, or the default account.</summary>
+    public string? BankText(int number) =>
+        Banks.FirstOrDefault(b => b.Number == number && b.Text.Trim().Length > 0)?.Text ?? Bank;
+
     public override string ToString() => Name;
 }
 
@@ -40,10 +50,17 @@ public static class InvoiceService
     public static List<Party> Suppliers(TableData t)
     {
         int id = 0, name = Col(t, "Supplier Name (English)", "Supplier Name", "Name"), native = Col(t, "Chinese Name", "Native Name"),
-            addr = Col(t, "Company Address", "Address"), bank = Col(t, "Banking Details (full paragraph)", "Banking", "Bank"),
+            addr = Col(t, "Company Address", "Address"),
             cat = Col(t, "Category (English | Arabic)", "Category"), tpl = Col(t, "DEFAULT TEMPLATE", "Template");
         return t.Rows.Where(r => Get(r, name) != null)
-            .Select(r => new Party("SUPPLIERS", Get(r, id) ?? "", Get(r, name)!, Get(r, native), Get(r, addr), Get(r, bank), Get(r, cat), Get(r, tpl)))
+            .Select(r =>
+            {
+                var banks = SupplierBanks.Accounts(t.Headers, r);
+                int def = SupplierBanks.DefaultNumber(t.Headers, r, banks);
+                var bank = banks.First(b => b.Number == def).Text;
+                return new Party("SUPPLIERS", Get(r, id) ?? "", Get(r, name)!, Get(r, native), Get(r, addr), bank.Length > 0 ? bank : null,
+                    Get(r, cat), Get(r, tpl)) { Banks = banks, DefaultBank = def };
+            })
             .ToList();
     }
 

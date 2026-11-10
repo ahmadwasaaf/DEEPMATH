@@ -67,7 +67,10 @@ public static class CompanyReports
             {
                 var n = name < r.Length ? r[name] : "";
                 if (!DashboardEngine.SameCompany(n, company)) continue;
-                rows++;
+                // every bank account of the row counts (old "(2)" rows count as one more each)
+                rows += type == "SUPPLIERS"
+                    ? Math.Max(1, SupplierBanks.Accounts(masterData.Headers, r).Count(b => b.Text.Trim().Length > 0))
+                    : 1;
                 if (!found || string.Equals(n.Trim(), DashboardEngine.BaseName(company), StringComparison.OrdinalIgnoreCase))
                 {
                     found = true;

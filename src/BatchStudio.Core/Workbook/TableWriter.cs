@@ -25,7 +25,9 @@ public static class TableWriter
                 if (string.Equals(src.Text(1, c).Trim(), table.Headers[i].Trim(), StringComparison.OrdinalIgnoreCase)) { found = c; break; }
             if (found == 0)
             {
+                // a new column (e.g. a supplier's second bank account) looks like the last one
                 found = ++lastCol;
+                if (found > 1) sheet.CopyColumnFormat(found - 1, found);
                 sheet.Set(1, found, table.Headers[i]);
                 written++;
             }
