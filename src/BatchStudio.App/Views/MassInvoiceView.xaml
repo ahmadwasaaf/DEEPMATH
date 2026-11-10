@@ -73,7 +73,7 @@
 
         <!-- ========== the 50 rows ========== -->
         <Border Grid.Row="2" Style="{StaticResource Card}" Padding="0">
-            <DataGrid ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserSortColumns="False"
+            <DataGrid SelectedIndex="{Binding SelectedRowIndex}" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserSortColumns="False"
                       HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="40" SelectionMode="Single"
                       EnableRowVirtualization="False" VirtualizingPanel.IsVirtualizing="False">
                 <DataGrid.Columns>
@@ -147,6 +147,27 @@
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
+                                    <!-- X on the selected row: clears the whole row -->
+                                    <Border HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,62,0">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True" />
+                                                            <Condition Binding="{Binding HasContent}" Value="True" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <Button Command="{Binding ClearRowCommand}" Padding="5,2" MinWidth="0" MinHeight="0" Background="Transparent" BorderThickness="0"
+                                                Focusable="False" ToolTip="{DynamicResource Mass.ClearRow}">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="11" Foreground="{StaticResource BadBrush}" />
+                                        </Button>
+                                    </Border>
                                     <!-- "+": a new supplier / client for this row -->
                                     <Button Command="{Binding AddPartyCommand}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,36,0"
                                             Padding="5,2" MinWidth="0" MinHeight="0" Background="Transparent" BorderThickness="0" Focusable="False"

@@ -385,4 +385,5 @@
     <sys:String x:Key="Mass.DetailsTip">عرض / تعديل بيانات المورد أو العميل</sys:String>
     <sys:String x:Key="Col.SupplierId">SUP ID</sys:String>
     <sys:String x:Key="Col.ClientId">CLI ID</sys:String>
+    <sys:String x:Key="Mass.ClearRow">مسح هذا الصف</sys:String>
 </ResourceDictionary>

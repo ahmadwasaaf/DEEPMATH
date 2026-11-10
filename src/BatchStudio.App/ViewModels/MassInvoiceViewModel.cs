@@ -61,6 +61,24 @@ public sealed partial class MassRowViewModel : ObservableObject
     [RelayCommand]
     private void AddParty() => _owner.AddPartyFor(this);
 
+    /// <summary>The row has something typed in it (the X that clears the row is shown).</summary>
+    public bool HasContent => !IsEmpty || InvoiceNo.Trim().Length > 0 || Date != null || Status.Length > 0 || ArchivedFile != null;
+
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName != nameof(HasContent)) base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(HasContent)));
+    }
+
+    /// <summary>X on the selected row: empties every input of the row (archived invoices stay archived).</summary>
+    [RelayCommand]
+    private void ClearRow()
+    {
+        if (_owner.IsBusy) return;
+        Clear();
+        _owner.Recount();
+    }
+
     /// <summary>The row number: opens the picked supplier / client's details.</summary>
     [RelayCommand]
     private void ShowDetails() => _owner.OpenDetailsFor(this);
@@ -101,6 +119,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
     public IReadOnlyList<string> Types => [Loc.T("Nav.Suppliers"), Loc.T("Nav.Clients")];
 
     [ObservableProperty] private int _typeIndex;
+    [ObservableProperty] private int _selectedRowIndex = -1;
     [ObservableProperty] private DateTime? _defaultDate = DateTime.Today;
     [ObservableProperty] private string _defaultCount = "10";
     [ObservableProperty] private string _status = "";

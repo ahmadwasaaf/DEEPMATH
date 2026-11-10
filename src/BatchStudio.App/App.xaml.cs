@@ -79,6 +79,7 @@ public partial class App : Application
             if (arg == "mass") vm.Mass.FillSample();
             if (massParty) vm.Mass.AddPartyFor(vm.Mass.Rows[3]);
             if (massDetails) vm.Mass.OpenDetailsFor(vm.Mass.Rows[0]);
+            if (arg == "mass" && !massParty && !massDetails) vm.Mass.SelectedRowIndex = 1;
             if (arg == "newinvoice-details")
             {
                 vm.NewInvoice.SelectedParty = vm.NewInvoice.Parties.FirstOrDefault();

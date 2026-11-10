@@ -23,6 +23,7 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
     private readonly dynamic _app;
     private readonly dynamic _wb;
     private readonly bool _owned;
+    private int? _pid;
     private readonly bool _events, _screen;
     private bool _saved;
 
@@ -54,6 +55,7 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
         var type = Type.GetTypeFromProgID("Excel.Application")
                    ?? throw new InvalidOperationException(Loc.T("Excel.Missing"));
         dynamic app = Activator.CreateInstance(type)!;
+        int? pid = ExcelProcess.Id(app);
         try
         {
             app.Visible = false;
@@ -63,12 +65,11 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
             app.AskToUpdateLinks = false;
             app.AutomationSecurity = 3;           // msoAutomationSecurityForceDisable: no macros run
             dynamic wb = app.Workbooks.Open(full, 0, false);   // UpdateLinks:=0, ReadOnly:=False
-            return new ExcelWorkbookEditor(app, wb, owned: true);
+            return new ExcelWorkbookEditor(app, wb, owned: true) { _pid = pid };
         }
         catch
         {
-            try { app.Quit(); } catch { }
-            Marshal.FinalReleaseComObject(app);
+            ExcelProcess.Shutdown(app, pid);
             throw;
         }
     }
@@ -111,9 +112,8 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
         if (_owned)
         {
             try { _wb.Close(false); } catch { }
-            try { _app.Quit(); } catch { }
             try { Marshal.FinalReleaseComObject(_wb); } catch { }
-            try { Marshal.FinalReleaseComObject(_app); } catch { }
+            ExcelProcess.Shutdown(_app, _pid);
         }
         else
         {

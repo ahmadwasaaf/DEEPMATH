@@ -14,9 +14,11 @@ public static class ExcelPdf
         var pdf = pdfPath ?? Path.ChangeExtension(xlsxPath, ".pdf");
         dynamic? app = null;
         dynamic? wb = null;
+        int? pid = null;
         try
         {
             app = Activator.CreateInstance(type)!;
+            pid = ExcelProcess.Id(app);
             app.DisplayAlerts = false;
             app.Visible = false;
             try { app.AutomationSecurity = 3; } catch { }   // no macros / controls run
@@ -45,9 +47,9 @@ public static class ExcelPdf
         }
         finally
         {
-            try { app?.Quit(); } catch { }
-            if (wb != null) Marshal.FinalReleaseComObject(wb);
-            if (app != null) Marshal.FinalReleaseComObject(app);
+            try { wb?.Close(false); } catch { }
+            try { if (wb != null) Marshal.FinalReleaseComObject(wb); } catch { }
+            ExcelProcess.Shutdown(app, pid);
         }
     }
 }

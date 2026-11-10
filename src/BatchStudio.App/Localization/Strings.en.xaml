@@ -385,4 +385,5 @@
     <sys:String x:Key="Mass.DetailsTip">Show / edit the details of this supplier or client</sys:String>
     <sys:String x:Key="Col.SupplierId">SUP ID</sys:String>
     <sys:String x:Key="Col.ClientId">CLI ID</sys:String>
+    <sys:String x:Key="Mass.ClearRow">Clear this row</sys:String>
 </ResourceDictionary>

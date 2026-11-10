@@ -27,6 +27,7 @@ public static class ExcelInvoiceEngine
     private sealed class Session : IDisposable
     {
         public dynamic? App;
+        public int? Pid;
         public string? BookPath;
         public byte[]? Book;
         public void Dispose()
@@ -34,8 +35,7 @@ public static class ExcelInvoiceEngine
             if (_session == this) _session = null;
             if (App != null)
             {
-                try { App.Quit(); } catch { }
-                try { Marshal.FinalReleaseComObject(App); } catch { }
+                ExcelProcess.Shutdown(App, Pid);
                 App = null;
             }
         }
@@ -103,7 +103,18 @@ public static class ExcelInvoiceEngine
             try { _ = session.App.Workbooks.Count; }          // still alive?
             catch { try { Marshal.FinalReleaseComObject(session.App); } catch { } session.App = null; }
         }
-        dynamic app = shared ? (session!.App ??= Activator.CreateInstance(type)!) : Activator.CreateInstance(type)!;
+        int? pid = null;
+        dynamic app;
+        if (shared)
+        {
+            if (session!.App == null) { session.App = Activator.CreateInstance(type)!; session.Pid = ExcelProcess.Id(session.App); }
+            app = session.App!;
+        }
+        else
+        {
+            app = Activator.CreateInstance(type)!;
+            pid = ExcelProcess.Id(app);
+        }
         dynamic? wb = null, outWb = null;   // outWb kept for the cleanup below
         try
         {
@@ -239,11 +250,7 @@ public static class ExcelInvoiceEngine
             try { outWb?.Close(false); } catch { }
             try { wb?.Close(false); } catch { }
             try { if (wb != null) Marshal.FinalReleaseComObject(wb); } catch { }
-            if (!shared)
-            {
-                try { app.Quit(); } catch { }
-                try { Marshal.FinalReleaseComObject(app); } catch { }
-            }
+            if (!shared) ExcelProcess.Shutdown(app, pid);
             try { File.Delete(tmpBook); } catch { }
             try { if (File.Exists(tmpOut)) File.Delete(tmpOut); } catch { }
         }
