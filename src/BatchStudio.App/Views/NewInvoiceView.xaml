@@ -154,7 +154,7 @@
                                         </Style.Triggers>
                                     </Style>
                                 </StackPanel.Style>
-                                <Button Command="{Binding PrevBankCommand}" Padding="5,1" MinWidth="0" MinHeight="0" Background="Transparent" BorderThickness="0" Margin="-26,0,0,0"
+                                <Button Command="{Binding PrevBankCommand}" Width="26" Padding="0,1" MinWidth="0" MinHeight="0" Background="Transparent" BorderThickness="0" Margin="-26,0,0,0"
                                         Visibility="{Binding CanPrevBank, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Bank.Prev}">
                                     <TextBlock Style="{StaticResource Icon}" Text="&#xE76B;" FontSize="12" />
                                 </Button>
@@ -169,7 +169,7 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                                <Button Command="{Binding NextBankCommand}" Padding="5,1" MinWidth="0" MinHeight="0" Background="Transparent" BorderThickness="0"
+                                <Button Command="{Binding NextBankCommand}" Width="26" Padding="0,1" MinWidth="0" MinHeight="0" Background="Transparent" BorderThickness="0"
                                         Visibility="{Binding CanNextBank, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Bank.Next}">
                                     <TextBlock Style="{StaticResource Icon}" Text="&#xE76C;" FontSize="12" />
                                 </Button>
@@ -185,8 +185,35 @@
                         </Grid>
 
                         <TextBlock Text="{DynamicResource Inv.Party}" Style="{StaticResource FieldLabel}" />
-                        <ComboBox ItemsSource="{Binding Parties}" SelectedItem="{Binding SelectedParty}" DisplayMemberPath="Name" IsEnabled="{Binding IsNormal}"
-                                  IsEditable="True" IsTextSearchEnabled="True" StaysOpenOnEdit="True" />
+                        <ComboBox ItemsSource="{Binding Parties}" SelectedItem="{Binding SelectedParty}" TextSearch.TextPath="Name" IsEnabled="{Binding IsNormal}"
+                                  IsEditable="True" IsTextSearchEnabled="True" StaysOpenOnEdit="True">
+                            <!-- the supplier's number of bank accounts on the right of its name (2 and more) -->
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <Border DockPanel.Dock="Right">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource BankBadgeBorder}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, ElementName=Badge}" Value="">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock x:Name="Badge" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BrandBrush}">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Converter="{StaticResource BankBadge}">
+                                                        <Binding />
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
 
                         <TextBlock Text="{DynamicResource Inv.Category}" Style="{StaticResource FieldLabel}" />
                         <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Text"

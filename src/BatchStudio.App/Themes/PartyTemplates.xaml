@@ -4,6 +4,17 @@
                     xmlns:svc="clr-namespace:BatchStudio.App.Services">
     <BooleanToVisibilityConverter x:Key="BankBoolToVis" />
     <svc:InverseBoolToVisibilityConverter x:Key="BankInverseBoolToVis" />
+    <svc:BankBadgeConverter x:Key="BankBadge" />
+
+    <!-- number of bank accounts next to a supplier's name (2 and more); display only -->
+    <Style x:Key="BankBadgeBorder" TargetType="Border">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="7,0" />
+        <Setter Property="Margin" Value="6,0,0,0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="{DynamicResource BrandSoftBrush}" />
+        <Setter Property="ToolTip" Value="{DynamicResource Bank.BadgeTip}" />
+    </Style>
 
 
     <!-- a supplier's bank accounts: Banking Details, Banking Details 2, 3 ... (the radio button = the account printed on invoices).

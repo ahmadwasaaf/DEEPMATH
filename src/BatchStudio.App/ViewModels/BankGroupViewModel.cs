@@ -12,7 +12,8 @@ public sealed partial class BankAccountViewModel : ObservableObject
     private readonly BankGroupViewModel _group;
     public int Number { get; }
     public string Header { get; }
-    public string Caption => Header;
+    /// <summary>"Banking Details (full paragraph) 1" for the first account (display only; the sheet header has no number).</summary>
+    public string Caption => Number == 1 && SupplierBanks.ExtraNumber(Header) == 0 ? Header + " 1" : Header;
     public bool IsFirst => Number == _group.FirstNumber;
 
     public BankAccountViewModel(BankGroupViewModel group, int number, string header)

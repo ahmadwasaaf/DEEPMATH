@@ -53,6 +53,11 @@ public static class ComboSearch
             var view = CollectionViewSource.GetDefaultView(box.ItemsSource);
             if (view == null) return;
             if (Matches(box, text) != null) view.Filter = null;
+            // suppliers: a number alone (2, 3 ...) lists the suppliers with that many bank accounts
+            else if (int.TryParse(text.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n)
+                     && n >= 2 && BankBadgeConverter.CountsByName.Values.Any(c => c >= 2)
+                     && box.ItemsSource.Cast<object>().Any(o => BankBadgeConverter.CountsByName.ContainsKey((o?.ToString() ?? "").Trim())))
+                view.Filter = o => BankBadgeConverter.CountsByName.TryGetValue((o?.ToString() ?? "").Trim(), out var c) && c == n;
             else view.Filter = o => (o?.ToString() ?? "").Contains(text.Trim(), StringComparison.CurrentCultureIgnoreCase);
             if (!box.IsDropDownOpen) box.IsDropDownOpen = true;
             tb.SelectionStart = tb.Text?.Length ?? 0;

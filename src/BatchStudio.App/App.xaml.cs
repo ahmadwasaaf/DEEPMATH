@@ -54,7 +54,8 @@ public partial class App : Application
             }
             // screenshot checks of this version: a wider name list, bank accounts, the colour picker (not saved)
             if (arg == "suppliers-wide") { vm.Settings.ListWidths["list.suppliers"] = 560; arg = "suppliers"; }
-            bool banks = arg == "suppliers-banks";
+            bool banks = arg is "suppliers-banks" or "suppliers-search2";
+            bool search2 = arg == "suppliers-search2";
             if (banks) arg = "suppliers";
             if (arg == "colorpicker")
             {
@@ -96,6 +97,7 @@ public partial class App : Application
                     added.Value = "PAYMENT & BANKING INSTRUCTIONS\nBENEFICIARY BANK: SECOND DEMO BANK\nSWIFT BIC: DEMOCNSH\nBENEFICIARY ACCOUNT NO.: 6222 0000 1111";
                     added.IsDefault = true;
                 }
+                if (search2) sp.SearchText = "2";
             }
         }
     }

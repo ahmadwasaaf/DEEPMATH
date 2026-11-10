@@ -12,7 +12,9 @@ public sealed record Party(string Type, string Id, string Name, string? NativeNa
     public IReadOnlyList<BankAccount> Banks { get; init; } = [];
     /// <summary>Number of the account printed on invoices by default.</summary>
     public int DefaultBank { get; init; } = 1;
-    public bool HasManyBanks => Banks.Count(b => b.Text.Trim().Length > 0) > 1;
+    /// <summary>Number of bank accounts with text.</summary>
+    public int BankCount => Banks.Count(b => b.Text.Trim().Length > 0);
+    public bool HasManyBanks => BankCount > 1;
 
     /// <summary>Text of account <paramref name="number"/>, or the default account.</summary>
     public string? BankText(int number) =>

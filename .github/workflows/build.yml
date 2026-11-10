@@ -93,6 +93,7 @@ jobs:
           Run 'Arabic' 'Dark' $true 'suppliers-banks' '31-suppliers-banks-ar'
           Run 'English' 'Dark' $true 'mass-newparty' '32-mass-newparty'
           Run 'English' 'Dark' $true 'newinvoice-banks' '33-newinvoice-pager'
+          Run 'English' 'Dark' $true 'suppliers-search2' '34-suppliers-search2'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

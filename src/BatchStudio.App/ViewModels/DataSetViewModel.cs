@@ -144,6 +144,7 @@ public sealed partial class DataSetViewModel : ObservableObject
         View = dt.DefaultView;
         ApplyFilter();
         RowCount = dt.Rows.Count;
+        BadgeVersion++;
         _loading = false;
         SelectedRow = (keepSel == null ? null
             : View.Cast<DataRowView>().FirstOrDefault(v => string.Equals(v[ColName(0)] as string, keepSel, StringComparison.OrdinalIgnoreCase)))
@@ -179,6 +180,7 @@ public sealed partial class DataSetViewModel : ObservableObject
     private void MarkDirty()
     {
         if (_loading) return;
+        BadgeVersion++;
         _editVersion++;
         IsDirty = true;
         RowCount = Table?.Rows.Cast<DataRow>().Count(r => r.RowState != DataRowState.Deleted) ?? 0;
@@ -198,9 +200,34 @@ public sealed partial class DataSetViewModel : ObservableObject
         if (View == null || Table == null) return;
         var q = SearchText.Trim();
         if (q.Length == 0) { View.RowFilter = ""; return; }
+        // suppliers: a number alone (2, 3 ...) = the suppliers with that many bank accounts
+        if (Session.Definition.Key == "suppliers" && int.TryParse(q, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var n)
+            && n >= 1 && n <= SupplierBanks.MaxAccounts)
+        {
+            var ids = Table.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Deleted && BankCount(r) == n)
+                .Select(r => "'" + (r[0] as string ?? "").Replace("'", "''") + "'").ToList();
+            View.RowFilter = ids.Count == 0 ? "1 = 0" : $"[{ColName(0)}] IN ({string.Join(",", ids)})";
+            return;
+        }
         var esc = q.Replace("'", "''").Replace("[", "[[]").Replace("*", "[*]").Replace("%", "[%]");
-        View.RowFilter = string.Join(" OR ", Table.Columns.Cast<DataColumn>().Select(c => $"[{c.ColumnName}] LIKE '%{esc}%'"));
+        // suppliers / clients are searched by name and details, not by their codes (SUP-001 ...)
+        var columns = Table.Columns.Cast<DataColumn>().Where(c => !(CompactGrid && Table.Columns.IndexOf(c) == 0));
+        View.RowFilter = string.Join(" OR ", columns.Select(c => $"[{c.ColumnName}] LIKE '%{esc}%'"));
     }
+
+    /// <summary>Number of bank accounts (with text) of a supplier row.</summary>
+    public int BankCount(DataRow row)
+    {
+        if (Table == null || Session.Definition.Key != "suppliers") return 0;
+        var headers = Table.Columns.Cast<DataColumn>().Select(c => c.Caption).ToList();
+        int n = 0;
+        foreach (var (_, col) in SupplierBanks.Columns(headers))
+            if ((row[col] as string ?? "").Trim().Length > 0) n++;
+        return n;
+    }
+
+    /// <summary>Changes whenever data changes, so the bank-count badges of the list are recomputed.</summary>
+    [ObservableProperty] private int _badgeVersion;
 
     partial void OnSelectedRowChanged(DataRowView? value)
     {

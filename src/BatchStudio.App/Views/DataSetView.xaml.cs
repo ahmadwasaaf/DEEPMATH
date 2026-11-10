@@ -60,6 +60,20 @@ public partial class DataSetView : UserControl
                 int index = vm.Table.Columns.IndexOf(col);
                 if (index > 1) { e.Cancel = true; return; }
                 star = index == 1;
+                // suppliers: the name with the number of bank accounts next to it
+                if (index == 1 && vm.Session.Definition.Key == "suppliers")
+                {
+                    e.Column = new DataGridTemplateColumn
+                    {
+                        Header = col.Caption,
+                        CellTemplate = (DataTemplate)FindResource("NameWithBadge"),
+                        SortMemberPath = e.PropertyName,
+                        Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+                        MinWidth = 70,
+                        IsReadOnly = true,
+                    };
+                    return;
+                }
             }
         }
         if (star) e.Column.Width = new DataGridLength(1, DataGridLengthUnitType.Star);
