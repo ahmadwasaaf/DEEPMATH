@@ -1,7 +1,9 @@
 <UserControl x:Class="BatchStudio.App.Views.ReportsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:svc="clr-namespace:BatchStudio.App.Services">
     <UserControl.Resources>
+        <svc:ShortIdConverter x:Key="ShortId" />
         <!-- list text centred in its row, like the Suppliers list -->
         <Style x:Key="ListCell" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -82,7 +84,7 @@
                           CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="34" SelectionMode="Single"
                           MouseDoubleClick="OnRowDoubleClick">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="Auto" MinWidth="90" ElementStyle="{StaticResource ListCell}" />
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id, Converter={StaticResource ShortId}}" Width="Auto" MinWidth="60" ElementStyle="{StaticResource ListCell}" />
                         <DataGridTextColumn Header="{StaticResource Col.Company}" Binding="{Binding Name}" Width="*" ElementStyle="{StaticResource ListCell}" />
                     </DataGrid.Columns>
                 </DataGrid>

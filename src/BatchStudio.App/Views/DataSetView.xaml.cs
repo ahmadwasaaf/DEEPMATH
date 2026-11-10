@@ -61,6 +61,20 @@ public partial class DataSetView : UserControl
                 int index = vm.Table.Columns.IndexOf(col);
                 if (index > 1) { e.Cancel = true; return; }
                 star = index == 1;
+                // the code column: "SUP ID" / "CLI ID", SUP-001 shown as SUP-1, only as wide as its text
+                if (index == 0 && e.Column is DataGridTextColumn idCol)
+                {
+                    idCol.Header = Loc.T(vm.Session.Definition.Key == "clients" ? "Col.ClientId" : "Col.SupplierId");
+                    idCol.Binding = new System.Windows.Data.Binding(e.PropertyName) { Converter = new ShortIdConverter(), Mode = System.Windows.Data.BindingMode.OneWay };
+                    idCol.Width = DataGridLength.SizeToCells;
+                    idCol.MinWidth = 64;
+                    idCol.IsReadOnly = true;
+                    var idStyle = new Style(typeof(TextBlock));
+                    idStyle.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center));
+                    idStyle.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(6, 0, 10, 0)));
+                    idCol.ElementStyle = idStyle;
+                    return;
+                }
                 // suppliers: the name with the number of bank accounts next to it
                 if (index == 1 && vm.Session.Definition.Key == "suppliers")
                 {

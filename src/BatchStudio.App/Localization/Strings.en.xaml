@@ -383,4 +383,6 @@
     <sys:String x:Key="Bank.Prev">Previous bank account</sys:String>
     <sys:String x:Key="Bank.Next">Next bank account</sys:String>
     <sys:String x:Key="Mass.DetailsTip">Show / edit the details of this supplier or client</sys:String>
+    <sys:String x:Key="Col.SupplierId">SUP ID</sys:String>
+    <sys:String x:Key="Col.ClientId">CLI ID</sys:String>
 </ResourceDictionary>
