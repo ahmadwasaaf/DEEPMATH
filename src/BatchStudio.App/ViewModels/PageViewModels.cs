@@ -357,6 +357,22 @@ public sealed partial class EntityRowViewModel : ObservableObject
 public sealed partial class SettingsViewModel : ObservableObject
 {
     private readonly MainViewModel _main;
+
+    /// <summary>Appearance: Language and Theme always shown; the arrow opens / closes the accent colours (remembered).</summary>
+    public bool AppearanceOpen
+    {
+        get => _main.Settings.AppearanceOpen;
+        set
+        {
+            if (_main.Settings.AppearanceOpen == value) return;
+            _main.Settings.AppearanceOpen = value;
+            _main.SaveSettings();
+            OnPropertyChanged();
+        }
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ToggleAppearance() => AppearanceOpen = !AppearanceOpen;
     public ObservableCollection<EntityRowViewModel> Entities { get; } = [];
 
     public void Refresh()

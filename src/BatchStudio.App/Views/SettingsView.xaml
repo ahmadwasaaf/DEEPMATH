@@ -32,7 +32,25 @@
 
             <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource Set.Appearance}" Style="{StaticResource SectionTitle}" />
+                    <!-- the arrow opens / closes the accent colours; Language and Theme stay visible -->
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Command="{Binding ToggleAppearanceCommand}" Padding="8,5" VerticalAlignment="Top"
+                                ToolTip="{DynamicResource Set.Accent}">
+                            <TextBlock FontSize="12">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                        <Setter Property="Text" Value="&#xE70D;" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AppearanceOpen}" Value="True">
+                                                <Setter Property="Text" Value="&#xE70E;" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                        <TextBlock Text="{DynamicResource Set.Appearance}" Style="{StaticResource SectionTitle}" />
+                    </DockPanel>
                     <Grid Margin="0,4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="200" />
@@ -56,7 +74,7 @@
                         </StackPanel>
                     </Grid>
                     <!-- accent colour (like Windows "Choose your accent color") -->
-                    <Grid Margin="0,14,0,4">
+                    <Grid Margin="0,14,0,4" Visibility="{Binding AppearanceOpen, Converter={StaticResource BoolToVis}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="200" />
                             <ColumnDefinition Width="*" />

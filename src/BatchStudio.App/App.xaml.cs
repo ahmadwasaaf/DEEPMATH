@@ -43,6 +43,7 @@ public partial class App : Application
             if (arg == "settings-accent")
             {
                 arg = "settings";
+                vm.Settings.AppearanceOpen = true;
                 Dispatcher.BeginInvoke(() => ThemeService.ApplyAccent("#E3008C"), DispatcherPriority.ContextIdle);
             }
             // screenshot checks of the Home background styles: --page home-sphere, home-waves ... (not saved)
