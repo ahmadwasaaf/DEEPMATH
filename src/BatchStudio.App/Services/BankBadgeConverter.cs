@@ -14,6 +14,7 @@ public sealed class BankBadgeConverter : IMultiValueConverter
 {
     /// <summary>Counts by supplier name for lists of plain names (Mass Invoice dropdowns).</summary>
     public static Dictionary<string, int> CountsByName { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public static int Version { get; set; }
 
     public object Convert(object[] values, Type targetType, object? parameter, CultureInfo culture)
     {
@@ -22,6 +23,8 @@ public sealed class BankBadgeConverter : IMultiValueConverter
         if (item is Party p) n = p.BankCount;
         else if (item is DataRowView rv && values.Length > 2 && values[2] is DataSetViewModel vm) n = vm.BankCount(rv.Row);
         else if (item is string name && CountsByName.TryGetValue(name.Trim(), out var c)) n = c;
+        else if (item is ReportParty rp && rp.Id.StartsWith("SUP", StringComparison.OrdinalIgnoreCase)
+                 && CountsByName.TryGetValue(rp.Name.Trim(), out var rc)) n = rc;
         return n >= 2 ? n.ToString(CultureInfo.InvariantCulture) : "";
     }
 

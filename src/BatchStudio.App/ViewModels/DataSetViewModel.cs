@@ -145,6 +145,7 @@ public sealed partial class DataSetViewModel : ObservableObject
         ApplyFilter();
         RowCount = dt.Rows.Count;
         BadgeVersion++;
+        UpdateBankCounts();
         _loading = false;
         SelectedRow = (keepSel == null ? null
             : View.Cast<DataRowView>().FirstOrDefault(v => string.Equals(v[ColName(0)] as string, keepSel, StringComparison.OrdinalIgnoreCase)))
@@ -224,6 +225,21 @@ public sealed partial class DataSetViewModel : ObservableObject
         foreach (var (_, col) in SupplierBanks.Columns(headers))
             if ((row[col] as string ?? "").Trim().Length > 0) n++;
         return n;
+    }
+
+    /// <summary>Suppliers: the name → number of bank accounts map used by the badges of the other lists (Reports, dropdowns).</summary>
+    private void UpdateBankCounts()
+    {
+        if (Session.Definition.Key != "suppliers" || Table == null) return;
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted || Table.Columns.Count < 2) continue;
+            var name = (r[1] as string ?? "").Trim();
+            if (name.Length > 0) counts[name] = BankCount(r);
+        }
+        BankBadgeConverter.CountsByName = counts;
+        BankBadgeConverter.Version++;
     }
 
     /// <summary>Changes whenever data changes, so the bank-count badges of the list are recomputed.</summary>
@@ -439,6 +455,7 @@ public sealed partial class DataSetViewModel : ObservableObject
                 IsDirty = false;
                 Table?.AcceptChanges();
                 Status = Loc.T("Status.Synced") + $"  ·  {DateTime.Now:HH:mm:ss}";
+                UpdateBankCounts();
             }
             else _autoSave.Start();
             _main.Home.Refresh();

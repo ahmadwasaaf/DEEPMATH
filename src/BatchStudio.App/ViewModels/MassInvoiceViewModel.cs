@@ -135,10 +135,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
 
         var type = IsClients ? "CLIENTS" : "SUPPLIERS";
         PartyNames = _parties.Select(p => p.Name).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        // bank-account count badges of the dropdowns
-        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in _parties) counts[p.Name.Trim()] = p.BankCount;
-        BankBadgeConverter.CountsByName = counts;
+
         TemplateNames = _templates.Where(t => t.Map!.EffectivePartyType == type).Select(t => t.Name).ToList();
         if (TemplateNames.Count == 0) TemplateNames = _templates.Select(t => t.Name).ToList();
         LoadHistoryNumbers();

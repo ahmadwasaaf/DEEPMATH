@@ -141,7 +141,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="{DynamicResource Inv.PartyType}" Style="{StaticResource FieldLabel}" />
                             <!-- bank account printed on this invoice: lights up when the supplier has more than one -->
-                            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,6,0,2"
+                            <StackPanel x:Name="BankPager" Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="28,6,0,2"
                                         FlowDirection="LeftToRight" ToolTip="{Binding BankTip}" ToolTipService.ShowOnDisabled="True"
                                         Visibility="{Binding ShowBankPager, Converter={StaticResource BoolToVis}}">
                                 <StackPanel.Style>
@@ -176,7 +176,7 @@
                             </StackPanel>
                             <RadioButton Grid.Row="1" Grid.Column="0" Content="{DynamicResource Nav.Suppliers}" GroupName="ptype" Margin="0,0,18,0"
                                          IsChecked="{Binding IsClients, Converter={StaticResource InverseBool}}" IsEnabled="{Binding IsNormal}" />
-                            <RadioButton Grid.Row="1" Grid.Column="1" Content="{DynamicResource Nav.Clients}" GroupName="ptype" IsChecked="{Binding IsClients}"
+                            <RadioButton x:Name="ClientsRadio" Grid.Row="1" Grid.Column="1" Content="{DynamicResource Nav.Clients}" GroupName="ptype" IsChecked="{Binding IsClients}"
                                          IsEnabled="{Binding IsNormal}" />
                             <Button Grid.Row="1" Grid.Column="3" Command="{Binding AddPartyCommand}" Padding="9,5" VerticalAlignment="Center"
                                     ToolTip="{DynamicResource Inv.AddParty}" Style="{DynamicResource AccentButtonStyle}" IsEnabled="{Binding IsNormal}">
@@ -190,7 +190,7 @@
                             <!-- the supplier's number of bank accounts on the right of its name (2 and more) -->
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <DockPanel>
+                                    <DockPanel HorizontalAlignment="Left">
                                         <Border DockPanel.Dock="Right">
                                             <Border.Style>
                                                 <Style TargetType="Border" BasedOn="{StaticResource BankBadgeBorder}">

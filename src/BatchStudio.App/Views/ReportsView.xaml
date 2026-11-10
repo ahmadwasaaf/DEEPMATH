@@ -85,7 +85,34 @@
                           MouseDoubleClick="OnRowDoubleClick">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ID" Binding="{Binding Id, Converter={StaticResource ShortId}}" Width="Auto" MinWidth="60" ElementStyle="{StaticResource ListCell}" />
-                        <DataGridTextColumn Header="{StaticResource Col.Company}" Binding="{Binding Name}" Width="*" ElementStyle="{StaticResource ListCell}" />
+                        <DataGridTemplateColumn Header="{StaticResource Col.Company}" Width="*" SortMemberPath="Name">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <!-- supplier name with its number of bank accounts right after it -->
+                                    <DockPanel Margin="6,0" VerticalAlignment="Center" HorizontalAlignment="Left">
+                                        <Border DockPanel.Dock="Right">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource BankBadgeBorder}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Text, ElementName=Badge}" Value="">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock x:Name="Badge" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BrandBrush}">
+                                                <TextBlock.Text>
+                                                    <MultiBinding Converter="{StaticResource BankBadge}">
+                                                        <Binding />
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>

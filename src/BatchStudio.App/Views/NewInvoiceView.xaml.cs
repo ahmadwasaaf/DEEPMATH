@@ -9,6 +9,8 @@ public partial class NewInvoiceView : UserControl
     public NewInvoiceView()
     {
         InitializeComponent();
+        // "Bank" starts exactly where the word "Clients" starts (after the radio's circle), in any theme / language
+        ClientsRadio.LayoutUpdated += (_, _) => AlignBankPager();
         // the expanded party details close with Esc or a click outside them (the arrow also toggles them)
         PreviewKeyDown += (_, e) =>
         {
@@ -25,6 +27,25 @@ public partial class NewInvoiceView : UserControl
                 if (x == PartyOverlay || x is Button { Name: "DetailsToggle" }) return;
             vm.DetailsExpanded = false;
         };
+    }
+
+    private void AlignBankPager()
+    {
+        if (!ClientsRadio.IsLoaded || FindPresenter(ClientsRadio) is not { } text) return;
+        double x = text.TransformToAncestor(ClientsRadio).Transform(new Point(0, 0)).X;
+        x = Math.Round(Math.Max(0, x));
+        if (Math.Abs(BankPager.Margin.Left - x) > 0.5) BankPager.Margin = new Thickness(x, 6, 0, 2);
+    }
+
+    private static ContentPresenter? FindPresenter(DependencyObject root)
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var c = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (c is ContentPresenter cp) return cp;
+            if (FindPresenter(c) is { } found) return found;
+        }
+        return null;
     }
 
     private void OnThemeLostFocus(object sender, RoutedEventArgs e)
