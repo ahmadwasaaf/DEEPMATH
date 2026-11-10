@@ -165,7 +165,7 @@
                                         </Border.Style>
                                         <Button Command="{Binding ClearRowCommand}" Padding="5,2" MinWidth="0" MinHeight="0" Background="Transparent" BorderThickness="0"
                                                 Focusable="False" ToolTip="{DynamicResource Mass.ClearRow}">
-                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="11" Foreground="{StaticResource BadBrush}" />
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE894;" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                         </Button>
                                     </Border>
                                     <!-- "+": a new supplier / client for this row -->
