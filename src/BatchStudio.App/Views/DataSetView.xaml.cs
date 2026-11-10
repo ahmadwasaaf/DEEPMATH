@@ -36,7 +36,6 @@ public partial class DataSetView : UserControl
         {
             ListColumn.Width = new GridLength(ListWidth.Get("list." + vm.Session.Definition.Key, DefaultListWidth));
             ListColumn.MinWidth = 220;
-            ListColumn.MaxWidth = double.PositiveInfinity;
             DetailsColumn.Width = new GridLength(1, GridUnitType.Star);
             DetailsColumn.MinWidth = 320;
         }
@@ -44,7 +43,6 @@ public partial class DataSetView : UserControl
         {
             ListColumn.Width = new GridLength(1, GridUnitType.Star);
             ListColumn.MinWidth = 200;
-            ListColumn.MaxWidth = double.PositiveInfinity;
             DetailsColumn.Width = new GridLength(360);
             DetailsColumn.MinWidth = 260;
         }

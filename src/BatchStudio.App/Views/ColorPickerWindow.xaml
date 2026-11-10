@@ -6,9 +6,9 @@
         Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
     <Window.Resources>
         <Style x:Key="Swatch" TargetType="Button">
-            <Setter Property="Width" Value="22" />
-            <Setter Property="Height" Value="22" />
-            <Setter Property="Margin" Value="0,0,5,5" />
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Margin" Value="0,0,6,6" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
             <Setter Property="Template">
@@ -151,7 +151,7 @@
             <TextBlock Text="{DynamicResource Color.Palette}" Style="{StaticResource Caption}" Margin="0,16,0,6" />
             <ItemsControl x:Name="PaletteList">
                 <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><WrapPanel Width="270" /></ItemsPanelTemplate>
+                    <ItemsPanelTemplate><WrapPanel Width="262" /></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>

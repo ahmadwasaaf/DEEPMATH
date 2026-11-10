@@ -11,6 +11,8 @@ namespace BatchStudio.App.Services;
 /// </summary>
 public static class ListWidth
 {
+    private const double DetailsMin = 320;
+
     public static double Get(string key, double fallback)
     {
         var w = MainViewModel.Current?.Settings.ListWidths;
@@ -25,6 +27,9 @@ public static class ListWidth
             if (key() is { } k) column.Width = new GridLength(Get(k, fallback));
         }
         Apply();
+        // a width saved on a larger window never pushes the details pane out of view
+        if (splitter.Parent is Grid grid)
+            grid.SizeChanged += (_, _) => column.MaxWidth = Math.Max(column.MinWidth, grid.ActualWidth - splitter.Width - DetailsMin);
         splitter.DragCompleted += (_, _) =>
         {
             if (key() is not { } k || MainViewModel.Current is not { } main) return;
