@@ -57,6 +57,10 @@ public sealed partial class MassRowViewModel : ObservableObject
 
     public void CommitInvoiceNo() => _owner.OnInvoiceNoCommitted(this);
 
+    /// <summary>"+" next to the dropdown: a new supplier / client, put on this row once saved.</summary>
+    [RelayCommand]
+    private void AddParty() => _owner.AddPartyFor(this);
+
     public void FormatAmount()
     {
         if (decimal.TryParse(AmountText.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var a) && a > 0)
@@ -108,6 +112,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
 
     private bool IsClients => TypeIndex == 1;
     public string PartyHeader => Loc.T(IsClients ? "Mass.Client" : "Mass.Supplier");
+    public string AddPartyTip => Loc.T(IsClients ? "Inv.NewClient" : "Inv.NewSupplier");
 
     // ------------------------------------------------------------------ loading
     public void Refresh()
@@ -131,6 +136,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
         LoadHistoryNumbers();
         foreach (var r in Rows) r.Refresh();
         OnPropertyChanged(nameof(PartyHeader));
+        OnPropertyChanged(nameof(AddPartyTip));
         Recount();
         if (_templates.Count == 0) Status = Loc.T("Inv.NoTemplates");
     }
@@ -241,6 +247,46 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
         if (row.CountText.Trim().Length == 0) row.CountText = DefaultCount;
         row.Date ??= DefaultDate;
         Recount();
+    }
+
+    // ------------------------------------------------------------------ new supplier / client from a row
+    [ObservableProperty] private bool _isAddingParty;
+    private PartyFormViewModel? _partyForm;
+    private MassRowViewModel? _formRow;
+
+    /// <summary>The same form as New Invoice "+" (fields, bank accounts, theme).</summary>
+    public PartyFormViewModel PartyForm
+    {
+        get
+        {
+            if (_partyForm != null) return _partyForm;
+            _partyForm = new PartyFormViewModel(main);
+            _partyForm.Closed += OnPartyFormClosed;
+            return _partyForm;
+        }
+    }
+
+    public void AddPartyFor(MassRowViewModel row)
+    {
+        if (IsBusy) return;
+        var category = row.CategoryText.Trim().Length > 0 ? row.CategoryText : null;
+        var template = row.Template.Trim().Length > 0 ? row.Template : TemplateNames.FirstOrDefault();
+        _formRow = row;
+        if (PartyForm.Open(IsClients, category, template)) IsAddingParty = true;
+    }
+
+    private void OnPartyFormClosed(string? name)
+    {
+        IsAddingParty = false;
+        var row = _formRow;
+        _formRow = null;
+        if (name == null) return;
+        Refresh();
+        if (row != null)
+        {
+            row.PartyName = name;
+            Status = PartyForm.LastStatus;
+        }
     }
 
     // ------------------------------------------------------------------ commands

@@ -163,13 +163,18 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [ObservableProperty] private string _templateInfo = "";
     [ObservableProperty] private string? _savedPath;
     [ObservableProperty] private bool _isAddingParty;
-    [ObservableProperty] private string _newPartyTitle = "";
-    [ObservableProperty] private string _newPartyError = "";
-    /// <summary>The new supplier / client form: fields, the supplier's bank accounts and theme.</summary>
-    public ObservableCollection<object> NewPartyFields { get; } = [];
-    private BankGroupViewModel? _newBanks;
-    private readonly Dictionary<string, string> _newBankValues = new(StringComparer.OrdinalIgnoreCase);
-    private ThemeFieldViewModel? _newTheme;
+    private PartyFormViewModel? _partyForm;
+    /// <summary>The new supplier / client form (fields, bank accounts, theme), shared with Mass Invoice.</summary>
+    public PartyFormViewModel PartyForm
+    {
+        get
+        {
+            if (_partyForm != null) return _partyForm;
+            _partyForm = new PartyFormViewModel(main);
+            _partyForm.Closed += OnPartyFormClosed;
+            return _partyForm;
+        }
+    }
 
     // Smart Invoice Repair
     private RepairSource? _repair;
@@ -331,9 +336,8 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             : null;
     }
 
-    private static bool IsLongField(string h) =>
-        h.Contains("Address", StringComparison.OrdinalIgnoreCase) || h.Contains("Bank", StringComparison.OrdinalIgnoreCase) ||
-        h.Contains("Activit", StringComparison.OrdinalIgnoreCase);
+    private static bool IsLongField(string h) => PartyFormViewModel.IsLongField(h);
+    private static string Clean(string? v) => PartyFormViewModel.Clean(v);
 
     private void OnPartyBanksChanged() => UpdatePartyDirty();
 
@@ -587,120 +591,16 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     [RelayCommand]
     private void AddParty()
     {
-        var page = PartyPage;
-        if (page == null) return;
-        var headers = page.Headers;
-        NewPartyFields.Clear();
-        _newBankValues.Clear();
-        _newBanks = null;
-        _newTheme = null;
-        NewPartyError = "";
-        NewPartyTitle = Loc.T(IsClients ? "Inv.NewClient" : "Inv.NewSupplier");
-        bool suppliers = !IsClients;
-        NewFieldViewModel? nameField = null, templateField = null;
-        for (int i = 0; i < headers.Count; i++)
-        {
-            var h = headers[i];
-            if (suppliers && SupplierBanks.IsBankHeader(headers, i))
-            {
-                // bank accounts (1, + more) as on the Suppliers page
-                if (_newBanks == null)
-                {
-                    _newBanks = new BankGroupViewModel(headers, k => _newBankValues.TryGetValue(k, out var v) ? v : "",
-                        (k, v) => _newBankValues[k] = v, expanded: true);
-                    NewPartyFields.Add(_newBanks);
-                }
-                continue;
-            }
-            var options = main.OptionsFor(page.Session.Definition.Key, h, []);
-            string value = "";
-            if (i == 0) value = page.NextId();
-            else if (options != null && h.Contains("Category", StringComparison.OrdinalIgnoreCase) && SelectedCategory != null) value = SelectedCategory.Text;
-            else if (options != null && h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase) && SelectedTemplate != null) value = SelectedTemplate.Name;
-            if (options != null && value.Length > 0 && !options.Contains(value)) options = [value, .. options];
-            var field = new NewFieldViewModel { Caption = h, Options = options, Value = value, Index = i, IsLong = IsLongField(h) };
-            NewPartyFields.Add(field);
-            if (i == 1) nameField = field;
-            // suppliers: the theme comes right after DEFAULT TEMPLATE (saved with the new supplier)
-            if (suppliers && h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))
-            {
-                templateField = field;
-                NewPartyFields.Add(_newTheme = new ThemeFieldViewModel(main, "", value, deferred: true));
-            }
-        }
-        if (suppliers && _newTheme == null) NewPartyFields.Add(_newTheme = new ThemeFieldViewModel(main, "", SelectedTemplate?.Name ?? "INVOICE", deferred: true));
-        if (_newTheme is { } theme && templateField != null)
-            templateField.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(NewFieldViewModel.Value)) _ = theme.UpdateAsync(nameField?.Value ?? "", templateField.Value);
-            };
-        IsAddingParty = true;
+        if (PartyForm.Open(IsClients, SelectedCategory?.Text, SelectedTemplate?.Name)) IsAddingParty = true;
     }
 
-    private static string Clean(string? v) => (v ?? "").Replace("\r\n", "\n").Replace('\r', '\n').Trim();
-
-    [RelayCommand]
-    private void CancelParty()
+    private void OnPartyFormClosed(string? name)
     {
         IsAddingParty = false;
-        NewPartyFields.Clear();
-        _newBanks = null;
-        _newTheme = null;
-    }
-
-    [RelayCommand]
-    private async Task SavePartyAsync()
-    {
-        var page = PartyPage;
-        if (page == null) return;
-        NewPartyError = "";
-        var fields = NewPartyFields.OfType<NewFieldViewModel>().ToList();
-        var headers = page.Headers;
-        int nameCol = headers.FindIndex(h => h.Contains("Name", StringComparison.OrdinalIgnoreCase) &&
-                                             !h.Contains("Chinese", StringComparison.OrdinalIgnoreCase) && !h.Contains("Native", StringComparison.OrdinalIgnoreCase));
-        if (nameCol < 0) nameCol = 1;
-        string ValueAt(int index) => fields.FirstOrDefault(f => f.Index == index) is { } f ? Clean(f.Value) : "";
-        var id = ValueAt(0);
-        var name = ValueAt(nameCol);
-        if (id.Length == 0 || name.Length == 0) { NewPartyError = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
-        var existing = IsClients ? _clients : _suppliers;
-        if (existing.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
-        { NewPartyError = Loc.F("Inv.PartyExists", name); return; }
-        if (page.Session.Current.Rows.Any(r => string.Equals(r[0], id, StringComparison.OrdinalIgnoreCase)))
-        { NewPartyError = Loc.F("Inv.PartyIdExists", id); return; }
-
-        // extra bank accounts may need new columns
-        foreach (var (header, value) in _newBankValues)
-            if (value.Trim().Length > 0 || SupplierBanks.IsDefaultHeader(header)) page.EnsureColumn(header);
-        headers = page.Headers;
-        var values = new string[headers.Count];
-        for (int i = 0; i < values.Length; i++)
-        {
-            values[i] = ValueAt(i);
-            if (_newBankValues.TryGetValue(headers[i], out var bank)) values[i] = Clean(bank);
-        }
-        string template = fields.FirstOrDefault(f => f.Caption.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))?.Value ?? SelectedTemplate?.Name ?? "INVOICE";
-
-        IsBusy = true;
-        Status = Loc.T("Status.SavingWorkbook");
-        try
-        {
-            page.AddRecord(values);
-            await page.SaveAsync();
-            // the theme picked in the form goes to CLIENT THEME MEMORY with the new supplier
-            if (!IsClients && _newTheme != null) await _newTheme.FlushAsync(name, template);
-        }
-        catch (Exception ex) { Status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
-        finally { IsBusy = false; }
-
-        IsAddingParty = false;
-        NewPartyFields.Clear();
-        _newBanks = null;
-        _newTheme = null;
+        if (name == null) return;
         Refresh();
         SelectedParty = Parties.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
-        if (Status.StartsWith(Loc.T("Status.Error"), StringComparison.Ordinal)) return;
-        Status = page.IsDirty ? page.Status : Loc.F("Inv.PartyAdded", name);
+        Status = PartyForm.LastStatus;
     }
 
     // ------------------------------------------------------------------ commands

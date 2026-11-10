@@ -91,6 +91,8 @@ jobs:
           Run 'English' 'Dark' $true 'colorpicker' '29-colorpicker'
           Run 'English' 'Light' $true 'colorpicker' '30-colorpicker-light'
           Run 'Arabic' 'Dark' $true 'suppliers-banks' '31-suppliers-banks-ar'
+          Run 'English' 'Dark' $true 'mass-newparty' '32-mass-newparty'
+          Run 'English' 'Dark' $true 'newinvoice-banks' '33-newinvoice-pager'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

@@ -8,7 +8,19 @@ namespace BatchStudio.App.Views;
 
 public partial class MassInvoiceView : UserControl
 {
-    public MassInvoiceView() => InitializeComponent();
+    public MassInvoiceView()
+    {
+        InitializeComponent();
+        // Esc closes the new supplier / client form
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.Escape && DataContext is MassInvoiceViewModel { IsAddingParty: true } vm)
+            {
+                vm.PartyForm.CancelCommand.Execute(null);
+                e.Handled = true;
+            }
+        };
+    }
 
     private void OnAmountLostFocus(object sender, RoutedEventArgs e)
     {
