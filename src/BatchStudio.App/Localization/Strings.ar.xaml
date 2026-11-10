@@ -382,4 +382,5 @@
     <sys:String x:Key="Bank.IsDefault">الحساب الافتراضي</sys:String>
     <sys:String x:Key="Bank.Prev">الحساب البنكي السابق</sys:String>
     <sys:String x:Key="Bank.Next">الحساب البنكي التالي</sys:String>
+    <sys:String x:Key="Mass.DetailsTip">عرض / تعديل بيانات المورد أو العميل</sys:String>
 </ResourceDictionary>

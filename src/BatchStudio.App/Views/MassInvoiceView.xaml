@@ -80,7 +80,34 @@
                     <DataGridTemplateColumn Header="#" Width="36" HeaderTemplate="{StaticResource CenterHeader}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding No}" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.7" />
+                                <!-- the row number opens the picked supplier / client's details -->
+                                <TextBlock Text="{Binding No}" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="6,4" Background="Transparent"
+                                           ToolTip="{DynamicResource Mass.DetailsTip}">
+                                    <TextBlock.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" Command="{Binding ShowDetailsCommand}" />
+                                    </TextBlock.InputBindings>
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Opacity" Value="0.7" />
+                                            <Setter Property="Cursor" Value="Hand" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Opacity" Value="1" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource BrandBrush}" />
+                                                    <Setter Property="TextDecorations" Value="Underline" />
+                                                </Trigger>
+                                                <!-- no supplier / client picked: a plain number -->
+                                                <DataTrigger Binding="{Binding PartyName}" Value="">
+                                                    <Setter Property="Cursor" Value="Arrow" />
+                                                    <Setter Property="ToolTip" Value="{x:Null}" />
+                                                    <Setter Property="Opacity" Value="0.7" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                    <Setter Property="TextDecorations" Value="{x:Null}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

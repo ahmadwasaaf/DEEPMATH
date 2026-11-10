@@ -94,6 +94,7 @@ jobs:
           Run 'English' 'Dark' $true 'mass-newparty' '32-mass-newparty'
           Run 'English' 'Dark' $true 'newinvoice-banks' '33-newinvoice-pager'
           Run 'English' 'Dark' $true 'suppliers-search2' '34-suppliers-search2'
+          Run 'English' 'Dark' $true 'mass-details' '35-mass-details'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

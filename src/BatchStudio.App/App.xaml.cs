@@ -68,7 +68,8 @@ public partial class App : Application
             }
             if (arg == "newinvoice-banks") ScreenshotBanks(vm);
             bool massParty = arg == "mass-newparty";
-            if (massParty) arg = "mass";
+            bool massDetails = arg == "mass-details";
+            if (massParty || massDetails) arg = "mass";
             var key = arg is "newinvoice" or "newparty" or "newinvoice-details" or "newinvoice-banks" ? "Nav.NewInvoice" : arg == "reportview" ? "Nav.Reports" : arg == "mass" ? "Nav.Mass" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
             var nav = vm.Nav.FirstOrDefault(n => n.Key == key);
             if (nav != null) vm.SelectedNav = nav;
@@ -76,6 +77,7 @@ public partial class App : Application
             if (arg == "reportview") vm.Reports.ViewReportCommand.Execute(null);
             if (arg == "mass") vm.Mass.FillSample();
             if (massParty) vm.Mass.AddPartyFor(vm.Mass.Rows[3]);
+            if (massDetails) vm.Mass.OpenDetailsFor(vm.Mass.Rows[0]);
             if (arg == "newinvoice-details")
             {
                 vm.NewInvoice.SelectedParty = vm.NewInvoice.Parties.FirstOrDefault();

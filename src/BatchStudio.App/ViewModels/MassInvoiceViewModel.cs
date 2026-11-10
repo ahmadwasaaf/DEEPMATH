@@ -61,6 +61,10 @@ public sealed partial class MassRowViewModel : ObservableObject
     [RelayCommand]
     private void AddParty() => _owner.AddPartyFor(this);
 
+    /// <summary>The row number: opens the picked supplier / client's details.</summary>
+    [RelayCommand]
+    private void ShowDetails() => _owner.OpenDetailsFor(this);
+
     public void FormatAmount()
     {
         if (decimal.TryParse(AmountText.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var a) && a > 0)
@@ -279,6 +283,14 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
         if (PartyForm.Open(IsClients, category, template)) IsAddingParty = true;
     }
 
+    /// <summary>Row number clicked: the picked supplier / client's details, to check or change (Save writes them).</summary>
+    public void OpenDetailsFor(MassRowViewModel row)
+    {
+        if (IsBusy || FindParty(row.PartyName) is not { Id.Length: > 0 } party) return;
+        _formRow = row;
+        if (PartyForm.OpenExisting(IsClients, party.Id)) IsAddingParty = true;
+    }
+
     private void OnPartyFormClosed(string? name)
     {
         IsAddingParty = false;
@@ -288,7 +300,8 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
         Refresh();
         if (row != null)
         {
-            row.PartyName = name;
+            // a new record is put on the row; an edited one keeps the row (renamed if its name changed)
+            if (!string.Equals(row.PartyName.Trim(), name, StringComparison.Ordinal)) row.PartyName = name;
             Status = PartyForm.LastStatus;
         }
     }

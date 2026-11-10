@@ -20,6 +20,10 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
     public bool IsClients { get; private set; }
 
     private readonly Dictionary<string, string> _bankValues = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Editing an existing record (its ID and values as loaded); null = a new record.</summary>
+    private string? _editId;
+    private string[] _original = [];
+    public bool IsEdit => _editId != null;
     private ThemeFieldViewModel? _theme;
     private string _status = "";
 
@@ -41,6 +45,8 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
     public bool Open(bool isClients, string? category, string? template)
     {
         IsClients = isClients;
+        _editId = null;
+        _original = [];
         var page = Page;
         if (page == null) return false;
         var headers = page.Headers;
@@ -92,6 +98,96 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         return true;
     }
 
+    /// <summary>Opens an existing supplier / client to check or change its details (Save writes them to the sheet).</summary>
+    public bool OpenExisting(bool isClients, string id)
+    {
+        IsClients = isClients;
+        var page = Page;
+        if (page == null || page.RecordValues(id) is not { } values) return false;
+        var headers = page.Headers;
+        Fields.Clear();
+        _bankValues.Clear();
+        _theme = null;
+        Error = "";
+        _editId = id;
+        _original = values;
+        bool suppliers = !isClients;
+        int nameCol = NameColumn(headers);
+        Title = nameCol < values.Length ? values[nameCol] : id;
+        for (int i = 1; i < headers.Count && i < values.Length; i++)
+        {
+            var h = headers[i];
+            if (suppliers && SupplierBanks.IsBankHeader(headers, i))
+            {
+                if (!Fields.OfType<BankGroupViewModel>().Any())
+                {
+                    for (int j = 0; j < headers.Count && j < values.Length; j++)
+                        if (SupplierBanks.IsBankHeader(headers, j)) _bankValues[headers[j]] = values[j];
+                    Fields.Add(new BankGroupViewModel(headers, k => _bankValues.TryGetValue(k, out var v) ? v : "",
+                        (k, v) => _bankValues[k] = v, expanded: false));
+                }
+                continue;
+            }
+            var options = main.OptionsFor(page.Session.Definition.Key, h, []);
+            if (options != null && values[i].Length > 0 && !options.Contains(values[i])) options = [values[i], .. options];
+            Fields.Add(new NewFieldViewModel { Caption = h, Options = options, Value = values[i], Index = i, IsLong = IsLongField(h) });
+            // suppliers: the theme right after DEFAULT TEMPLATE, saved at once (like the Suppliers page)
+            if (suppliers && h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))
+                Fields.Add(_theme = new ThemeFieldViewModel(main, Title, values[i]));
+        }
+        if (suppliers && _theme == null) Fields.Add(_theme = new ThemeFieldViewModel(main, Title, "INVOICE"));
+        IsOpen = true;
+        return true;
+    }
+
+    private static int NameColumn(IReadOnlyList<string> headers)
+    {
+        for (int i = 0; i < headers.Count; i++)
+            if (headers[i].Contains("Name", StringComparison.OrdinalIgnoreCase) && !headers[i].Contains("Chinese", StringComparison.OrdinalIgnoreCase)
+                && !headers[i].Contains("Native", StringComparison.OrdinalIgnoreCase)) return i;
+        return 1;
+    }
+
+    private async Task SaveExistingAsync(DataSetViewModel page)
+    {
+        var values = (string[])_original.Clone();
+        foreach (var f in Fields.OfType<NewFieldViewModel>()) if (f.Index < values.Length) values[f.Index] = Clean(f.Value);
+        // bank accounts: new columns (a second account ...) are added to the sheet
+        foreach (var (header, value) in _bankValues)
+        {
+            if (page.Headers.FindIndex(h => string.Equals(h, header, StringComparison.OrdinalIgnoreCase)) < 0 &&
+                value.Trim().Length == 0 && !SupplierBanks.IsDefaultHeader(header)) continue;
+            page.EnsureColumn(header);
+            int col = page.Headers.FindIndex(h => string.Equals(h, header, StringComparison.OrdinalIgnoreCase));
+            if (col >= values.Length)
+            {
+                int old = values.Length;
+                Array.Resize(ref values, page.Headers.Count);
+                for (int k = old; k < values.Length; k++) values[k] = "";
+            }
+            values[col] = Clean(value);
+        }
+        var headers = page.Headers;
+        int nameCol = NameColumn(headers);
+        var name = nameCol < values.Length ? values[nameCol] : "";
+        if (name.Length == 0) { Error = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
+        var others = (IsClients ? InvoiceService.Clients(page.Session.Current) : InvoiceService.Suppliers(page.Session.Current))
+            .Where(p => !string.Equals(p.Id, _editId, StringComparison.OrdinalIgnoreCase));
+        if (others.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase))) { Error = Loc.F("Inv.PartyExists", name); return; }
+
+        IsBusy = true;
+        try
+        {
+            page.UpdateRecord(_editId!, values);
+            await page.SaveAsync();
+            _status = page.IsDirty ? page.Status : Loc.F("Inv.PartySaved", name);
+        }
+        catch (Exception ex) { _status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        finally { IsBusy = false; }
+        Reset();
+        Closed?.Invoke(name);
+    }
+
     [RelayCommand]
     private void Cancel()
     {
@@ -102,6 +198,8 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
     private void Reset()
     {
         IsOpen = false;
+        _editId = null;
+        _original = [];
         Fields.Clear();
         _bankValues.Clear();
         _theme = null;
@@ -114,6 +212,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         var page = Page;
         if (page == null || IsBusy) return;
         Error = "";
+        if (_editId != null) { await SaveExistingAsync(page); return; }
         var fields = Fields.OfType<NewFieldViewModel>().ToList();
         var headers = page.Headers;
         int nameCol = headers.FindIndex(h => h.Contains("Name", StringComparison.OrdinalIgnoreCase) &&
