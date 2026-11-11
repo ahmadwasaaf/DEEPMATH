@@ -129,22 +129,29 @@ public sealed partial class GoogleAccount : ObservableObject
         catch { return null; }
     }
 
-    /// <summary>The OAuth client of the user's Google Cloud project (Desktop app).</summary>
-    public void SetClient(string id, string secret)
+    /// <summary>Another OAuth client (Settings › OAuth client); empty = the client built into the program. True when it changed.</summary>
+    public bool SetClient(string id, string secret)
     {
         id = (id ?? "").Trim();
         secret = (secret ?? "").Trim();
-        if (id == _data.ClientId && secret == _data.ClientSecret) return;
+        // the built-in values typed back in are the built-in client
+        if (id == GoogleClient.Id && (secret == GoogleClient.Secret || secret.Length == 0)) { id = ""; secret = ""; }
+        if (id == _data.ClientId.Trim() && secret == _data.ClientSecret.Trim()) return false;
         _data.ClientId = id;
         _data.ClientSecret = secret;
+        _accessToken = null;
         Save();
         OnPropertyChanged(nameof(ClientId));
         OnPropertyChanged(nameof(ClientSecret));
         OnPropertyChanged(nameof(IsConfigured));
+        OnPropertyChanged(nameof(IsCustomClient));
+        return true;
     }
 
-    /// <summary>Reads the client_secret_….json downloaded from Google Cloud (Credentials → OAuth client → Download JSON).</summary>
-    public bool LoadClientFile(string path)
+    public bool IsCustomClient => _data.ClientId.Trim().Length > 0;
+
+    /// <summary>Reads the client_secret_….json downloaded from Google Cloud (Clients → the client → Download JSON).</summary>
+    public static (string Id, string Secret)? ReadClientFile(string path)
     {
         try
         {
@@ -153,11 +160,9 @@ public sealed partial class GoogleAccount : ObservableObject
             var node = root.TryGetProperty("installed", out var inst) ? inst : root.TryGetProperty("web", out var web) ? web : root;
             var id = node.TryGetProperty("client_id", out var i) ? i.GetString() ?? "" : "";
             var secret = node.TryGetProperty("client_secret", out var s) ? s.GetString() ?? "" : "";
-            if (id.Length == 0) return false;
-            SetClient(id, secret);
-            return true;
+            return id.Length == 0 ? null : (id, secret);
         }
-        catch { return false; }
+        catch { return null; }
     }
 
     // ------------------------------------------------------------------ sign in / out

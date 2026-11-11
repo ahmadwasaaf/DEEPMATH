@@ -390,7 +390,7 @@
     <sys:String x:Key="Preview.Theme">Supplier theme</sys:String>
     <sys:String x:Key="Google.Title">Google account</sys:String>
     <sys:String x:Key="Google.Intro">Sign in to see new emails on the Home page and as Windows notifications. DEEPMATH reads only the sender and the subject, never the message itself.</sys:String>
-    <sys:String x:Key="Google.ClientHelp">One-time setup: the Client ID and secret of your Google Cloud project (OAuth client of type Desktop app).</sys:String>
+    <sys:String x:Key="Google.ClientHelp">DEEPMATH has its own Google Cloud client built in. To use another one, enter its Client ID and secret or load its client_secret….json file (OAuth client of type Desktop app).</sys:String>
     <sys:String x:Key="Google.ClientId">Client ID</sys:String>
     <sys:String x:Key="Google.ClientSecret">Client secret</sys:String>
     <sys:String x:Key="Google.LoadFile">Load client file (.json)</sys:String>
@@ -419,4 +419,13 @@
     <sys:String x:Key="Home.SignInHint">Sign in with Google in Settings to see your emails here</sys:String>
     <sys:String x:Key="Google.NoGmail">Gmail access was not allowed. Sign out, sign in again and tick the box “View your email message metadata” on Google's page.</sys:String>
     <sys:String x:Key="Mail.Problem">Can't read the inbox right now: {0}</sys:String>
+    <sys:String x:Key="Google.Client">OAuth client</sys:String>
+    <sys:String x:Key="Google.ClientBuiltIn">Built into DEEPMATH</sys:String>
+    <sys:String x:Key="Google.ClientCustom">Custom client</sys:String>
+    <sys:String x:Key="Google.ClientUseBuiltIn">Use built-in client</sys:String>
+    <sys:String x:Key="Google.ClientLoaded">Loaded from the file. Press Save to use it.</sys:String>
+    <sys:String x:Key="Google.ClientSaved">Saved. Sign in with Google again to use the new client.</sys:String>
+    <sys:String x:Key="Google.ClientReset">Back to the built-in client. Sign in with Google again.</sys:String>
+    <sys:String x:Key="Google.ClientSame">No change.</sys:String>
+    <sys:String x:Key="Google.ClientBadId">A Client ID ends with .apps.googleusercontent.com</sys:String>
 </ResourceDictionary>

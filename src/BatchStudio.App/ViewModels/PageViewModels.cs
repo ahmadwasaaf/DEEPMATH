@@ -589,9 +589,57 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _googleClientId = "";
     [ObservableProperty] private string _googleClientSecret = "";
 
-    private bool _loadingClient;
-    partial void OnGoogleClientIdChanged(string value) { if (!_loadingClient) Account.SetClient(value, GoogleClientSecret); }
-    partial void OnGoogleClientSecretChanged(string value) { if (!_loadingClient) Account.SetClient(GoogleClientId, value); }
+    /// <summary>Settings › Google account › OAuth client: the part that shows / changes the client (closed by default).</summary>
+    [ObservableProperty] private bool _clientOpen;
+    [ObservableProperty] private string _clientNote = "";
+    public string ClientKind => Loc.T(Account.IsCustomClient ? "Google.ClientCustom" : "Google.ClientBuiltIn");
+
+    [RelayCommand]
+    private void ToggleClient()
+    {
+        ClientOpen = !ClientOpen;
+        if (ClientOpen) ShowClient();
+    }
+
+    private void ShowClient()
+    {
+        GoogleClientId = Account.ClientId;
+        GoogleClientSecret = Account.ClientSecret;
+        ClientNote = "";
+        OnPropertyChanged(nameof(ClientKind));
+    }
+
+    /// <summary>The client_secret_….json downloaded from Google Cloud fills both boxes (Save keeps them).</summary>
+    [RelayCommand]
+    private void LoadGoogleClient()
+    {
+        var file = Dialogs.PickFile("Google OAuth client (*.json)|*.json");
+        if (file == null) return;
+        if (GoogleAccount.ReadClientFile(file) is not { } client) { Dialogs.Error(Loc.T("Google.FileBad")); return; }
+        GoogleClientId = client.Id;
+        GoogleClientSecret = client.Secret;
+        ClientNote = Loc.T("Google.ClientLoaded");
+    }
+
+    [RelayCommand]
+    private Task SaveClient() => ChangeClient(GoogleClientId, GoogleClientSecret);
+
+    /// <summary>Back to the client built into the program.</summary>
+    [RelayCommand]
+    private Task ResetClient() => ChangeClient("", "");
+
+    private async Task ChangeClient(string id, string secret)
+    {
+        id = (id ?? "").Trim();
+        secret = (secret ?? "").Trim();
+        if (id.Length > 0 && !id.EndsWith(".apps.googleusercontent.com", StringComparison.OrdinalIgnoreCase))
+        { ClientNote = Loc.T("Google.ClientBadId"); return; }
+        bool changed = Account.SetClient(id, secret);
+        // Google ties a sign-in to the client it was made with: a new client needs a new sign-in
+        if (changed && Account.IsSignedIn) await Account.SignOutAsync();
+        ShowClient();
+        ClientNote = Loc.T(changed ? (id.Length == 0 ? "Google.ClientReset" : "Google.ClientSaved") : "Google.ClientSame");
+    }
 
     public bool MailToasts
     {
@@ -614,23 +662,6 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [RelayCommand]
     private Task GoogleSignOut() => Account.SignOutAsync();
-
-    /// <summary>The client_secret_….json downloaded from Google Cloud fills both boxes.</summary>
-    [RelayCommand]
-    private void LoadGoogleClient()
-    {
-        var file = Dialogs.PickFile("Google OAuth client (*.json)|*.json");
-        if (file == null) return;
-        if (!Account.LoadClientFile(file)) { Dialogs.Error(Loc.T("Google.FileBad")); return; }
-        // both boxes at once: setting one through its property would save it with the other box's old value
-        _loadingClient = true;
-        try
-        {
-            GoogleClientId = Account.ClientId;
-            GoogleClientSecret = Account.ClientSecret;
-        }
-        finally { _loadingClient = false; }
-    }
 
     partial void OnIsArabicChanged(bool value)
     {

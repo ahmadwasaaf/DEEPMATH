@@ -390,7 +390,7 @@
     <sys:String x:Key="Preview.Theme">ثيم المورّد</sys:String>
     <sys:String x:Key="Google.Title">حساب جوجل</sys:String>
     <sys:String x:Key="Google.Intro">سجّل الدخول لتظهر رسائلك الجديدة في الصفحة الرئيسية وكإشعارات ويندوز. البرنامج يقرأ المرسل والعنوان فقط، ولا يقرأ محتوى الرسالة أبداً.</sys:String>
-    <sys:String x:Key="Google.ClientHelp">إعداد لمرة واحدة: Client ID و Client secret من مشروعك في Google Cloud (عميل OAuth من نوع Desktop app).</sys:String>
+    <sys:String x:Key="Google.ClientHelp">DEEPMATH فيه عميل Google Cloud مدمج. لاستخدام عميل آخر أدخل الـ Client ID والـ secret أو حمّل ملف client_secret….json الخاص به (عميل OAuth من نوع Desktop app).</sys:String>
     <sys:String x:Key="Google.ClientId">Client ID</sys:String>
     <sys:String x:Key="Google.ClientSecret">Client secret</sys:String>
     <sys:String x:Key="Google.LoadFile">تحميل ملف العميل (.json)</sys:String>
@@ -419,4 +419,13 @@
     <sys:String x:Key="Home.SignInHint">سجّل الدخول بجوجل من الإعدادات لتظهر رسائلك هنا</sys:String>
     <sys:String x:Key="Google.NoGmail">لم يتم السماح بالوصول إلى Gmail. سجّل الخروج ثم سجّل الدخول مرة أخرى وعلّم على خانة “View your email message metadata” في صفحة جوجل.</sys:String>
     <sys:String x:Key="Mail.Problem">تعذّرت قراءة البريد الآن: {0}</sys:String>
+    <sys:String x:Key="Google.Client">عميل OAuth</sys:String>
+    <sys:String x:Key="Google.ClientBuiltIn">مدمج في DEEPMATH</sys:String>
+    <sys:String x:Key="Google.ClientCustom">عميل مخصّص</sys:String>
+    <sys:String x:Key="Google.ClientUseBuiltIn">استخدام العميل المدمج</sys:String>
+    <sys:String x:Key="Google.ClientLoaded">تم التحميل من الملف. اضغط حفظ لاستخدامه.</sys:String>
+    <sys:String x:Key="Google.ClientSaved">تم الحفظ. سجّل الدخول بجوجل مرة أخرى لاستخدام العميل الجديد.</sys:String>
+    <sys:String x:Key="Google.ClientReset">تمت العودة للعميل المدمج. سجّل الدخول بجوجل مرة أخرى.</sys:String>
+    <sys:String x:Key="Google.ClientSame">لا يوجد تغيير.</sys:String>
+    <sys:String x:Key="Google.ClientBadId">الـ Client ID ينتهي بـ .apps.googleusercontent.com</sys:String>
 </ResourceDictionary>
