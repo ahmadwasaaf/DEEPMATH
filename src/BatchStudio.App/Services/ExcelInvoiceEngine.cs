@@ -404,7 +404,8 @@ public static class ExcelInvoiceEngine
             {
                 try
                 {
-                    if ((int)cell.Row == 1) continue;
+                    // INVOICE / INV1 keep row 1 for Theme.bas; the Templates workbook's designs colour row 1 too (corner blocks, top bars)
+                    if ((int)cell.Row == 1 && (inv1 || invoice)) continue;
                     dynamic interior = cell.Interior;
                     if ((int)interior.Pattern != -4142)
                     {
