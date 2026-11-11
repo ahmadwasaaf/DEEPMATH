@@ -106,27 +106,37 @@ class Sheet:
         row = "".join(ch for ch in ref if ch.isdigit())
         self.ws.defined_names.add(DefinedName(defined, attr_text=f"'{self.name}'!${col}${row}"))
 
-    def items(self, header_row, first, header_font, header_bg, zebra, line_color=LINE):
+    def band(self, rows, color=None, c1="A", c2="G"):
+        """Edge-to-edge colour band (every cell filled, so text cells can be merged on top of it)."""
+        from openpyxl.utils import column_index_from_string, get_column_letter
+        for r in rows:
+            for ci in range(column_index_from_string(c1), column_index_from_string(c2) + 1):
+                self.ws[f"{get_column_letter(ci)}{r}"].fill = fill(color or self.theme)
+
+    def items(self, header_row, first, header_font, header_bg, zebra, line_color=LINE, grid=None, desc_bold=False):
         ws = self.ws
         heads = [("B", "Code", "center"), ("C", "DESCRIPTION", "left"), ("D", "QTY", "center"),
                  ("E", "Price", "center"), ("F", "TOTAL AMOUNT", "center")]
         for col, text, h in heads:
             self.put(f"{col}{header_row}", text, header_font,
                      Alignment(horizontal=h, vertical="center", indent=1 if h == "left" else 0), bg=header_bg)
-        hair = Border(bottom=Side(style="thin", color=line_color))
+        hair = grid or Border(bottom=Side(style="thin", color=line_color))
+        if grid:
+            for col, _, _ in heads:
+                ws[f"{col}{header_row}"].border = grid
         for i, (code, desc, qty, price) in enumerate(ITEMS):
             r = first + i
             self.h(r, 30)
             bg = zebra[i % 2]
             self.put(f"B{r}", code, font(10.5), Alignment(horizontal="center", vertical="center"), bg=bg, border=hair)
-            self.put(f"C{r}", desc, font(10.5), Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1), bg=bg, border=hair)
+            self.put(f"C{r}", desc, font(10.5, desc_bold), Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1), bg=bg, border=hair)
             self.put(f"D{r}", qty, font(10.5), Alignment(horizontal="center", vertical="center"), bg=bg, fmt="0", border=hair)
             self.put(f"E{r}", price, font(10.5), Alignment(horizontal="center", vertical="center"), bg=bg, fmt=MONEY, border=hair)
             self.put(f"F{r}", f"=D{r}*E{r}", font(10.5, True), Alignment(horizontal="center", vertical="center"), bg=bg, fmt=MONEY, border=hair)
         return first + len(ITEMS) - 1
 
-    def print_area(self, last_row):
-        self.ws.print_area = f"B1:F{last_row}"
+    def print_area(self, last_row, c1="B", c2="F"):
+        self.ws.print_area = f"{c1}1:{c2}{last_row}"
 
 
 # ---------------------------------------------------------------- INV2: "Band"
@@ -261,11 +271,230 @@ def inv3(wb):
         s.define_name(n, ref)
 
 
+WIDTHS = {"A": 3.5, "B": 21, "C": 56, "D": 13, "E": 22, "F": 30, "G": 3.5}
+WHITE = "FFFFFF"
+MUTED_ON_DARK = "D9DCE3"
+CHARCOAL = "262626"
+
+
+def names(s, mapping):
+    for n, ref in mapping:
+        s.define_name(n, ref)
+
+
+# ---------------------------------------------------------------- INV4: "Bold Header"
+def inv4(wb):
+    """A tall theme-coloured header across the whole page: supplier, the word INVOICE and the total due in white."""
+    s = Sheet(wb, "INV4", "3D348B", WIDTHS)
+    T = s.theme
+    s.h(1, 1.5)
+    s.put("B1", merge="B1:F1", bg=T)              # theme marker
+    s.band(range(2, 13))
+    s.h(2, 22)
+    s.h(3, 32)
+    s.put("B3", "SAMPLE TRADING CO., LIMITED", font(17, True, WHITE), Alignment(horizontal="left", vertical="center", wrap_text=True), merge="B3:C3")
+    s.put("E3", "ISSUE DATE", font(9, True, MUTED_ON_DARK), Alignment(horizontal="left", vertical="bottom"))
+    s.put("F3", datetime(2026, 11, 11), font(12, True, WHITE), Alignment(horizontal="left", vertical="bottom"), fmt="dd/mm/yyyy")
+    s.h(4, 22)
+    s.put("B4", "示例贸易有限公司", font(12, False, MUTED_ON_DARK), merge="B4:C4")
+    s.h(5, 42)
+    s.put("B5", ADDRESS, font(9.5, False, MUTED_ON_DARK), Alignment(horizontal="left", vertical="top", wrap_text=True), merge="B5:C5")
+    s.put("E5", "BILL TO", font(9, True, MUTED_ON_DARK), Alignment(horizontal="left", vertical="bottom"), merge="E5:F5")
+    s.h(6, 20)
+    s.put("E6", BUYER_BODY, font(10, False, WHITE), Alignment(horizontal="left", vertical="top", wrap_text=True), merge="E6:F8")
+    s.h(7, 62)
+    s.put("B7", "INVOICE", font(54, True, WHITE), Alignment(horizontal="left", vertical="center"), merge="B7:C7")
+    s.h(8, 26)
+    s.put("B8", "Mad-1234567", font(13, True, WHITE), Alignment(horizontal="left", vertical="center"), merge="B8:C8")
+    s.h(9, 14)
+    s.h(10, 18)
+    s.put("E10", "TOTAL DUE", font(9, True, MUTED_ON_DARK), Alignment(horizontal="left", vertical="center"))
+    s.h(11, 30)
+    s.h(12, 22)
+    s.h(13, 22)
+    s.h(14, 28)
+    s.put("B14", CATEGORY, font(11, True, T), Alignment(horizontal="left", vertical="center"), merge="B14:F14")
+    s.h(15, 38)
+    last = s.items(15, 16, font(11, True, WHITE), CHARCOAL, ("FFFFFF", "F1F1F4"))
+    r = last + 1
+    s.h(r, 14)
+    r += 1
+    s.h(r, 44); s.h(r + 1, 20)
+    s.put(f"B{r}", WORDS, font(10.5), Alignment(horizontal="left", vertical="center", wrap_text=True), merge=f"B{r}:C{r + 1}")
+    s.put(f"D{r}", "TOTAL VALUE", font(12, True, WHITE), Alignment(horizontal="center", vertical="center"), merge=f"D{r}:E{r}", bg=T)
+    s.put(f"F{r}", f"=SUM(F16:F{last})", font(15, True, WHITE), Alignment(horizontal="center", vertical="center"), bg=T, fmt=MONEY)
+    total = f"F{r}"
+    # the header repeats the total (a formula: it follows the filled total)
+    s.put("E11", f"={total}", font(20, True, WHITE), Alignment(horizontal="left", vertical="center"), merge="E11:F11", fmt=MONEY)
+    r += 2
+    s.h(r, 22)
+    r += 1
+    s.h(r, 26)
+    s.put(f"B{r}", "PAYMENT & BANKING INSTRUCTIONS", font(12, True, T), Alignment(horizontal="left", vertical="center"), merge=f"B{r}:F{r}")
+    r += 1
+    s.h(r, 150)
+    s.put(f"B{r}", BANK, font(10.5), Alignment(horizontal="left", vertical="center", wrap_text=True), merge=f"B{r}:F{r}")
+    bank = f"B{r}"
+    r += 1
+    s.h(r, 20)
+    r += 1
+    s.band([r, r + 1])
+    s.h(r, 30)
+    s.put(f"B{r}", "THANK YOU FOR YOUR BUSINESS", font(10, True, WHITE), Alignment(horizontal="left", vertical="center"), merge=f"B{r}:F{r}")
+    s.h(r + 1, 8)
+    s.print_area(r + 1, "A", "G")
+    names(s, [("SupplierEnglishTarget", "B3"), ("SupplierChineseTarget", "B4"), ("SupplierAddressTarget", "B5"),
+              ("InvoiceNumberTarget", "B8"), ("InvoiceDateTarget", "F3"), ("InvoiceTarget", total), ("SupplierBankTarget", bank)])
+
+
+# ---------------------------------------------------------------- INV5: "Corporate Grid"
+def inv5(wb):
+    """Corporate: theme rules top and bottom, a header of separate tiles, items in a grid of boxes, a bold total tile."""
+    s = Sheet(wb, "INV5", "1565C0", WIDTHS)
+    T = s.theme
+    gap = Side(style="medium", color=WHITE)
+    grid = Border(left=gap, right=gap, top=gap, bottom=gap)
+    s.h(1, 12)
+    s.put("B1", merge="B1:F1", bg=T)              # theme marker + top rule
+    s.put("A1", bg=T)
+    s.put("G1", bg=T)
+    s.h(2, 6)
+    s.put("A2", bg=T)                             # a corner block
+    s.put("B2", bg=T)
+    s.h(3, 26)
+    s.put("A3", bg=T)
+    s.h(4, 30)
+    s.put("B4", "FROM", font(9, True, SOFT), Alignment(horizontal="left", vertical="bottom"), merge="B4:C4")
+    s.put("E4", "INVOICE", font(40, True, CHARCOAL), Alignment(horizontal="right", vertical="center"), merge="E4:F5")
+    s.h(5, 34)
+    s.put("B5", "SAMPLE TRADING CO., LIMITED", font(18, True, CHARCOAL), Alignment(horizontal="left", vertical="center", wrap_text=True), merge="B5:C5")
+    s.h(6, 22)
+    s.put("B6", "示例贸易有限公司", font(12, False, SOFT), merge="B6:C6")
+    s.put("E6", "INVOICE NO", font(9.5, True, SOFT), Alignment(horizontal="right", vertical="center"))
+    s.put("F6", "Mad-1234567", font(11.5, True, T), Alignment(horizontal="right", vertical="center"))
+    s.h(7, 42)
+    s.put("B7", ADDRESS, font(9.5, False, SOFT), Alignment(horizontal="left", vertical="top", wrap_text=True), merge="B7:C7")
+    s.put("E7", "ISSUE DATE", font(9.5, True, SOFT), Alignment(horizontal="right", vertical="top"))
+    s.put("F7", datetime(2026, 11, 11), font(11.5, False, CHARCOAL), Alignment(horizontal="right", vertical="top"), fmt="dd/mm/yyyy")
+    s.h(8, 14)
+    s.h(9, 22)
+    s.put("B9", "BUYER / CONSIGNEE", font(9, True, T), Alignment(horizontal="left", vertical="center"), merge="B9:C9")
+    s.h(10, 50)
+    s.put("B10", BUYER_BODY, font(10.5, False, CHARCOAL), Alignment(horizontal="left", vertical="top", wrap_text=True), merge="B10:C10")
+    s.h(11, 14)
+    s.h(12, 26)
+    s.put("B12", CATEGORY, font(10.5, False, SOFT), Alignment(horizontal="left", vertical="center"), merge="B12:F12")
+    s.h(13, 40)
+    last = s.items(13, 14, font(11, True, WHITE), T, ("FFFFFF", "F2F5F9"), grid=grid, desc_bold=True)
+    r = last + 1
+    s.h(r, 16)
+    r += 1
+    s.h(r, 26)
+    s.put(f"B{r}", "Thank You For Your Business", font(14, True, CHARCOAL), Alignment(horizontal="left", vertical="center"), merge=f"B{r}:C{r}")
+    s.h(r + 1, 44)
+    s.put(f"B{r + 1}", WORDS, font(10, False, SOFT), Alignment(horizontal="left", vertical="top", wrap_text=True), merge=f"B{r + 1}:C{r + 1}")
+    s.put(f"D{r}", "TOTAL VALUE", font(12, True, WHITE), Alignment(horizontal="center", vertical="center"), merge=f"D{r}:E{r + 1}", bg=T)
+    s.put(f"F{r}", f"=SUM(F14:F{last})", font(15, True, WHITE), Alignment(horizontal="center", vertical="center"), merge=f"F{r}:F{r + 1}", bg=T, fmt=MONEY)
+    total = f"F{r}"
+    r += 2
+    s.h(r, 22)
+    r += 1
+    s.h(r, 24)
+    s.put(f"B{r}", "Payment Method:", font(11, True, CHARCOAL), Alignment(horizontal="left", vertical="center"), merge=f"B{r}:F{r}")
+    r += 1
+    s.h(r, 150)
+    s.put(f"B{r}", BANK, font(10.5, False, CHARCOAL), Alignment(horizontal="left", vertical="center", wrap_text=True), merge=f"B{r}:F{r}")
+    bank = f"B{r}"
+    r += 1
+    s.h(r, 26)
+    s.put(f"G{r}", bg=T)                          # the opposite corner block
+    r += 1
+    s.h(r, 6)
+    s.put(f"F{r}", bg=T)
+    s.put(f"G{r}", bg=T)
+    r += 1
+    s.h(r, 12)
+    s.band([r])
+    s.print_area(r, "A", "G")
+    names(s, [("SupplierEnglishTarget", "B5"), ("SupplierChineseTarget", "B6"), ("SupplierAddressTarget", "B7"),
+              ("InvoiceNumberTarget", "F6"), ("InvoiceDateTarget", "F7"), ("InvoiceTarget", total), ("SupplierBankTarget", bank)])
+
+
+# ---------------------------------------------------------------- INV6: "Dark Band"
+def inv6(wb):
+    """Statement look: white top, a charcoal band with the buyer and a bright theme tile holding the grand total."""
+    s = Sheet(wb, "INV6", "E85D04", WIDTHS)
+    T = s.theme
+    s.h(1, 1.5)
+    s.put("B1", merge="B1:F1", bg=T)              # theme marker
+    s.h(2, 22)
+    s.h(3, 34)
+    s.put("B3", "SAMPLE TRADING CO., LIMITED", font(17, True, CHARCOAL), Alignment(horizontal="left", vertical="center", wrap_text=True), merge="B3:C3")
+    s.put("E3", "INVOICE", font(42, False, "A3A3A3"), Alignment(horizontal="right", vertical="center"), merge="E3:F4")
+    s.h(4, 22)
+    s.put("B4", "示例贸易有限公司", font(12, False, SOFT), merge="B4:C4")
+    s.h(5, 42)
+    s.put("B5", ADDRESS, font(9.5, False, SOFT), Alignment(horizontal="left", vertical="top", wrap_text=True), merge="B5:C5")
+    s.h(6, 12)
+    s.band(range(7, 12), CHARCOAL)
+    s.h(7, 22)
+    s.put("B7", "INVOICE TO", font(9, True, T), Alignment(horizontal="left", vertical="bottom"), merge="B7:C7")
+    s.put("E7", "GRAND TOTAL", font(9, True, WHITE), Alignment(horizontal="center", vertical="center"), merge="E7:F7", bg=T)
+    s.h(8, 50)
+    s.put("B8", BUYER_BODY, font(10, False, WHITE), Alignment(horizontal="left", vertical="top", wrap_text=True), merge="B8:C8")
+    s.h(9, 10)
+    s.h(10, 18)
+    s.put("B10", "INVOICE NO", font(9, True, MUTED_ON_DARK), Alignment(horizontal="left", vertical="bottom"))
+    s.put("C10", "ISSUE DATE", font(9, True, MUTED_ON_DARK), Alignment(horizontal="left", vertical="bottom"))
+    s.h(11, 30)
+    s.put("B11", "Mad-1234567", font(12, True, WHITE), Alignment(horizontal="left", vertical="center"))
+    s.put("C11", datetime(2026, 11, 11), font(12, True, WHITE), Alignment(horizontal="left", vertical="center"), fmt="dd/mm/yyyy")
+    s.h(12, 14)
+    s.h(13, 28)
+    s.put("B13", CATEGORY, font(10.5, True, CHARCOAL), Alignment(horizontal="left", vertical="center"), merge="B13:F13")
+    s.h(14, 36)
+    last = s.items(14, 15, font(11, True, WHITE), T, ("FFFFFF", "FFF7F0"))
+    r = last + 1
+    s.h(r, 14)
+    r += 1
+    s.h(r, 44); s.h(r + 1, 20)
+    s.put(f"B{r}", WORDS, font(10.5), Alignment(horizontal="left", vertical="center", wrap_text=True), merge=f"B{r}:C{r + 1}")
+    s.put(f"D{r}", "TOTAL VALUE", font(12, True, CHARCOAL), Alignment(horizontal="right", vertical="center"), merge=f"D{r}:E{r}")
+    s.put(f"F{r}", f"=SUM(F15:F{last})", font(15, True, WHITE), Alignment(horizontal="center", vertical="center"), bg=CHARCOAL, fmt=MONEY)
+    total = f"F{r}"
+    # the big grand-total tile in the dark band (a formula: it follows the filled total)
+    s.put("E8", f"={total}", font(24, True, WHITE), Alignment(horizontal="center", vertical="center"), merge="E8:F11", bg=T, fmt=MONEY)
+    r += 2
+    s.h(r, 22)
+    r += 1
+    s.h(r, 26)
+    s.put(f"B{r}", "PAYMENT & BANKING INSTRUCTIONS", font(11, True, T), Alignment(horizontal="left", vertical="center"), merge=f"B{r}:F{r}")
+    r += 1
+    s.h(r, 150)
+    s.put(f"B{r}", BANK, font(10.5, False, CHARCOAL), Alignment(horizontal="left", vertical="center", wrap_text=True), merge=f"B{r}:F{r}")
+    bank = f"B{r}"
+    r += 1
+    s.h(r, 20)
+    r += 1
+    s.band([r, r + 1, r + 2], CHARCOAL)
+    s.h(r, 8)
+    s.h(r + 1, 26)
+    s.put(f"B{r + 1}", "THANK YOU!", font(11, True, T), Alignment(horizontal="left", vertical="center"), merge=f"B{r + 1}:C{r + 1}")
+    s.put(f"E{r + 1}", "Demo Trading Company Ltd.", font(9, False, MUTED_ON_DARK), Alignment(horizontal="right", vertical="center"), merge=f"E{r + 1}:F{r + 1}")
+    s.h(r + 2, 8)
+    s.print_area(r + 2, "A", "G")
+    names(s, [("SupplierEnglishTarget", "B3"), ("SupplierChineseTarget", "B4"), ("SupplierAddressTarget", "B5"),
+              ("InvoiceNumberTarget", "B11"), ("InvoiceDateTarget", "C11"), ("InvoiceTarget", total), ("SupplierBankTarget", bank)])
+
+
 def main(out):
     wb = Workbook()
     wb.remove(wb.active)
     inv2(wb)
     inv3(wb)
+    inv4(wb)
+    inv5(wb)
+    inv6(wb)
     wb.active = 0
     wb.save(out)
 

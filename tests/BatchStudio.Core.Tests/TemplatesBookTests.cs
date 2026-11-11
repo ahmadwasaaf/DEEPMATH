@@ -22,6 +22,9 @@ public class TemplatesBookTests
     [Theory]
     [InlineData("INV2")]
     [InlineData("INV3")]
+    [InlineData("INV4")]
+    [InlineData("INV5")]
+    [InlineData("INV6")]
     public void Every_template_of_the_book_is_detected_through_its_names(string sheet)
     {
         var dir = Path.Combine(Path.GetTempPath(), "bs-tpl-" + Guid.NewGuid().ToString("N"));
@@ -51,6 +54,9 @@ public class TemplatesBookTests
     [InlineData("INV2", 13, 45000.5)]
     [InlineData("INV3", 3, 30000)]
     [InlineData("INV3", 10, 87500)]
+    [InlineData("INV4", 12, 60000)]
+    [InlineData("INV5", 4, 15000)]
+    [InlineData("INV6", 9, 99999.99)]
     public void Template_of_the_book_fills_exactly(string sheet, int count, double amount)
     {
         var root = Path.Combine(Path.GetTempPath(), "bs-tplfill-" + Guid.NewGuid().ToString("N"));
@@ -106,6 +112,7 @@ public class TemplatesBookTests
             var ws = Workspace.Open(book, Path.Combine(dir, "state"));
             Assert.Contains("INV2", ws.TemplateSheets);
             Assert.Contains("INV3", ws.TemplateSheets);
+            Assert.Contains("INV6", ws.TemplateSheets);
             Assert.Equal(Path.Combine(dir, "Templates.xlsx"), ws.BookFor("INV2"));
             Assert.Equal(ws.WorkbookPath, ws.BookFor("INVOICE"));
             var cached = Path.Combine(ws.TemplatesDir, "INV2.xlsx");
