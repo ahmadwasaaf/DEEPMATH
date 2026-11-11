@@ -98,40 +98,6 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- connection: Wi-Fi / cable, a dot for online (green), network without internet (amber), offline (red) -->
-                <Grid Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Width="40" Height="40" Margin="0,0,22,0"
-                      Background="Transparent" ToolTip="{Binding Net.Tip}">
-                    <TextBlock x:Name="NetGlyph" Text="{Binding Net.Glyph}" FontSize="26"
-                               HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
-                                <Setter Property="Opacity" Value="0.9" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Net.IsOffline}" Value="True">
-                                        <Setter Property="Opacity" Value="0.35" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <Ellipse Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,2,4"
-                             Stroke="{DynamicResource SolidBackgroundFillColorBaseBrush}" StrokeThickness="2">
-                        <Ellipse.Style>
-                            <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="{StaticResource GoodBrush}" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Net.IsLimited}" Value="True">
-                                        <Setter Property="Fill" Value="{StaticResource WarnBrush}" />
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Net.IsOffline}" Value="True">
-                                        <Setter Property="Fill" Value="{StaticResource BadBrush}" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Ellipse.Style>
-                    </Ellipse>
-                </Grid>
-
                 <!-- lock-screen clock -->
                 <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" FlowDirection="LeftToRight">
@@ -141,7 +107,39 @@
                             <TextBlock x:Name="ClockSeconds" Text="00" FontSize="18" FontWeight="Light" Opacity="0.6" />
                         </StackPanel>
                     </StackPanel>
-                    <TextBlock x:Name="ClockDate" Text="" FontSize="14" HorizontalAlignment="Center" Style="{StaticResource Muted}" Margin="0,-6,0,0" />
+                    <!-- connection (Wi-Fi arcs: white online, amber with no internet, red and crossed offline) beside the date -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,-4,0,0">
+                        <Border Background="Transparent" Margin="0,0,14,0" VerticalAlignment="Center" ToolTip="{Binding Net.Tip}">
+                        <Viewbox Width="26" Height="21">
+                            <Canvas Width="24" Height="19">
+                                <Canvas.Resources>
+                                    <Style TargetType="Path">
+                                        <Setter Property="StrokeThickness" Value="2.3" />
+                                        <Setter Property="StrokeStartLineCap" Value="Round" />
+                                        <Setter Property="StrokeEndLineCap" Value="Round" />
+                                        <Setter Property="Stroke" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Net.IsLimited}" Value="True">
+                                                <Setter Property="Stroke" Value="{StaticResource WarnBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Net.IsOffline}" Value="True">
+                                                <Setter Property="Stroke" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Canvas.Resources>
+                                <Path Data="M2.45,7.45 A13.5,13.5 0 0 1 21.55,7.45" />
+                                <Path Data="M5.64,10.64 A9,9 0 0 1 18.36,10.64" />
+                                <Path Data="M8.82,13.82 A4.5,4.5 0 0 1 15.18,13.82" />
+                                <Path Data="M12,16.9 L12,17" StrokeThickness="3.6" />
+                                <!-- offline: crossed out -->
+                                <Line X1="3" Y1="1.5" X2="21" Y2="18" StrokeThickness="2.3" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Stroke="{StaticResource BadBrush}" Visibility="{Binding Net.IsOffline, Converter={StaticResource BoolToVis}}" />
+                            </Canvas>
+                        </Viewbox>
+                        </Border>
+                        <TextBlock x:Name="ClockDate" Text="" FontSize="15" VerticalAlignment="Center" Opacity="0.9" />
+                    </StackPanel>
                 </StackPanel>
             </Grid>
 
