@@ -23,6 +23,7 @@
         </DataTemplate>
         <Style x:Key="MenuRow" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Template">
                 <Setter.Value>
