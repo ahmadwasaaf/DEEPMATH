@@ -324,7 +324,14 @@
                             <Binding Path="Mail.HasItems" Converter="{StaticResource InverseBoolToVis}" />
                         </StackPanel.Visibility>
                         <TextBlock Text="{Binding Account.Email}" Style="{StaticResource Muted}" FontSize="12" />
-                        <TextBlock Text="{Binding Mail.UnreadText}" FontSize="16" Margin="0,3,0,0" />
+                        <TextBlock Text="{Binding Mail.UnreadText}" FontSize="16" Margin="0,3,0,0">
+                            <TextBlock.Visibility>
+                                <Binding Path="Mail.HasProblem" Converter="{StaticResource InverseBoolToVis}" />
+                            </TextBlock.Visibility>
+                        </TextBlock>
+                        <!-- why the inbox cannot be read (Gmail not allowed, no answer ...) -->
+                        <TextBlock Text="{Binding Mail.Problem}" FontSize="13" Margin="0,3,0,0" TextWrapping="Wrap" Foreground="{StaticResource WarnBrush}"
+                                   Visibility="{Binding Mail.HasProblem, Converter={StaticResource BoolToVis}}" />
                     </StackPanel>
                 </Grid>
 

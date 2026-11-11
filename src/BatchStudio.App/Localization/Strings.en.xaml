@@ -417,4 +417,6 @@
     <sys:String x:Key="Net.NoInternet">Network connected, no internet</sys:String>
     <sys:String x:Key="Net.Offline">Offline</sys:String>
     <sys:String x:Key="Home.SignInHint">Sign in with Google in Settings to see your emails here</sys:String>
+    <sys:String x:Key="Google.NoGmail">Gmail access was not allowed. Sign out, sign in again and tick the box “View your email message metadata” on Google's page.</sys:String>
+    <sys:String x:Key="Mail.Problem">Can't read the inbox right now: {0}</sys:String>
 </ResourceDictionary>

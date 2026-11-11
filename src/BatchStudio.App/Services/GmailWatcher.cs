@@ -22,7 +22,8 @@ public sealed class MailItem
     public required DateTime Received { get; init; }
     public required string Account { get; init; }
 
-    public string Url => $"https://mail.google.com/mail/u/{Uri.EscapeDataString(Account)}/#inbox/{ThreadId}";
+    /// <summary>Gmail chooses the signed-in browser account by authuser (a path /u/&lt;email&gt; fails when that account is not open).</summary>
+    public string Url => GmailWatcher.InboxUrl(Account) + "/" + ThreadId;
 
     public string Time
     {
@@ -56,6 +57,14 @@ public sealed partial class GmailWatcher : ObservableObject
     [ObservableProperty] private bool _isActive;
     /// <summary>The banner was closed with X (it comes back with the next email).</summary>
     [ObservableProperty] private bool _dismissed;
+
+    public static string InboxUrl(string account) =>
+        "https://mail.google.com/mail/" + (account.Length > 0 ? "?authuser=" + Uri.EscapeDataString(account) : "") + "#inbox";
+
+    /// <summary>Why the inbox cannot be read (Gmail not allowed, Google not answering ...); shown in the banner.</summary>
+    [ObservableProperty] private string _problem = "";
+    public bool HasProblem => Problem.Length > 0;
+    partial void OnProblemChanged(string value) => OnPropertyChanged(nameof(HasProblem));
 
     public MailItem? Current => Index >= 0 && Index < Items.Count ? Items[Index] : null;
     public bool HasItems => Items.Count > 0;
@@ -119,10 +128,23 @@ public sealed partial class GmailWatcher : ObservableObject
         {
             try
             {
-                if (NetworkStatus.Instance.IsOnline) await CheckAsync(ct);
+                if (NetworkStatus.Instance.IsOnline)
+                {
+                    await CheckAsync(ct);
+                    await OnUi(() => Problem = "");
+                }
             }
             catch (OperationCanceledException) { return; }
-            catch { /* offline, Google busy ...: next round */ }
+            catch (GmailRefusedException)
+            {
+                await OnUi(() => { GoogleAccount.Instance.GmailRefused(); Problem = Loc.T("Google.NoGmail"); });
+            }
+            catch (Exception ex)
+            {
+                // offline, Google busy ...: shown, and tried again next round
+                var text = ex.Message;
+                await OnUi(() => Problem = Loc.F("Mail.Problem", text));
+            }
             try { await Task.Delay(Every, ct); }
             catch (OperationCanceledException) { return; }
         }
@@ -266,12 +288,33 @@ public sealed partial class GmailWatcher : ObservableObject
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             using var res = await GoogleAccount.Http.SendAsync(req, ct);
             if (res.StatusCode == HttpStatusCode.Unauthorized) continue;
+            if (res.StatusCode == HttpStatusCode.Forbidden)
+            {
+                var body = await res.Content.ReadAsStringAsync(ct);
+                if (body.Contains("insufficient", StringComparison.OrdinalIgnoreCase) || body.Contains("PERMISSION_DENIED", StringComparison.Ordinal)
+                    || body.Contains("Metadata scope", StringComparison.OrdinalIgnoreCase))
+                    throw new GmailRefusedException();
+                throw new HttpRequestException($"Gmail: HTTP 403 {Short(body)}");
+            }
             if (res.StatusCode == HttpStatusCode.NotFound && allowNotFound) return null;
-            if (!res.IsSuccessStatusCode) throw new HttpRequestException($"Gmail: HTTP {(int)res.StatusCode}");
+            if (!res.IsSuccessStatusCode) throw new HttpRequestException($"Gmail: HTTP {(int)res.StatusCode} {Short(await res.Content.ReadAsStringAsync(ct))}");
             return JsonDocument.Parse(await res.Content.ReadAsStringAsync(ct));
         }
         return null;
     }
+
+    private static string Short(string body)
+    {
+        try
+        {
+            using var d = JsonDocument.Parse(body);
+            if (d.RootElement.TryGetProperty("error", out var e) && e.TryGetProperty("message", out var m)) return m.GetString() ?? "";
+        }
+        catch { }
+        return "";
+    }
+
+    private sealed class GmailRefusedException : Exception;
 
     private static Task OnUi(Action a)
     {
@@ -296,7 +339,7 @@ public sealed partial class GmailWatcher : ObservableObject
     {
         item ??= Current;
         var account = GoogleAccount.Instance.Email;
-        Shell.OpenUrl(item?.Url ?? $"https://mail.google.com/mail/u/{Uri.EscapeDataString(account)}/#inbox");
+        Shell.OpenUrl(item?.Url ?? InboxUrl(account));
     }
 
     /// <summary>Screenshot check only: sample messages (nothing is contacted).</summary>

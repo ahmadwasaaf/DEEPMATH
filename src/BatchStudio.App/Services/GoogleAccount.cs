@@ -40,6 +40,8 @@ public sealed partial class GoogleAccount : ObservableObject
         public string Email { get; set; } = "";
         public string Name { get; set; } = "";
         public string Picture { get; set; } = "";
+        /// <summary>The user allowed the Gmail box on Google's consent page (sender / subject of emails).</summary>
+        public bool Gmail { get; set; } = true;
     }
 
     private Stored _data = new();
@@ -61,6 +63,8 @@ public sealed partial class GoogleAccount : ObservableObject
     [ObservableProperty] private string _status = "";
 
     public string ClientId => _data.ClientId;
+    /// <summary>Gmail (sender / subject) was allowed at sign-in.</summary>
+    public bool HasGmail => IsSignedIn && _data.Gmail;
     public string ClientSecret => _data.ClientSecret;
     public bool IsConfigured => _data.ClientId.Trim().Length > 0;
 
@@ -104,6 +108,7 @@ public sealed partial class GoogleAccount : ObservableObject
         Name = IsSignedIn ? _data.Name : "";
         Initial = Name.Trim().Length > 0 ? Name.Trim()[..1].ToUpperInvariant() : Email.Length > 0 ? Email[..1].ToUpperInvariant() : "";
         Avatar = IsSignedIn ? LoadAvatar() : null;
+        OnPropertyChanged(nameof(HasGmail));
     }
 
     private static ImageSource? LoadAvatar()
@@ -211,11 +216,13 @@ public sealed partial class GoogleAccount : ObservableObject
             });
             if (token?.RefreshToken is not { Length: > 0 } refresh) { Status = Loc.F("Google.Failed", token?.Error ?? "token"); return false; }
             _data.RefreshToken = refresh;
+            // Google's consent page shows Gmail as a separate box: without it only the name and photo are allowed
+            _data.Gmail = token.Scope == null || token.Scope.Contains("gmail.metadata", StringComparison.Ordinal);
             _accessToken = token.AccessToken;
             _accessUntil = DateTime.UtcNow.AddSeconds(Math.Max(60, token.ExpiresIn - 60));
             await LoadProfileAsync();
             Save();
-            Status = "";
+            Status = _data.Gmail ? "" : Loc.T("Google.NoGmail");
             Show();
             SignedInChanged?.Invoke();
             return true;
@@ -312,6 +319,7 @@ public sealed partial class GoogleAccount : ObservableObject
         [JsonPropertyName("refresh_token")] public string? RefreshToken { get; set; }
         [JsonPropertyName("expires_in")] public int ExpiresIn { get; set; }
         [JsonPropertyName("error")] public string? Error { get; set; }
+        [JsonPropertyName("scope")] public string? Scope { get; set; }
     }
 
     private static async Task<TokenResponse?> PostTokenAsync(Dictionary<string, string> form)
@@ -383,6 +391,16 @@ public sealed partial class GoogleAccount : ObservableObject
             d[Uri.UnescapeDataString(kv[0])] = kv.Length > 1 ? Uri.UnescapeDataString(kv[1].Replace('+', ' ')) : "";
         }
         return d;
+    }
+
+    /// <summary>Gmail answered "not allowed": the box was not ticked (or the access was removed in the Google account).</summary>
+    internal void GmailRefused()
+    {
+        if (!_data.Gmail) return;
+        _data.Gmail = false;
+        Save();
+        Status = Loc.T("Google.NoGmail");
+        OnPropertyChanged(nameof(HasGmail));
     }
 
     /// <summary>Screenshot check only: shows a signed-in account without contacting Google (nothing is saved).</summary>

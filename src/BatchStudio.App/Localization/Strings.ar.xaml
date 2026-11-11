@@ -417,4 +417,6 @@
     <sys:String x:Key="Net.NoInternet">متصل بالشبكة بدون إنترنت</sys:String>
     <sys:String x:Key="Net.Offline">غير متصل</sys:String>
     <sys:String x:Key="Home.SignInHint">سجّل الدخول بجوجل من الإعدادات لتظهر رسائلك هنا</sys:String>
+    <sys:String x:Key="Google.NoGmail">لم يتم السماح بالوصول إلى Gmail. سجّل الخروج ثم سجّل الدخول مرة أخرى وعلّم على خانة “View your email message metadata” في صفحة جوجل.</sys:String>
+    <sys:String x:Key="Mail.Problem">تعذّرت قراءة البريد الآن: {0}</sys:String>
 </ResourceDictionary>
