@@ -109,7 +109,7 @@ public static class TemplatePreview
     private static void EnsurePopup()
     {
         if (_popup != null) return;
-        _image = new Image { Width = PreviewWidth, Stretch = Stretch.Uniform, SnapsToDevicePixels = true };
+        _image = new Image { Width = PreviewWidth, Height = PreviewWidth * 297 / 210, Stretch = Stretch.Uniform, SnapsToDevicePixels = true };
         RenderOptions.SetBitmapScalingMode(_image, BitmapScalingMode.HighQuality);
         var paper = new Border { CornerRadius = new CornerRadius(6), ClipToBounds = true, Background = Brushes.White, Child = _image };
         _title = new TextBlock { FontWeight = FontWeights.SemiBold, FontSize = 13, VerticalAlignment = VerticalAlignment.Center };
@@ -227,7 +227,12 @@ public static class TemplatePreview
     /// <summary>Draws a template: fills, text, borders and pictures; the template's theme colour becomes <paramref name="color"/>.</summary>
     public static BitmapSource Render(TemplateSnapshot s, uint? color, double width = PreviewWidth)
     {
-        double k = width / s.Width;
+        // an A4 page (210 × 297) with print margins, the template fitted inside and centred across, from the top - the
+        // same page size for every template, as in Excel's print preview
+        double pageW = width, pageH = width * 297 / 210;
+        double side = pageW * 0.075, top = pageH * 0.06;
+        double k = Math.Min((pageW - 2 * side) / s.Width, (pageH - 2 * top) / s.Height);
+        double offX = (pageW - s.Width * k) / 2, offY = top;
         double[] xs = TemplateSnapshot.Starts(s.Columns), ys = TemplateSnapshot.Starts(s.Rows);
         uint? from = s.ThemeBase;
         uint Map(uint argb, int row) =>
@@ -242,7 +247,8 @@ public static class TemplatePreview
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, s.Width * k, s.Height * k));
+            dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, pageW, pageH));
+            dc.PushTransform(new TranslateTransform(offX, offY));
             dc.PushTransform(new ScaleTransform(k, k));
             foreach (var c in s.Cells)
                 if (c.Fill is { } fill)
@@ -264,9 +270,10 @@ public static class TemplatePreview
                 }
                 catch { }
             }
-            dc.Pop();
+            dc.Pop();   // scale
+            dc.Pop();   // page margins
         }
-        int pw = (int)Math.Ceiling(s.Width * k * Scale), ph = (int)Math.Ceiling(s.Height * k * Scale);
+        int pw = (int)Math.Ceiling(pageW * Scale), ph = (int)Math.Ceiling(pageH * Scale);
         var bmp = new RenderTargetBitmap(Math.Max(1, pw), Math.Max(1, ph), 96 * Scale, 96 * Scale, PixelFormats.Pbgra32);
         bmp.Render(visual);
         bmp.Freeze();
