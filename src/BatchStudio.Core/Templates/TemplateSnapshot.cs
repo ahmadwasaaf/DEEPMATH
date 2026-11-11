@@ -147,11 +147,11 @@ public sealed partial class TemplateSnapshot
                 if (tl == null) continue;
                 int pr = tl.Address.RowNumber, pc = tl.Address.ColumnNumber;
                 if (pr < r1 || pr > r2 || pc < c1 || pc > c2) continue;
-                var off = pic.GetOffset(XLMarkerPosition.TopLeft);
+                // Left / Top: the picture's offset from its top-left cell, in pixels
                 using var ms = new MemoryStream();
                 pic.ImageStream.Position = 0;
                 pic.ImageStream.CopyTo(ms);
-                pictures.Add(new SnapPicture(ms.ToArray(), colStart[pc - c1] + off.X, rowStart[pr - r1] + off.Y, pic.Width, pic.Height));
+                pictures.Add(new SnapPicture(ms.ToArray(), colStart[pc - c1] + pic.Left, rowStart[pr - r1] + pic.Top, pic.Width, pic.Height));
             }
         }
         catch { }
