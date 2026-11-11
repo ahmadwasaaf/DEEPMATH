@@ -589,8 +589,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _googleClientId = "";
     [ObservableProperty] private string _googleClientSecret = "";
 
-    partial void OnGoogleClientIdChanged(string value) => Account.SetClient(value, GoogleClientSecret);
-    partial void OnGoogleClientSecretChanged(string value) => Account.SetClient(GoogleClientId, value);
+    private bool _loadingClient;
+    partial void OnGoogleClientIdChanged(string value) { if (!_loadingClient) Account.SetClient(value, GoogleClientSecret); }
+    partial void OnGoogleClientSecretChanged(string value) { if (!_loadingClient) Account.SetClient(GoogleClientId, value); }
 
     public bool MailToasts
     {
@@ -621,8 +622,14 @@ public sealed partial class SettingsViewModel : ObservableObject
         var file = Dialogs.PickFile("Google OAuth client (*.json)|*.json");
         if (file == null) return;
         if (!Account.LoadClientFile(file)) { Dialogs.Error(Loc.T("Google.FileBad")); return; }
-        GoogleClientId = Account.ClientId;
-        GoogleClientSecret = Account.ClientSecret;
+        // both boxes at once: setting one through its property would save it with the other box's old value
+        _loadingClient = true;
+        try
+        {
+            GoogleClientId = Account.ClientId;
+            GoogleClientSecret = Account.ClientSecret;
+        }
+        finally { _loadingClient = false; }
     }
 
     partial void OnIsArabicChanged(bool value)
