@@ -608,7 +608,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task GoogleSignIn()
     {
-        Account.SetClient(GoogleClientId, GoogleClientSecret);
+        // the program's own Google client is built in: nothing to set up
         await Account.SignInAsync();
     }
 

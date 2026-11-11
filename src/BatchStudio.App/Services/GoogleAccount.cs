@@ -62,11 +62,12 @@ public sealed partial class GoogleAccount : ObservableObject
     /// <summary>Last problem (sign-in cancelled, session expired ...), shown in Settings.</summary>
     [ObservableProperty] private string _status = "";
 
-    public string ClientId => _data.ClientId;
+    /// <summary>The program's own client (built in); a client loaded in an older version is still honoured.</summary>
+    public string ClientId => _data.ClientId.Trim().Length > 0 ? _data.ClientId : GoogleClient.Id;
     /// <summary>Gmail (sender / subject) was allowed at sign-in.</summary>
     public bool HasGmail => IsSignedIn && _data.Gmail;
-    public string ClientSecret => _data.ClientSecret;
-    public bool IsConfigured => _data.ClientId.Trim().Length > 0;
+    public string ClientSecret => _data.ClientId.Trim().Length > 0 ? _data.ClientSecret : GoogleClient.Secret;
+    public bool IsConfigured => ClientId.Length > 0;
 
     /// <summary>Raised after sign-in / sign-out (the Gmail watcher starts or stops).</summary>
     public event Action? SignedInChanged;
@@ -178,7 +179,7 @@ public sealed partial class GoogleAccount : ObservableObject
             string state = Base64Url(RandomNumberGenerator.GetBytes(16));
             string url = AuthUrl + "?" + Query(new()
             {
-                ["client_id"] = _data.ClientId,
+                ["client_id"] = ClientId,
                 ["redirect_uri"] = redirect,
                 ["response_type"] = "code",
                 ["scope"] = Scopes,
@@ -208,8 +209,8 @@ public sealed partial class GoogleAccount : ObservableObject
             var token = await PostTokenAsync(new()
             {
                 ["code"] = code,
-                ["client_id"] = _data.ClientId,
-                ["client_secret"] = _data.ClientSecret,
+                ["client_id"] = ClientId,
+                ["client_secret"] = ClientSecret,
                 ["redirect_uri"] = redirect,
                 ["grant_type"] = "authorization_code",
                 ["code_verifier"] = verifier,
@@ -263,8 +264,8 @@ public sealed partial class GoogleAccount : ObservableObject
             if (!forceRenew && _accessToken != null && DateTime.UtcNow < _accessUntil) return _accessToken;
             var token = await PostTokenAsync(new()
             {
-                ["client_id"] = _data.ClientId,
-                ["client_secret"] = _data.ClientSecret,
+                ["client_id"] = ClientId,
+                ["client_secret"] = ClientSecret,
                 ["refresh_token"] = _data.RefreshToken,
                 ["grant_type"] = "refresh_token",
             });

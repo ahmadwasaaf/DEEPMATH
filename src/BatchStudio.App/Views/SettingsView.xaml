@@ -223,23 +223,7 @@
                     <!-- signed out: the client of the Google Cloud project, then Sign in -->
                     <StackPanel Visibility="{Binding Account.IsSignedIn, Converter={StaticResource InverseBoolToVis}}">
                         <TextBlock Text="{DynamicResource Google.Intro}" TextWrapping="Wrap" Margin="0,2,0,12" />
-                        <TextBlock Text="{DynamicResource Google.ClientHelp}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Text="{DynamicResource Google.ClientId}" VerticalAlignment="Center" />
-                            <TextBox Grid.Column="1" Text="{Binding GoogleClientId, UpdateSourceTrigger=LostFocus}" FlowDirection="LeftToRight" FontFamily="Consolas" />
-                            <TextBlock Grid.Row="1" Text="{DynamicResource Google.ClientSecret}" VerticalAlignment="Center" Margin="0,8,0,0" />
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GoogleClientSecret, UpdateSourceTrigger=LostFocus}" FlowDirection="LeftToRight"
-                                     FontFamily="Consolas" Margin="0,8,0,0" />
-                        </Grid>
-                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <Button Command="{Binding GoogleSignInCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="16,7"
                                     IsEnabled="{Binding Account.IsBusy, Converter={StaticResource InverseBool}}">
                                 <StackPanel Orientation="Horizontal">
@@ -247,12 +231,6 @@
                                         <TextBlock Text="G" FontWeight="Bold" FontSize="13" Foreground="#4285F4" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Segoe UI" />
                                     </Border>
                                     <TextBlock Text="{DynamicResource Google.SignIn}" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                            <Button Command="{Binding LoadGoogleClientCommand}" Margin="8,0,0,0">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" FontSize="12" Margin="0,0,8,0" />
-                                    <TextBlock Text="{DynamicResource Google.LoadFile}" />
                                 </StackPanel>
                             </Button>
                         </StackPanel>
