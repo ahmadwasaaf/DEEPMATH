@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using BatchStudio.App.Services;
@@ -23,8 +24,9 @@ public partial class HomeView : UserControl
             _clock.Start();
             Hook(DataContext as HomeViewModel);
             StartPulse();
+            GmailWatcher.Instance.Arrived += OnMailArrived;
         };
-        Unloaded += (_, _) => { _clock.Stop(); Hook(null); };
+        Unloaded += (_, _) => { _clock.Stop(); Hook(null); GmailWatcher.Instance.Arrived -= OnMailArrived; };
         DataContextChanged += (_, e) => { if (IsLoaded) Hook(e.NewValue as HomeViewModel); };
     }
 
@@ -52,6 +54,21 @@ public partial class HomeView : UserControl
     private void OnParticleAreaMouseMove(object sender, System.Windows.Input.MouseEventArgs e) => Particles.SetPointer(e.GetPosition(Particles));
 
     private void OnParticleAreaMouseLeave(object sender, System.Windows.Input.MouseEventArgs e) => Particles.SetPointer(null);
+
+    /// <summary>A new email: the banner rises into place and the envelope sends out two soft rings.</summary>
+    private void OnMailArrived(IReadOnlyList<MailItem> items) => AnimateBanner();
+
+    public void AnimateBanner()
+    {
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        BannerShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(36, 0, TimeSpan.FromMilliseconds(420)) { EasingFunction = ease });
+        MailBanner.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)));
+        var grow = new DoubleAnimation(1, 1.9, TimeSpan.FromMilliseconds(900)) { RepeatBehavior = new RepeatBehavior(2), EasingFunction = ease };
+        var fade = new DoubleAnimation(0.45, 0, TimeSpan.FromMilliseconds(900)) { RepeatBehavior = new RepeatBehavior(2) };
+        MailGlowScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, grow);
+        MailGlowScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, grow);
+        MailGlow.BeginAnimation(OpacityProperty, fade);
+    }
 
     private void StartPulse()
     {

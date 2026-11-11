@@ -24,3 +24,12 @@ public sealed class EqualsConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         value is true ? parameter?.ToString() ?? "" : Binding.DoNothing;
 }
+
+/// <summary>Visible when the text is not empty (or the value is not null).</summary>
+public sealed class NonEmptyToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is string s ? (s.Trim().Length > 0 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed)
+        : value != null ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
+}

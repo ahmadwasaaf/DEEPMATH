@@ -88,6 +88,13 @@ public static class ThemeService
 
 public static class Shell
 {
+    /// <summary>Opens a web page in the default browser (no error box: the page is a convenience).</summary>
+    public static void OpenUrl(string url)
+    {
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch { }
+    }
+
     public static void Open(string path)
     {
         try { Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }); }

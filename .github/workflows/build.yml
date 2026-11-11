@@ -95,6 +95,11 @@ jobs:
           Run 'English' 'Dark' $true 'newinvoice-banks' '33-newinvoice-pager'
           Run 'English' 'Dark' $true 'suppliers-search2' '34-suppliers-search2'
           Run 'English' 'Dark' $true 'mass-details' '35-mass-details'
+          Run 'English' 'Dark' $true 'home-mail' '36-home-mail'
+          Run 'Arabic' 'Light' $true 'home-mail' '37-home-mail-ar'
+          Run 'English' 'Dark' $true 'settings-google' '38-settings-google'
+          Run 'English' 'Dark' $true 'newinvoice-preview' '39-template-preview'
+          Run 'English' 'Light' $true 'newinvoice-preview' '40-template-preview-light'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

@@ -14,6 +14,7 @@
             <svc:InverseBoolConverter x:Key="InverseBool" />
             <svc:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
             <svc:EqualsConverter x:Key="Equals" />
+            <svc:NonEmptyToVisibilityConverter x:Key="NonEmptyToVis" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

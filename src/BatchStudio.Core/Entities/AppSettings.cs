@@ -62,6 +62,9 @@ public sealed class AppSettings
     /// <summary>Settings › Appearance: the accent colour part is open.</summary>
     public bool AppearanceOpen { get; set; }
 
+    /// <summary>Windows notification for each new email (Google account in Settings).</summary>
+    public bool MailToasts { get; set; } = true;
+
     /// <summary>Width of the name list on the Suppliers / Clients / Reports pages (dragged by the user), per page.</summary>
     public Dictionary<string, double> ListWidths { get; set; } = [];
 

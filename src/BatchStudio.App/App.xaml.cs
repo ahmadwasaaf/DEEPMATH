@@ -19,6 +19,10 @@ public partial class App : Application
 
         // Alt+Enter / Shift+Enter: a new line inside the text fields, like Excel
         TextNewLine.Register();
+        // hovering a template in any list shows its picture
+        TemplatePreview.Register();
+        // a click on an email notification opens the message in Gmail
+        MailToasts.Register();
 
         var settings = SettingsStore.Load();
         ThemeService.Accent = string.IsNullOrWhiteSpace(settings.Accent) ? "auto" : settings.Accent;
@@ -32,6 +36,11 @@ public partial class App : Application
         var vm = new MainViewModel(settings);
         window.DataContext = vm;
         window.Show();
+
+        // connection indicator and the Gmail inbox of the signed-in Google account
+        NetworkStatus.Instance.Start();
+        GmailWatcher.Instance.Arrived += items => { if (vm.Settings.MailToasts) MailToasts.Show(items); };
+        if (GoogleAccount.Instance.IsSignedIn) GmailWatcher.Instance.Start();
 
         // --page <suppliers|clients|items|categories|templates|settings>  (used by the screenshot smoke test)
         var i = Array.IndexOf(e.Args, "--page");
@@ -68,6 +77,29 @@ public partial class App : Application
                 }, DispatcherPriority.ContextIdle);
             }
             if (arg == "newinvoice-banks") ScreenshotBanks(vm);
+            // screenshot checks of the Google account, the email banner and the template preview (nothing is contacted or saved)
+            if (arg is "home-mail" or "settings-google")
+            {
+                GoogleAccount.Instance.Demo("Madar Trading", "madar.demo@gmail.com", null);
+                GmailWatcher.Instance.Demo("madar.demo@gmail.com");
+                arg = arg == "home-mail" ? "home" : "settings";
+            }
+            bool preview = arg == "newinvoice-preview";
+            if (preview)
+            {
+                arg = "newinvoice";
+                Dispatcher.BeginInvoke(async () =>
+                {
+                    await Task.Delay(2500);
+                    var combo = FindAll<System.Windows.Controls.ComboBox>(window).FirstOrDefault(c => ReferenceEquals(c.ItemsSource, vm.NewInvoice.Templates));
+                    if (combo == null) return;
+                    combo.IsDropDownOpen = true;
+                    await Task.Delay(800);
+                    int index = Math.Min(1, combo.Items.Count - 1);
+                    if (combo.ItemContainerGenerator.ContainerFromIndex(index) is System.Windows.Controls.ComboBoxItem item)
+                        await TemplatePreview.ShowAsync(item);
+                }, DispatcherPriority.ContextIdle);
+            }
             bool massParty = arg == "mass-newparty";
             bool massDetails = arg == "mass-details";
             if (massParty || massDetails) arg = "mass";
@@ -103,6 +135,17 @@ public partial class App : Application
                 }
                 if (search2) sp.SearchText = "2";
             }
+        }
+    }
+
+    private static IEnumerable<T> FindAll<T>(DependencyObject root) where T : DependencyObject
+    {
+        int n = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < n; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is T t) yield return t;
+            foreach (var x in FindAll<T>(child)) yield return x;
         }
     }
 

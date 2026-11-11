@@ -55,6 +55,17 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
     [ObservableProperty] private string _databasePath = "";
     [ObservableProperty] private bool _hasMissing;
 
+    public GoogleAccount Account => GoogleAccount.Instance;
+    public GmailWatcher Mail => GmailWatcher.Instance;
+    public NetworkStatus Net => NetworkStatus.Instance;
+
+    /// <summary>The picture beside "Welcome": signed out, it leads to Settings (Sign in with Google).</summary>
+    [RelayCommand]
+    private void OpenAccount()
+    {
+        if (main.Nav.FirstOrDefault(n => n.Key == "Nav.Settings") is { } nav) main.SelectedNav = nav;
+    }
+
     public void Refresh()
     {
         Tiles.Clear();
@@ -569,6 +580,49 @@ public sealed partial class SettingsViewModel : ObservableObject
         _isLight = main.Settings.Theme == AppTheme.Light;
         _autoSave = main.Settings.AutoSave;
         _keepBackups = main.Settings.KeepBackups;
+        _googleClientId = GoogleAccount.Instance.ClientId;
+        _googleClientSecret = GoogleAccount.Instance.ClientSecret;
+    }
+
+    // ---------------------------------------------------------------- Google account (new emails on Home + notifications)
+    public GoogleAccount Account => GoogleAccount.Instance;
+    [ObservableProperty] private string _googleClientId = "";
+    [ObservableProperty] private string _googleClientSecret = "";
+
+    partial void OnGoogleClientIdChanged(string value) => Account.SetClient(value, GoogleClientSecret);
+    partial void OnGoogleClientSecretChanged(string value) => Account.SetClient(GoogleClientId, value);
+
+    public bool MailToasts
+    {
+        get => _main.Settings.MailToasts;
+        set
+        {
+            if (_main.Settings.MailToasts == value) return;
+            _main.Settings.MailToasts = value;
+            _main.SaveSettings();
+            OnPropertyChanged();
+        }
+    }
+
+    [RelayCommand]
+    private async Task GoogleSignIn()
+    {
+        Account.SetClient(GoogleClientId, GoogleClientSecret);
+        await Account.SignInAsync();
+    }
+
+    [RelayCommand]
+    private Task GoogleSignOut() => Account.SignOutAsync();
+
+    /// <summary>The client_secret_….json downloaded from Google Cloud fills both boxes.</summary>
+    [RelayCommand]
+    private void LoadGoogleClient()
+    {
+        var file = Dialogs.PickFile("Google OAuth client (*.json)|*.json");
+        if (file == null) return;
+        if (!Account.LoadClientFile(file)) { Dialogs.Error(Loc.T("Google.FileBad")); return; }
+        GoogleClientId = Account.ClientId;
+        GoogleClientSecret = Account.ClientSecret;
     }
 
     partial void OnIsArabicChanged(bool value)

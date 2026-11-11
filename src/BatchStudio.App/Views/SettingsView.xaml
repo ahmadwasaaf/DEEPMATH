@@ -174,6 +174,98 @@
                 </StackPanel>
             </Border>
 
+            <!-- ========== Google account: new emails on Home + Windows notifications ========== -->
+            <Border x:Name="GoogleCard" Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Border Width="26" Height="26" CornerRadius="13" Background="White" Margin="0,0,10,0" VerticalAlignment="Center">
+                            <TextBlock Text="G" FontWeight="Bold" FontSize="16" Foreground="#4285F4" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontFamily="Segoe UI" Margin="0,-1,0,0" />
+                        </Border>
+                        <TextBlock Text="{DynamicResource Google.Title}" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- signed in: who, notifications, sign out -->
+                    <StackPanel Visibility="{Binding Account.IsSignedIn, Converter={StaticResource BoolToVis}}" Margin="0,8,0,0">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Command="{Binding GoogleSignOutCommand}" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xF3B1;" FontSize="12" Margin="0,0,8,0" />
+                                    <TextBlock Text="{DynamicResource Google.SignOut}" />
+                                </StackPanel>
+                            </Button>
+                            <Grid Width="54" Height="54" Margin="0,0,14,0">
+                                <Ellipse Fill="{DynamicResource BrandBrush}" />
+                                <TextBlock Text="{Binding Account.Initial}" Foreground="White" FontSize="22" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <Ellipse>
+                                    <Ellipse.Fill>
+                                        <ImageBrush ImageSource="{Binding Account.Avatar}" Stretch="UniformToFill" />
+                                    </Ellipse.Fill>
+                                </Ellipse>
+                            </Grid>
+                            <StackPanel VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Account.Name}" FontSize="15" FontWeight="SemiBold" />
+                                    <Border CornerRadius="9" Padding="8,1" Margin="10,0,0,0" BorderThickness="1" BorderBrush="{StaticResource GoodBrush}" VerticalAlignment="Center">
+                                        <Border.Background>
+                                            <SolidColorBrush Color="#2EA043" Opacity="0.14" />
+                                        </Border.Background>
+                                        <TextBlock Text="{DynamicResource Google.Connected}" Foreground="{StaticResource GoodBrush}" FontSize="11" FontWeight="SemiBold" />
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="{Binding Account.Email}" Style="{StaticResource Muted}" FontSize="12" FlowDirection="LeftToRight" HorizontalAlignment="Left" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                        <CheckBox Content="{DynamicResource Google.Toasts}" IsChecked="{Binding MailToasts}" Margin="0,14,0,0" />
+                    </StackPanel>
+
+                    <!-- signed out: the client of the Google Cloud project, then Sign in -->
+                    <StackPanel Visibility="{Binding Account.IsSignedIn, Converter={StaticResource InverseBoolToVis}}">
+                        <TextBlock Text="{DynamicResource Google.Intro}" TextWrapping="Wrap" Margin="0,2,0,12" />
+                        <TextBlock Text="{DynamicResource Google.ClientHelp}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,10" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="{DynamicResource Google.ClientId}" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Text="{Binding GoogleClientId, UpdateSourceTrigger=LostFocus}" FlowDirection="LeftToRight" FontFamily="Consolas" />
+                            <TextBlock Grid.Row="1" Text="{DynamicResource Google.ClientSecret}" VerticalAlignment="Center" Margin="0,8,0,0" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GoogleClientSecret, UpdateSourceTrigger=LostFocus}" FlowDirection="LeftToRight"
+                                     FontFamily="Consolas" Margin="0,8,0,0" />
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                            <Button Command="{Binding GoogleSignInCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="16,7"
+                                    IsEnabled="{Binding Account.IsBusy, Converter={StaticResource InverseBool}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Border Width="20" Height="20" CornerRadius="10" Background="White" Margin="0,0,10,0">
+                                        <TextBlock Text="G" FontWeight="Bold" FontSize="13" Foreground="#4285F4" HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Segoe UI" />
+                                    </Border>
+                                    <TextBlock Text="{DynamicResource Google.SignIn}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding LoadGoogleClientCommand}" Margin="8,0,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" FontSize="12" Margin="0,0,8,0" />
+                                    <TextBlock Text="{DynamicResource Google.LoadFile}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Account.Status}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,10,0,0">
+                        <TextBlock.Visibility>
+                            <Binding Path="Account.Status" Converter="{StaticResource NonEmptyToVis}" />
+                        </TextBlock.Visibility>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
             <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource Set.Sync}" Style="{StaticResource SectionTitle}" />
