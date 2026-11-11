@@ -100,7 +100,7 @@
 
                 <!-- lock-screen clock; the connection (Wi-Fi arcs: white online, amber with no internet, crossed offline) on its left,
                      level with the date -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,18,0">
                     <Border Background="Transparent" Margin="0,0,14,1" VerticalAlignment="Bottom" ToolTip="{Binding Net.Tip}">
                     <Viewbox Width="26" Height="21">
                         <Canvas Width="24" Height="19">
@@ -199,7 +199,7 @@
                     <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PulseTopClient}" ToolTip="{Binding PulseTopClientTip}" Style="{StaticResource PulseValue}" />
                     <!-- total transactions: label on top, the value large -->
                     <Border Grid.RowSpan="2" Grid.Column="2" Width="1" Margin="20,2" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
-                    <StackPanel Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="2" VerticalAlignment="Center" MinWidth="170">
+                    <StackPanel Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="2" VerticalAlignment="Center" MinWidth="170" Margin="0,0,44,0">
                         <TextBlock Text="{DynamicResource Home.PulseValue}" Style="{StaticResource PulseLabel}" Margin="0,0,0,2" HorizontalAlignment="Right" />
                         <TextBlock Text="{Binding PulseTotal}" ToolTip="{Binding PulseTotalTip}" FontSize="30" FontWeight="SemiBold"
                                    FlowDirection="LeftToRight" HorizontalAlignment="Right" />
