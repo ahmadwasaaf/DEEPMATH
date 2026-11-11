@@ -10,19 +10,38 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using BatchStudio.Core.Entities;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace BatchStudio.App.Services;
 
+/// <summary>One Google account added to the program (Home account menu, Settings).</summary>
+public sealed partial class GoogleAccountEntry : ObservableObject
+{
+    public required string Email { get; init; }
+    [ObservableProperty] private string _name = "";
+    [ObservableProperty] private ImageSource? _avatar;
+    /// <summary>Signed in (a saved sign-in); false = "Signed out", kept in the list until the user removes it.</summary>
+    [ObservableProperty] private bool _isSignedIn;
+    [ObservableProperty] private bool _isActive;
+
+    public string Initial => (Name.Trim().Length > 0 ? Name.Trim() : Email)[..1].ToUpperInvariant();
+    public string Title => Name.Trim().Length > 0 ? Name : Email;
+}
+
 /// <summary>
-/// The user's Google account: "Sign in with Google" (Settings) through the system browser, like every desktop app
-/// (OAuth 2 for installed apps: loopback redirect + PKCE). The program never sees the password; it keeps the refresh
-/// token, encrypted for this Windows user (DPAPI), in %AppData%\BATCH STUDIO\google.dat, and the profile photo as
-/// avatar.png. Gmail access is read-only and limited to message headers (gmail.metadata: sender and subject, never the
-/// body).
+/// The user's Google accounts: "Sign in with Google" through the system browser, like every desktop app (OAuth 2 for
+/// installed apps: loopback redirect + PKCE). The program never sees the password. Like Google's own account menu, every
+/// account that signed in stays (switch with one click); Sign out keeps it in the list as "Signed out" and only Remove
+/// forgets it. The refresh tokens are kept encrypted for this Windows user (DPAPI) in %AppData%\BATCH STUDIO\google.dat,
+/// the profile photos in the avatars folder. Gmail access is read-only and limited to message headers (gmail.metadata:
+/// sender and subject, never the body).
 /// </summary>
 public sealed partial class GoogleAccount : ObservableObject
 {
-    public static GoogleAccount Instance { get; } = new();
+    // created on first use: every static value below is ready by then (a field initialised before them read the
+    // encryption key while it was still empty - the saved sign-in could not be read back at the next start)
+    private static GoogleAccount? _instance;
+    public static GoogleAccount Instance => _instance ??= new();
 
     public const string Scopes = "openid email profile https://www.googleapis.com/auth/gmail.metadata";
     private const string AuthUrl = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -31,16 +50,30 @@ public sealed partial class GoogleAccount : ObservableObject
     private const string UserInfoUrl = "https://openidconnect.googleapis.com/v1/userinfo";
 
     internal static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private static byte[] Entropy => Encoding.UTF8.GetBytes("DEEPMATH.google.v1");
+
+    private sealed class StoredAccount
+    {
+        public string Email { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Picture { get; set; } = "";
+        public string RefreshToken { get; set; } = "";
+        /// <summary>The user allowed the Gmail box on Google's consent page (sender / subject of emails).</summary>
+        public bool Gmail { get; set; } = true;
+    }
 
     private sealed class Stored
     {
         public string ClientId { get; set; } = "";
         public string ClientSecret { get; set; } = "";
+        public List<StoredAccount> Accounts { get; set; } = [];
+        /// <summary>E-mail of the account in use.</summary>
+        public string Active { get; set; } = "";
+        // 0.11.x kept one account here (moved into Accounts when read)
         public string RefreshToken { get; set; } = "";
         public string Email { get; set; } = "";
         public string Name { get; set; } = "";
         public string Picture { get; set; } = "";
-        /// <summary>The user allowed the Gmail box on Google's consent page (sender / subject of emails).</summary>
         public bool Gmail { get; set; } = true;
     }
 
@@ -50,7 +83,17 @@ public sealed partial class GoogleAccount : ObservableObject
     private readonly SemaphoreSlim _tokenLock = new(1, 1);
 
     private static string DataPath => Path.Combine(SettingsStore.Folder, "google.dat");
-    private static string AvatarPath => Path.Combine(SettingsStore.Folder, "avatar.png");
+    private static string AvatarFolder => Path.Combine(SettingsStore.Folder, "avatars");
+
+    private static string AvatarPath(string email) =>
+        Path.Combine(AvatarFolder, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(email.Trim().ToLowerInvariant())))[..16] + ".png");
+
+    /// <summary>Every account added (the one in use first).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<GoogleAccountEntry> Accounts { get; } = [];
+    /// <summary>The other accounts (Home account menu).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<GoogleAccountEntry> Others { get; } = [];
+    public bool HasAccounts => Accounts.Count > 0;
+    public bool HasOthers => Others.Count > 0;
 
     [ObservableProperty] private bool _isSignedIn;
     [ObservableProperty] private bool _isBusy;
@@ -62,15 +105,21 @@ public sealed partial class GoogleAccount : ObservableObject
     /// <summary>Last problem (sign-in cancelled, session expired ...), shown in Settings.</summary>
     [ObservableProperty] private string _status = "";
 
-    /// <summary>The program's own client (built in); a client loaded in an older version is still honoured.</summary>
+    /// <summary>The program's own client (built in); a client entered in Settings › OAuth client is used instead.</summary>
     public string ClientId => _data.ClientId.Trim().Length > 0 ? _data.ClientId : GoogleClient.Id;
-    /// <summary>Gmail (sender / subject) was allowed at sign-in.</summary>
-    public bool HasGmail => IsSignedIn && _data.Gmail;
     public string ClientSecret => _data.ClientId.Trim().Length > 0 ? _data.ClientSecret : GoogleClient.Secret;
     public bool IsConfigured => ClientId.Length > 0;
+    /// <summary>Gmail (sender / subject) was allowed at sign-in for the account in use.</summary>
+    public bool HasGmail => Current?.Gmail ?? false;
 
-    /// <summary>Raised after sign-in / sign-out (the Gmail watcher starts or stops).</summary>
+    /// <summary>Raised after sign-in, switch and sign-out (the Gmail watcher follows the account in use).</summary>
     public event Action? SignedInChanged;
+
+    private StoredAccount? Current =>
+        _data.Accounts.FirstOrDefault(a => a.RefreshToken.Length > 0 && string.Equals(a.Email, _data.Active, StringComparison.OrdinalIgnoreCase));
+
+    private StoredAccount? Find(string email) =>
+        _data.Accounts.FirstOrDefault(a => string.Equals(a.Email, email, StringComparison.OrdinalIgnoreCase));
 
     private GoogleAccount() => Load();
 
@@ -86,6 +135,25 @@ public sealed partial class GoogleAccount : ObservableObject
             }
         }
         catch { _data = new Stored(); }
+        // the single account of 0.11.x becomes the first of the list (its photo moves with it)
+        if (_data.RefreshToken.Length > 0 && _data.Email.Length > 0 && Find(_data.Email) == null)
+        {
+            _data.Accounts.Add(new StoredAccount
+            { Email = _data.Email, Name = _data.Name, Picture = _data.Picture, RefreshToken = _data.RefreshToken, Gmail = _data.Gmail });
+            _data.Active = _data.Email;
+            try
+            {
+                var old = Path.Combine(SettingsStore.Folder, "avatar.png");
+                if (File.Exists(old))
+                {
+                    Directory.CreateDirectory(AvatarFolder);
+                    File.Move(old, AvatarPath(_data.Email), true);
+                }
+            }
+            catch { }
+            _data.RefreshToken = _data.Email = _data.Name = _data.Picture = "";
+            Save();
+        }
         Show();
     }
 
@@ -100,28 +168,46 @@ public sealed partial class GoogleAccount : ObservableObject
         catch (Exception ex) { Status = ex.Message; }
     }
 
-    private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("DEEPMATH.google.v1");
-
     private void Show()
     {
-        IsSignedIn = _data.RefreshToken.Length > 0;
-        Email = IsSignedIn ? _data.Email : "";
-        Name = IsSignedIn ? _data.Name : "";
+        var cur = Current;
+        IsSignedIn = cur != null;
+        Email = cur?.Email ?? "";
+        Name = cur?.Name ?? "";
         Initial = Name.Trim().Length > 0 ? Name.Trim()[..1].ToUpperInvariant() : Email.Length > 0 ? Email[..1].ToUpperInvariant() : "";
-        Avatar = IsSignedIn ? LoadAvatar() : null;
+        Avatar = cur != null ? LoadAvatar(cur.Email) : null;
         OnPropertyChanged(nameof(HasGmail));
+
+        Accounts.Clear();
+        Others.Clear();
+        foreach (var a in _data.Accounts.OrderByDescending(a => ReferenceEquals(a, cur)))
+        {
+            var entry = new GoogleAccountEntry
+            {
+                Email = a.Email,
+                Name = a.Name,
+                Avatar = ReferenceEquals(a, cur) ? Avatar : LoadAvatar(a.Email),
+                IsSignedIn = a.RefreshToken.Length > 0,
+                IsActive = ReferenceEquals(a, cur),
+            };
+            Accounts.Add(entry);
+            if (!entry.IsActive) Others.Add(entry);
+        }
+        OnPropertyChanged(nameof(HasAccounts));
+        OnPropertyChanged(nameof(HasOthers));
     }
 
-    private static ImageSource? LoadAvatar()
+    private static ImageSource? LoadAvatar(string email)
     {
         try
         {
-            if (!File.Exists(AvatarPath)) return null;
+            var path = AvatarPath(email);
+            if (!File.Exists(path)) return null;
             var img = new BitmapImage();
             img.BeginInit();
             img.CacheOption = BitmapCacheOption.OnLoad;
             img.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            img.UriSource = new Uri(AvatarPath);
+            img.UriSource = new Uri(path);
             img.EndInit();
             img.Freeze();
             return img;
@@ -150,6 +236,18 @@ public sealed partial class GoogleAccount : ObservableObject
 
     public bool IsCustomClient => _data.ClientId.Trim().Length > 0;
 
+    /// <summary>Another client: Google ties every sign-in to the client it was made with, so all accounts show "Signed out".</summary>
+    public void ClientChanged()
+    {
+        bool had = Current != null;
+        foreach (var a in _data.Accounts) a.RefreshToken = "";
+        _data.Active = "";
+        _accessToken = null;
+        Save();
+        Show();
+        if (had) SignedInChanged?.Invoke();
+    }
+
     /// <summary>Reads the client_secret_….json downloaded from Google Cloud (Clients → the client → Download JSON).</summary>
     public static (string Id, string Secret)? ReadClientFile(string path)
     {
@@ -165,9 +263,81 @@ public sealed partial class GoogleAccount : ObservableObject
         catch { return null; }
     }
 
-    // ------------------------------------------------------------------ sign in / out
-    /// <summary>Opens Google's sign-in page in the browser and waits (up to 5 minutes) for the user to allow the access.</summary>
-    public async Task<bool> SignInAsync()
+    // ------------------------------------------------------------------ accounts: add, switch, sign out, remove
+    /// <summary>"Add another account" / first sign-in: Google's account chooser in the browser.</summary>
+    [RelayCommand]
+    private Task AddAccount() => SignInAsync();
+
+    /// <summary>Uses another added account: at once when it is signed in, else Google's sign-in for that account.</summary>
+    [RelayCommand]
+    private async Task SwitchTo(GoogleAccountEntry? entry)
+    {
+        if (entry == null || entry.IsActive) return;
+        var a = Find(entry.Email);
+        if (a == null) return;
+        if (a.RefreshToken.Length == 0) { await SignInAsync(a.Email); return; }
+        _data.Active = a.Email;
+        _accessToken = null;
+        Save();
+        Status = "";
+        Show();
+        SignedInChanged?.Invoke();
+    }
+
+    /// <summary>"Sign in" on a signed-out account of the list.</summary>
+    [RelayCommand]
+    private Task SignInAgain(GoogleAccountEntry? entry) => SignInAsync(entry?.Email);
+
+    /// <summary>Forgets an account: Google forgets the access too, its photo is deleted.</summary>
+    [RelayCommand]
+    private async Task Remove(GoogleAccountEntry? entry)
+    {
+        if (entry == null || Find(entry.Email) is not { } a) return;
+        if (!Dialogs.Confirm(Loc.F("Google.RemoveConfirm", a.Email))) return;
+        var refresh = a.RefreshToken;
+        bool wasActive = ReferenceEquals(a, Current);
+        _data.Accounts.Remove(a);
+        try { File.Delete(AvatarPath(a.Email)); } catch { }
+        if (wasActive) UseNextSignedIn();
+        Save();
+        Show();
+        if (wasActive) SignedInChanged?.Invoke();
+        await RevokeAsync(refresh);
+    }
+
+    /// <summary>Signs the account in use out: it stays in the list ("Signed out"); the next signed-in account takes over.</summary>
+    [RelayCommand]
+    public async Task SignOutAsync()
+    {
+        if (Current is not { } a) return;
+        var refresh = a.RefreshToken;
+        a.RefreshToken = "";
+        UseNextSignedIn();
+        Save();
+        Status = "";
+        Show();
+        SignedInChanged?.Invoke();
+        await RevokeAsync(refresh);
+    }
+
+    private void UseNextSignedIn()
+    {
+        _accessToken = null;
+        _data.Active = _data.Accounts.FirstOrDefault(x => x.RefreshToken.Length > 0)?.Email ?? "";
+    }
+
+    private static async Task RevokeAsync(string refresh)
+    {
+        if (refresh.Length == 0) return;
+        try { await Http.PostAsync(RevokeUrl, new FormUrlEncodedContent(new Dictionary<string, string> { ["token"] = refresh })); }
+        catch { }
+    }
+
+    /// <summary>
+    /// Opens Google's sign-in page in the browser and waits (up to 5 minutes) for the user to allow the access.
+    /// <paramref name="hint"/>: the account to sign in again (Google skips the chooser).
+    /// </summary>
+    public async Task<bool> SignInAsync(string? hint = null)
     {
         if (!IsConfigured) { Status = Loc.T("Google.NeedClient"); return false; }
         if (IsBusy) return false;
@@ -182,7 +352,7 @@ public sealed partial class GoogleAccount : ObservableObject
             string verifier = Base64Url(RandomNumberGenerator.GetBytes(32));
             string challenge = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier)));
             string state = Base64Url(RandomNumberGenerator.GetBytes(16));
-            string url = AuthUrl + "?" + Query(new()
+            var query = new Dictionary<string, string>
             {
                 ["client_id"] = ClientId,
                 ["redirect_uri"] = redirect,
@@ -192,9 +362,10 @@ public sealed partial class GoogleAccount : ObservableObject
                 ["code_challenge_method"] = "S256",
                 ["state"] = state,
                 ["access_type"] = "offline",
-                ["prompt"] = "consent select_account",
-            });
-            Shell.OpenUrl(url);
+                ["prompt"] = hint == null ? "consent select_account" : "consent",
+            };
+            if (hint != null) query["login_hint"] = hint;
+            Shell.OpenUrl(AuthUrl + "?" + Query(query));
 
             using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
             string? code = null, error = null;
@@ -220,17 +391,28 @@ public sealed partial class GoogleAccount : ObservableObject
                 ["grant_type"] = "authorization_code",
                 ["code_verifier"] = verifier,
             });
-            if (token?.RefreshToken is not { Length: > 0 } refresh) { Status = Loc.F("Google.Failed", token?.Error ?? "token"); return false; }
-            _data.RefreshToken = refresh;
+            if (token?.RefreshToken is not { Length: > 0 } refresh || token.AccessToken is not { Length: > 0 } access)
+            { Status = Loc.F("Google.Failed", token?.Error ?? "token"); return false; }
+            var profile = await LoadProfileAsync(access);
+            if (profile.Email.Length == 0) { Status = Loc.F("Google.Failed", "profile"); return false; }
+
+            // the same account signed in again replaces its old sign-in; a new one is added to the list
+            var a = Find(profile.Email);
+            if (a == null) _data.Accounts.Add(a = new StoredAccount { Email = profile.Email });
+            var oldRefresh = a.RefreshToken;
+            a.Name = profile.Name;
+            a.Picture = profile.Picture;
+            a.RefreshToken = refresh;
             // Google's consent page shows Gmail as a separate box: without it only the name and photo are allowed
-            _data.Gmail = token.Scope == null || token.Scope.Contains("gmail.metadata", StringComparison.Ordinal);
-            _accessToken = token.AccessToken;
+            a.Gmail = token.Scope == null || token.Scope.Contains("gmail.metadata", StringComparison.Ordinal);
+            _data.Active = a.Email;
+            _accessToken = access;
             _accessUntil = DateTime.UtcNow.AddSeconds(Math.Max(60, token.ExpiresIn - 60));
-            await LoadProfileAsync();
             Save();
-            Status = _data.Gmail ? "" : Loc.T("Google.NoGmail");
+            Status = a.Gmail ? "" : Loc.T("Google.NoGmail");
             Show();
             SignedInChanged?.Invoke();
+            if (oldRefresh.Length > 0 && oldRefresh != refresh) await RevokeAsync(oldRefresh);
             return true;
         }
         catch (OperationCanceledException) { Status = Loc.T("Google.TimedOut"); return false; }
@@ -242,36 +424,19 @@ public sealed partial class GoogleAccount : ObservableObject
         }
     }
 
-    /// <summary>Signs out: Google forgets the access (revoke) and the token and photo are removed from this computer.</summary>
-    public async Task SignOutAsync()
-    {
-        var refresh = _data.RefreshToken;
-        _data.RefreshToken = "";
-        _data.Email = _data.Name = _data.Picture = "";
-        _accessToken = null;
-        Save();
-        try { File.Delete(AvatarPath); } catch { }
-        Status = "";
-        Show();
-        SignedInChanged?.Invoke();
-        if (refresh.Length > 0)
-            try { await Http.PostAsync(RevokeUrl, new FormUrlEncodedContent(new Dictionary<string, string> { ["token"] = refresh })); }
-            catch { }
-    }
-
-    /// <summary>A valid access token (renewed with the refresh token when needed); null when signed out or the access was withdrawn.</summary>
+    /// <summary>A valid access token of the account in use (renewed when needed); null when signed out or the access was withdrawn.</summary>
     public async Task<string?> AccessTokenAsync(bool forceRenew = false)
     {
-        if (!IsSignedIn) return null;
         await _tokenLock.WaitAsync();
         try
         {
+            if (Current is not { } a) return null;
             if (!forceRenew && _accessToken != null && DateTime.UtcNow < _accessUntil) return _accessToken;
             var token = await PostTokenAsync(new()
             {
                 ["client_id"] = ClientId,
                 ["client_secret"] = ClientSecret,
-                ["refresh_token"] = _data.RefreshToken,
+                ["refresh_token"] = a.RefreshToken,
                 ["grant_type"] = "refresh_token",
             });
             if (token?.AccessToken is { Length: > 0 } access)
@@ -282,11 +447,15 @@ public sealed partial class GoogleAccount : ObservableObject
             }
             if (token?.Error == "invalid_grant")
             {
-                // the access was withdrawn (password change, removed in the Google account, 7-day test token ...)
-                await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+                // the access was withdrawn (password change, removed in the Google account ...): the account shows "Signed out"
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    await SignOutAsync();
-                    Status = Loc.T("Google.Expired");
+                    a.RefreshToken = "";
+                    UseNextSignedIn();
+                    Save();
+                    Show();
+                    Status = Loc.F("Google.ExpiredFor", a.Email);
+                    SignedInChanged?.Invoke();
                 });
             }
             return null;
@@ -294,29 +463,31 @@ public sealed partial class GoogleAccount : ObservableObject
         finally { _tokenLock.Release(); }
     }
 
-    private async Task LoadProfileAsync()
+    /// <summary>Name, e-mail and photo of the account that just signed in (the photo is saved for it).</summary>
+    private static async Task<(string Email, string Name, string Picture)> LoadProfileAsync(string access)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, UserInfoUrl);
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", access);
         using var res = await Http.SendAsync(req);
-        if (!res.IsSuccessStatusCode) return;
+        if (!res.IsSuccessStatusCode) return ("", "", "");
         using var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync());
         var r = doc.RootElement;
-        _data.Email = r.TryGetProperty("email", out var e) ? e.GetString() ?? "" : "";
-        _data.Name = r.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-        _data.Picture = r.TryGetProperty("picture", out var p) ? p.GetString() ?? "" : "";
-        if (_data.Picture.Length > 0)
+        var email = r.TryGetProperty("email", out var e) ? e.GetString() ?? "" : "";
+        var name = r.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+        var picture = r.TryGetProperty("picture", out var p) ? p.GetString() ?? "" : "";
+        if (picture.Length > 0 && email.Length > 0)
         {
             try
             {
                 // a larger photo than the 96 px default
-                var big = System.Text.RegularExpressions.Regex.Replace(_data.Picture, @"=s\d+(-c)?$", "=s256-c");
+                var big = System.Text.RegularExpressions.Regex.Replace(picture, @"=s\d+(-c)?$", "=s256-c");
                 var bytes = await Http.GetByteArrayAsync(big);
-                Directory.CreateDirectory(SettingsStore.Folder);
-                await File.WriteAllBytesAsync(AvatarPath, bytes);
+                Directory.CreateDirectory(AvatarFolder);
+                await File.WriteAllBytesAsync(AvatarPath(email), bytes);
             }
             catch { }
         }
+        return (email, name, picture);
     }
 
     private sealed class TokenResponse
@@ -402,14 +573,14 @@ public sealed partial class GoogleAccount : ObservableObject
     /// <summary>Gmail answered "not allowed": the box was not ticked (or the access was removed in the Google account).</summary>
     internal void GmailRefused()
     {
-        if (!_data.Gmail) return;
-        _data.Gmail = false;
+        if (Current is not { Gmail: true } a) return;
+        a.Gmail = false;
         Save();
         Status = Loc.T("Google.NoGmail");
         OnPropertyChanged(nameof(HasGmail));
     }
 
-    /// <summary>Screenshot check only: shows a signed-in account without contacting Google (nothing is saved).</summary>
+    /// <summary>Screenshot check only: shows signed-in accounts without contacting Google (nothing is saved).</summary>
     internal void Demo(string name, string email, ImageSource? avatar)
     {
         IsSignedIn = true;
@@ -417,5 +588,13 @@ public sealed partial class GoogleAccount : ObservableObject
         Email = email;
         Initial = name[..1];
         Avatar = avatar;
+        Accounts.Clear();
+        Others.Clear();
+        Accounts.Add(new GoogleAccountEntry { Email = email, Name = name, IsSignedIn = true, IsActive = true });
+        var second = new GoogleAccountEntry { Email = "sales.demo@gmail.com", Name = "Madar Sales", IsSignedIn = true };
+        var third = new GoogleAccountEntry { Email = "old.demo@gmail.com", Name = "Old Mailbox", IsSignedIn = false };
+        foreach (var x in new[] { second, third }) { Accounts.Add(x); Others.Add(x); }
+        OnPropertyChanged(nameof(HasAccounts));
+        OnPropertyChanged(nameof(HasOthers));
     }
 }

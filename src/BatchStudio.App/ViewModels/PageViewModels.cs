@@ -60,9 +60,21 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
     public NetworkStatus Net => NetworkStatus.Instance;
 
     /// <summary>The picture beside "Welcome": signed out, it leads to Settings (Sign in with Google).</summary>
+    /// <summary>The account menu under the picture (like Google's): switch, add, sign out.</summary>
+    [ObservableProperty] private bool _accountMenuOpen;
+
+    /// <summary>The picture beside "Welcome": the account menu; with no account yet, Settings › Sign in with Google.</summary>
     [RelayCommand]
     private void OpenAccount()
     {
+        if (Account.HasAccounts) { AccountMenuOpen = !AccountMenuOpen; return; }
+        OpenSettings();
+    }
+
+    [RelayCommand]
+    private void OpenSettings()
+    {
+        AccountMenuOpen = false;
         if (main.Nav.FirstOrDefault(n => n.Key == "Nav.Settings") is { } nav) main.SelectedNav = nav;
     }
 
@@ -636,7 +648,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         { ClientNote = Loc.T("Google.ClientBadId"); return; }
         bool changed = Account.SetClient(id, secret);
         // Google ties a sign-in to the client it was made with: a new client needs a new sign-in
-        if (changed && Account.IsSignedIn) await Account.SignOutAsync();
+        if (changed) Account.ClientChanged();
         ShowClient();
         ClientNote = Loc.T(changed ? (id.Length == 0 ? "Google.ClientReset" : "Google.ClientSaved") : "Google.ClientSame");
     }
@@ -662,6 +674,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [RelayCommand]
     private Task GoogleSignOut() => Account.SignOutAsync();
+
 
     partial void OnIsArabicChanged(bool value)
     {

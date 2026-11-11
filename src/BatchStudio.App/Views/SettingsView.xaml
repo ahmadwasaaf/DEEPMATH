@@ -185,43 +185,92 @@
                         <TextBlock Text="{DynamicResource Google.Title}" Style="{StaticResource SectionTitle}" Margin="0" VerticalAlignment="Center" />
                     </StackPanel>
 
-                    <!-- signed in: who, notifications, sign out -->
-                    <StackPanel Visibility="{Binding Account.IsSignedIn, Converter={StaticResource BoolToVis}}" Margin="0,8,0,0">
-                        <DockPanel>
-                            <Button DockPanel.Dock="Right" Command="{Binding GoogleSignOutCommand}" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xF3B1;" FontSize="12" Margin="0,0,8,0" />
-                                    <TextBlock Text="{DynamicResource Google.SignOut}" />
-                                </StackPanel>
-                            </Button>
-                            <Grid Width="54" Height="54" Margin="0,0,14,0">
-                                <Ellipse Fill="{DynamicResource BrandBrush}" />
-                                <TextBlock Text="{Binding Account.Initial}" Foreground="White" FontSize="22" FontWeight="SemiBold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                <Ellipse>
-                                    <Ellipse.Fill>
-                                        <ImageBrush ImageSource="{Binding Account.Avatar}" Stretch="UniformToFill" />
-                                    </Ellipse.Fill>
-                                </Ellipse>
-                            </Grid>
-                            <StackPanel VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Account.Name}" FontSize="15" FontWeight="SemiBold" />
-                                    <Border CornerRadius="9" Padding="8,1" Margin="10,0,0,0" BorderThickness="1" BorderBrush="{StaticResource GoodBrush}" VerticalAlignment="Center">
-                                        <Border.Background>
-                                            <SolidColorBrush Color="#2EA043" Opacity="0.14" />
-                                        </Border.Background>
-                                        <TextBlock Text="{DynamicResource Google.Connected}" Foreground="{StaticResource GoodBrush}" FontSize="11" FontWeight="SemiBold" />
+                    <!-- the accounts added (like Google's account list): the one in use, switch, sign in again, remove -->
+                    <StackPanel Visibility="{Binding Account.HasAccounts, Converter={StaticResource BoolToVis}}" Margin="0,6,0,0">
+                        <ItemsControl ItemsSource="{Binding Account.Accounts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" Padding="0,10">
+                                        <DockPanel>
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <!-- signed in, not in use: switch -->
+                                                <Button Margin="8,0,0,0" Command="{Binding DataContext.Account.SwitchToCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <Button.Visibility>
+                                                        <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                                                            <Binding Path="IsSignedIn" />
+                                                            <Binding Path="IsActive" Converter="{StaticResource InverseBool}" />
+                                                        </MultiBinding>
+                                                    </Button.Visibility>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8AB;" FontSize="12" Margin="0,0,8,0" />
+                                                        <TextBlock Text="{DynamicResource Google.Switch}" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <!-- signed out: sign in again -->
+                                                <Button Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}" Content="{DynamicResource Google.SignInShort}"
+                                                        Command="{Binding DataContext.Account.SignInAgainCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}" Visibility="{Binding IsSignedIn, Converter={StaticResource InverseBoolToVis}}" />
+                                                <!-- in use: sign out (it stays in the list) -->
+                                                <Button Margin="8,0,0,0" Command="{Binding DataContext.Account.SignOutCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xF3B1;" FontSize="12" Margin="0,0,8,0" />
+                                                        <TextBlock Text="{DynamicResource Google.SignOut}" />
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button Margin="8,0,0,0" ToolTip="{DynamicResource Google.Remove}" Padding="10,7"
+                                                        Command="{Binding DataContext.Account.RemoveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="13" />
+                                                </Button>
+                                            </StackPanel>
+                                            <Grid Width="46" Height="46" Margin="0,0,14,0">
+                                                <Ellipse Fill="{DynamicResource BrandBrush}" />
+                                                <TextBlock Text="{Binding Initial}" Foreground="White" FontSize="19" FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                <Ellipse>
+                                                    <Ellipse.Fill>
+                                                        <ImageBrush ImageSource="{Binding Avatar}" Stretch="UniformToFill" />
+                                                    </Ellipse.Fill>
+                                                </Ellipse>
+                                            </Grid>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" />
+                                                    <!-- in use / signed out -->
+                                                    <Border CornerRadius="9" Padding="8,1" Margin="10,0,0,0" BorderThickness="1" BorderBrush="{StaticResource GoodBrush}"
+                                                            VerticalAlignment="Center" Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}">
+                                                        <Border.Background>
+                                                            <SolidColorBrush Color="#2EA043" Opacity="0.14" />
+                                                        </Border.Background>
+                                                        <TextBlock Text="{DynamicResource Google.InUse}" Foreground="{StaticResource GoodBrush}" FontSize="11" FontWeight="SemiBold" />
+                                                    </Border>
+                                                    <Border CornerRadius="9" Padding="8,1" Margin="10,0,0,0" VerticalAlignment="Center"
+                                                            Background="{DynamicResource SubtleFillColorTertiaryBrush}"
+                                                            Visibility="{Binding IsSignedIn, Converter={StaticResource InverseBoolToVis}}">
+                                                        <TextBlock Text="{DynamicResource Google.SignedOut}" Style="{StaticResource Muted}" FontSize="11" />
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Email}" Style="{StaticResource Muted}" FontSize="12" FlowDirection="LeftToRight" HorizontalAlignment="Left" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                        </DockPanel>
                                     </Border>
-                                </StackPanel>
-                                <TextBlock Text="{Binding Account.Email}" Style="{StaticResource Muted}" FontSize="12" FlowDirection="LeftToRight" HorizontalAlignment="Left" Margin="0,2,0,0" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Command="{Binding Account.AddAccountCommand}" HorizontalAlignment="Left" Margin="0,12,0,0"
+                                IsEnabled="{Binding Account.IsBusy, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8FA;" FontSize="12" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Google.AddAccount}" />
                             </StackPanel>
-                        </DockPanel>
+                        </Button>
                         <CheckBox Content="{DynamicResource Google.Toasts}" IsChecked="{Binding MailToasts}" Margin="0,14,0,0" />
                     </StackPanel>
 
-                    <!-- signed out: the client of the Google Cloud project, then Sign in -->
-                    <StackPanel Visibility="{Binding Account.IsSignedIn, Converter={StaticResource InverseBoolToVis}}">
+                    <!-- no account yet: what it does, then Sign in -->
+                    <StackPanel Visibility="{Binding Account.HasAccounts, Converter={StaticResource InverseBoolToVis}}">
                         <TextBlock Text="{DynamicResource Google.Intro}" TextWrapping="Wrap" Margin="0,2,0,12" />
                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                             <Button Command="{Binding GoogleSignInCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="16,7"

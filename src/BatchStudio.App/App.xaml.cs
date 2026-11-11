@@ -56,6 +56,12 @@ public partial class App : Application
                 Dispatcher.BeginInvoke(() => ThemeService.ApplyAccent("#E3008C"), DispatcherPriority.ContextIdle);
             }
             // screenshot checks of the Google account, the email banner and the template preview (nothing is contacted or saved)
+            bool accounts = arg == "home-accounts";
+            if (accounts)
+            {
+                arg = "home-mail";
+                Dispatcher.BeginInvoke(async () => { await Task.Delay(2500); vm.Home.AccountMenuOpen = true; }, DispatcherPriority.ContextIdle);
+            }
             if (arg is "home-mail" or "settings-google")
             {
                 GoogleAccount.Instance.Demo("Madar Trading", "madar.demo@gmail.com", null);

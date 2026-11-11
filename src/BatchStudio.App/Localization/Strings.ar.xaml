@@ -428,4 +428,13 @@
     <sys:String x:Key="Google.ClientReset">تمت العودة للعميل المدمج. سجّل الدخول بجوجل مرة أخرى.</sys:String>
     <sys:String x:Key="Google.ClientSame">لا يوجد تغيير.</sys:String>
     <sys:String x:Key="Google.ClientBadId">الـ Client ID ينتهي بـ .apps.googleusercontent.com</sys:String>
+    <sys:String x:Key="Google.SignedOut">تم تسجيل الخروج</sys:String>
+    <sys:String x:Key="Google.SignInShort">تسجيل الدخول</sys:String>
+    <sys:String x:Key="Google.Remove">إزالة</sys:String>
+    <sys:String x:Key="Google.AddAccount">إضافة حساب آخر</sys:String>
+    <sys:String x:Key="Google.Manage">إدارة الحسابات</sys:String>
+    <sys:String x:Key="Google.Switch">تبديل</sys:String>
+    <sys:String x:Key="Google.InUse">قيد الاستخدام</sys:String>
+    <sys:String x:Key="Google.RemoveConfirm">إزالة {0} من DEEPMATH؟ سيتم حذف تسجيل الدخول المحفوظ والصورة، وسينسى جوجل الصلاحية.</sys:String>
+    <sys:String x:Key="Google.ExpiredFor">انتهى تسجيل دخول {0}. سجّل الدخول مرة أخرى من قائمة الحسابات.</sys:String>
 </ResourceDictionary>

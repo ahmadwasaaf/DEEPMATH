@@ -100,6 +100,8 @@ jobs:
           Run 'English' 'Dark' $true 'settings-google' '38-settings-google'
           Run 'English' 'Dark' $true 'newinvoice-preview' '39-template-preview'
           Run 'English' 'Light' $true 'newinvoice-preview' '40-template-preview-light'
+          Run 'English' 'Dark' $true 'home-accounts' '41-home-accounts'
+          Run 'Arabic' 'Light' $true 'home-accounts' '42-home-accounts-ar'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

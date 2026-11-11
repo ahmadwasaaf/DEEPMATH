@@ -428,4 +428,13 @@
     <sys:String x:Key="Google.ClientReset">Back to the built-in client. Sign in with Google again.</sys:String>
     <sys:String x:Key="Google.ClientSame">No change.</sys:String>
     <sys:String x:Key="Google.ClientBadId">A Client ID ends with .apps.googleusercontent.com</sys:String>
+    <sys:String x:Key="Google.SignedOut">Signed out</sys:String>
+    <sys:String x:Key="Google.SignInShort">Sign in</sys:String>
+    <sys:String x:Key="Google.Remove">Remove</sys:String>
+    <sys:String x:Key="Google.AddAccount">Add another account</sys:String>
+    <sys:String x:Key="Google.Manage">Manage accounts</sys:String>
+    <sys:String x:Key="Google.Switch">Switch</sys:String>
+    <sys:String x:Key="Google.InUse">In use</sys:String>
+    <sys:String x:Key="Google.RemoveConfirm">Remove {0} from DEEPMATH? Its saved sign-in and photo are deleted, and Google forgets the access.</sys:String>
+    <sys:String x:Key="Google.ExpiredFor">The sign-in of {0} has ended. Sign in again from the account list.</sys:String>
 </ResourceDictionary>
