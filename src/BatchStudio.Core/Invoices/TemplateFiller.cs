@@ -146,7 +146,9 @@ public static class TemplateFiller
         foreach (var cell in ws.CellsUsed(XLCellsUsedOptions.Contents).Where(c => c.HasFormula).ToList())
         {
             XLCellValue v;
-            try { v = cell.CachedValue; } catch { v = Blank.Value; }
+            // formulas inside the sheet (a total repeated in the header) are worked out; anything else keeps its cached value
+            try { v = cell.FormulaA1.Contains('!') || cell.FormulaA1.Contains('[') ? cell.CachedValue : cell.Value; }
+            catch { try { v = cell.CachedValue; } catch { v = Blank.Value; } }
             cell.Value = v;
         }
 
