@@ -55,6 +55,20 @@ public partial class App : Application
                 vm.Settings.AppearanceOpen = true;
                 Dispatcher.BeginInvoke(() => ThemeService.ApplyAccent("#E3008C"), DispatcherPriority.ContextIdle);
             }
+            // screenshot checks of the Google account, the email banner and the template preview (nothing is contacted or saved)
+            if (arg is "home-mail" or "settings-google")
+            {
+                GoogleAccount.Instance.Demo("Madar Trading", "madar.demo@gmail.com", null);
+                GmailWatcher.Instance.Demo("madar.demo@gmail.com");
+                bool google = arg == "settings-google";
+                arg = arg == "home-mail" ? "home" : "settings";
+                if (google)
+                    Dispatcher.BeginInvoke(async () =>
+                    {
+                        await Task.Delay(2000);
+                        FindAll<FrameworkElement>(window).FirstOrDefault(x => x.Name == "GoogleCard")?.BringIntoView();
+                    }, DispatcherPriority.ContextIdle);
+            }
             // screenshot checks of the Home background styles: --page home-sphere, home-waves ... (not saved)
             if (arg.StartsWith("home-", StringComparison.Ordinal))
             {
@@ -77,13 +91,6 @@ public partial class App : Application
                 }, DispatcherPriority.ContextIdle);
             }
             if (arg == "newinvoice-banks") ScreenshotBanks(vm);
-            // screenshot checks of the Google account, the email banner and the template preview (nothing is contacted or saved)
-            if (arg is "home-mail" or "settings-google")
-            {
-                GoogleAccount.Instance.Demo("Madar Trading", "madar.demo@gmail.com", null);
-                GmailWatcher.Instance.Demo("madar.demo@gmail.com");
-                arg = arg == "home-mail" ? "home" : "settings";
-            }
             bool preview = arg == "newinvoice-preview";
             if (preview)
             {

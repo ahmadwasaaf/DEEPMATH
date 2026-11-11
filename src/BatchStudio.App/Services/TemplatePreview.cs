@@ -287,24 +287,29 @@ public static class TemplatePreview
                 TextAlignment = c.Horizontal switch { "Center" => TextAlignment.Center, "Right" => TextAlignment.Right, _ => TextAlignment.Left },
                 Trimming = TextTrimming.None,
             };
-            // the text box: wrapped text stays in the cell; a single line may run over empty neighbours
+            // wrapped text stays in its cell; a single line keeps its natural width and may run over empty neighbours (Excel)
+            bool wrap = c.Wrap || c.Text.Contains('\n');
             var clip = box;
-            if (c.Wrap || c.Text.Contains('\n'))
+            double x;
+            if (wrap)
+            {
                 ft.MaxTextWidth = Math.Max(1, box.Width - 2 * pad);
-            else if (c.ColSpan == 1 && c.Horizontal == "Left")
-            {
-                int last = c.Col;
-                while (last + 1 < s.Columns.Length && !occupied.Contains((c.Row, last + 1))) last++;
-                clip = new Rect(box.X, box.Y, xs[last + 1] - box.X, box.Height);
+                x = box.X + pad;
             }
-            else if (c.ColSpan == 1 && c.Horizontal == "Right")
+            else
             {
-                int first = c.Col;
-                while (first - 1 >= 0 && !occupied.Contains((c.Row, first - 1))) first--;
-                clip = new Rect(xs[first], box.Y, box.Right - xs[first], box.Height);
+                ft.TextAlignment = TextAlignment.Left;
+                int first = c.Col, last = c.Col + c.ColSpan - 1;
+                if (c.Horizontal != "Right") while (last + 1 < s.Columns.Length && !occupied.Contains((c.Row, last + 1))) last++;
+                if (c.Horizontal != "Left") while (first - 1 >= 0 && !occupied.Contains((c.Row, first - 1))) first--;
+                clip = new Rect(xs[first], box.Y, xs[last + 1] - xs[first], box.Height);
+                x = c.Horizontal switch
+                {
+                    "Center" => box.X + (box.Width - ft.Width) / 2,
+                    "Right" => box.Right - pad - ft.Width,
+                    _ => box.X + pad,
+                };
             }
-            if (!(c.Wrap || c.Text.Contains('\n'))) ft.MaxTextWidth = Math.Max(1, (c.Horizontal == "Center" ? box.Width : clip.Width) - 2 * pad);
-            double x = c.Horizontal == "Right" && !(c.Wrap || c.Text.Contains('\n')) ? clip.X + pad : (c.Horizontal == "Center" ? box.X : clip.X) + pad;
             double y = c.Vertical switch
             {
                 "Top" => box.Y + 1,
