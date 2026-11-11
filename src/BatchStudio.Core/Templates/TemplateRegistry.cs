@@ -32,7 +32,7 @@ public static class TemplateRegistry
         foreach (var file in Directory.EnumerateFiles(dir)
                      .Where(p => p.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".xlsm", StringComparison.OrdinalIgnoreCase))
                      .Where(p => !System.IO.Path.GetFileName(p).StartsWith("~$"))
-                     .OrderBy(p => p, StringComparer.OrdinalIgnoreCase))
+                     .OrderBy(p => System.IO.Path.GetFileNameWithoutExtension(p), TemplateOrder.Instance))
         {
             var map = TemplateMap.LoadFor(file);
             var status = TemplateStatus.NotLinked;

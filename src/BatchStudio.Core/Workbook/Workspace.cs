@@ -230,7 +230,7 @@ public sealed class Workspace
                 catch (InvalidDataException) { }
             }
             _templateBooks = books;
-            TemplateSheets = templates;
+            TemplateSheets = BatchStudio.Core.Templates.TemplateOrder.Sort(templates);
 
             var changed = new List<string>();
             bool allWritten = true;
