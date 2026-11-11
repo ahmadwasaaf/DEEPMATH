@@ -66,7 +66,7 @@ public class WorkbookTests
             using (var dash = PackageRepair.OpenWorkbook(ws.DashboardPath))
                 Assert.Equal("All Time", dash.Worksheet(1).Cell("G3").GetString());
 
-            Assert.Equal(["INVOICE", "INV1", "Madar"], ws.TemplateSheets);
+            Assert.Equal(["Madar", "INVOICE", "INV1"], ws.TemplateSheets);
             var templates = TemplateRegistry.Scan(ws.CacheRoot);
             Assert.Equal(3, templates.Count);
             Assert.All(templates, t => Assert.Equal(TemplateStatus.Linked, t.Status));   // linked automatically
