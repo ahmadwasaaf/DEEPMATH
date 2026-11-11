@@ -174,6 +174,7 @@ public static class ExcelInvoiceEngine
             {
                 Put(ws, addr, d.Address);
                 try { Top(ws.Range[addr]).WrapText = true; } catch { }
+                FitAddressRow(ws, ws.Range[addr]);   // BankFit.FitAddressRow: long addresses get the height they need
             }
 
             // ---- item values
@@ -335,6 +336,43 @@ public static class ExcelInvoiceEngine
         catch { /* cosmetic */ }
     }
 
+    /// <summary>BankFit.FitAddressRow: the Company Address row grows with its text (at least 30 pt).</summary>
+    private static void FitAddressRow(dynamic ws, dynamic cell)
+    {
+        const double minH = 30, padding = 16, maxH = 409.5;
+        try
+        {
+            dynamic target = (bool)cell.MergeCells ? cell.MergeArea : cell.Cells[1, 1];
+            if ((int)target.Rows.Count != 1) return;
+            string text = (Convert.ToString(target.Cells[1, 1].Value2) ?? "").Replace("\r\n", "\n").Replace('\r', '\n');
+            double fontSize = Convert.ToDouble(target.Cells[1, 1].Font.Size);
+            double desired = minH;
+            if (text.Trim().Length > 0)
+            {
+                dynamic probe = ws.Shapes.AddTextbox(1, (double)target.Left, (double)target.Top, (double)target.Width, 20.0);
+                try
+                {
+                    probe.Line.Visible = 0;
+                    probe.Fill.Visible = 0;
+                    probe.TextFrame.Characters().Text = text;
+                    probe.TextFrame.MarginLeft = 0; probe.TextFrame.MarginRight = 0;
+                    probe.TextFrame.MarginTop = 0; probe.TextFrame.MarginBottom = 0;
+                    probe.TextFrame2.WordWrap = -1;
+                    probe.TextFrame2.AutoSize = 1;
+                    dynamic f = probe.TextFrame.Characters().Font;
+                    f.Name = target.Cells[1, 1].Font.Name;
+                    f.Size = fontSize;
+                    f.Bold = target.Cells[1, 1].Font.Bold;
+                    double measured = Math.Max((double)probe.Height, text.Split('\n').Length * (fontSize * 1.4 + 2));
+                    desired = measured + padding;
+                }
+                finally { try { probe.Delete(); } catch { } }
+            }
+            target.EntireRow.RowHeight = Math.Max(minH, Math.Min(maxH, desired));
+        }
+        catch { /* cosmetic */ }
+    }
+
     // ------------------------------------------------------------------ theme (Theme.bas)
     private static void ApplyTheme(dynamic wb, dynamic ws, string template, int target)
     {
@@ -342,14 +380,16 @@ public static class ExcelInvoiceEngine
         {
             dynamic ctl = FindSheet(wb, "CONTROL");
             bool inv1 = string.Equals(template, "INV1", StringComparison.OrdinalIgnoreCase);
+            bool invoice = string.Equals(template, "INVOICE", StringComparison.OrdinalIgnoreCase);
             int old;
             object? stored = ctl?.Range[inv1 ? "AB1" : "AA1"].Value2;
             string? ready = Convert.ToString(ctl?.Range[inv1 ? "AB2" : "AA2"].Value2);
             if (inv1 && ready != "THEME_INV1_READY") old = 255;                  // INV1 starts with pure red
-            else if (stored is double dv) old = (int)dv;
+            else if ((inv1 || invoice) && stored is double dv) old = (int)dv;
             else old = Convert.ToInt32(ws.Range["B1"].Interior.Color);
             int? design = null;
-            if (!inv1)
+            // INV2, INV3 ... (Templates workbook): the colour of B1 is the theme colour, used as-is everywhere
+            if (invoice)
             {
                 dynamic b11 = ws.Range["B11"].Interior;
                 if ((int)b11.Pattern != -4142)

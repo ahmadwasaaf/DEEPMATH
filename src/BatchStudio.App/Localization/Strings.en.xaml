@@ -53,7 +53,7 @@
     <sys:String x:Key="Setup.Create">Create</sys:String>
     <sys:String x:Key="Setup.OpenButton">Open folder…</sys:String>
 
-    <sys:String x:Key="Tpl.Intro">Templates are the invoice sheets of the workbook (INVOICE, INV1, Madar …). The app finds the variable cells automatically; check them and save.</sys:String>
+    <sys:String x:Key="Tpl.Intro">Templates are the invoice sheets of the workbook (INVOICE, INV1, Madar …) and of the Templates workbook beside it (INV2, INV3 …). The app finds the variable cells automatically; check them and save.</sys:String>
     <sys:String x:Key="Tpl.AddFile">Add template…</sys:String>
     <sys:String x:Key="Tpl.Detect">Detect cells</sys:String>
     <sys:String x:Key="Tpl.SaveMap">Save link</sys:String>
@@ -271,7 +271,7 @@
     <sys:String x:Key="Reports.Hint">Choose a company on the left, then View Report (shown here) or Export Report (PDF on the Desktop).</sys:String>
     <sys:String x:Key="Reports.Count">{0} companies</sys:String>
     <sys:String x:Key="Theme.For">invoice colour on the {0} template</sys:String>
-    <sys:String x:Key="Theme.NotSupported">themes work with the INVOICE and INV1 templates</sys:String>
+    <sys:String x:Key="Theme.NotSupported">themes work with the INVOICE, INV1, INV2, INV3 … templates</sys:String>
     <sys:String x:Key="Theme.BadHex">Enter a colour code like #7030A0.</sys:String>
     <sys:String x:Key="Theme.Saved">Theme colour saved in the workbook (CLIENT THEME MEMORY).</sys:String>
     <sys:String x:Key="Theme.Cleared">Theme colour removed - not assigned.</sys:String>

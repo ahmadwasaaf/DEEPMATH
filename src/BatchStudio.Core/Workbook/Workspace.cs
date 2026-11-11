@@ -69,6 +69,34 @@ public sealed class Workspace
     public IReadOnlyList<string> Sheets { get; private set; } = [];
     public IReadOnlyList<string> TemplateSheets { get; private set; } = [];
 
+    /// <summary>
+    /// The extra templates workbook ("Templates.xlsx" / ".xlsm" next to the system workbook, or in the folder above it,
+    /// or in a "... Database" folder beside it): each visible sheet is one more invoice template (INV2, INV3 ...).
+    /// </summary>
+    public string? TemplatesBookPath { get; private set; }
+    private Dictionary<string, string> _templateBooks = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The workbook a template sheet lives in (the Templates workbook for its sheets, else the system workbook).</summary>
+    public string BookFor(string? template) =>
+        template != null && _templateBooks.TryGetValue(template.Trim(), out var b) ? b : WorkbookPath;
+
+    public static readonly string[] TemplatesBookNames = ["Templates.xlsx", "Templates.xlsm"];
+
+    /// <summary>Finds the Templates workbook for this system workbook (null when there is none).</summary>
+    public string? FindTemplatesBook()
+    {
+        var dirs = new List<string> { Folder };
+        if (Directory.GetParent(Folder) is { } parent) dirs.Add(parent.FullName);
+        try { dirs.AddRange(Directory.GetDirectories(Folder, "* Database")); } catch { }
+        foreach (var dir in dirs)
+            foreach (var name in TemplatesBookNames)
+            {
+                var f = Path.Combine(dir, name);
+                if (File.Exists(f) && !string.Equals(Path.GetFullPath(f), WorkbookPath, StringComparison.OrdinalIgnoreCase)) return Path.GetFullPath(f);
+            }
+        return null;
+    }
+
     private readonly object _gate = new();
     private string _stamp = "";
     private Dictionary<string, string> _manifest = new(StringComparer.OrdinalIgnoreCase);
@@ -140,7 +168,13 @@ public sealed class Workspace
         return fi.Exists ? $"{fi.Length}-{fi.LastWriteTimeUtc.Ticks}" : "";
     }
 
-    public bool IsCurrent => StampOf(WorkbookPath) == _stamp;
+    public bool IsCurrent => CurrentStamp() == _stamp;
+
+    private string CurrentStamp()
+    {
+        var book = FindTemplatesBook();
+        return StampOf(WorkbookPath) + "|" + (book == null ? "" : book + ":" + StampOf(book));
+    }
 
     /// <summary>
     /// Re-copies the sheets that changed since the last refresh. Returns the cache files that were updated
@@ -150,7 +184,7 @@ public sealed class Workspace
     {
         lock (_gate)
         {
-            var stamp = StampOf(WorkbookPath);
+            var stamp = CurrentStamp();
             if (!force && stamp == _stamp) return [];
             byte[] bytes = [];
             for (int attempt = 0; ; attempt++)
@@ -173,19 +207,42 @@ public sealed class Workspace
                 .Where(s => s.Visible && s != report && !SystemSheets.Contains(s.Name, StringComparer.OrdinalIgnoreCase))
                 .Select(s => s.Name).ToList();
             foreach (var t in templates) plan.Add((t, Path.Combine(DatabaseLayout.TemplatesFolder, InvoiceSafe(t) + ".xlsx")));
+
+            // the Templates workbook: every visible sheet is one more template (a name the system workbook already has is skipped)
+            var books = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            SheetExtractor.Package? extra = null;
+            var extraPlan = new List<(string Sheet, string Rel)>();
+            TemplatesBookPath = FindTemplatesBook();
+            if (TemplatesBookPath != null)
+            {
+                try
+                {
+                    extra = SheetExtractor.Load(PackageRepair.ReadAllShared(TemplatesBookPath));
+                    foreach (var sh in extra.Sheets.Where(x => x.Visible))
+                    {
+                        if (templates.Contains(sh.Name, StringComparer.OrdinalIgnoreCase)) continue;
+                        templates.Add(sh.Name);
+                        books[sh.Name] = TemplatesBookPath;
+                        extraPlan.Add((sh.Name, Path.Combine(DatabaseLayout.TemplatesFolder, InvoiceSafe(sh.Name) + ".xlsx")));
+                    }
+                }
+                catch (IOException) { }
+                catch (InvalidDataException) { }
+            }
+            _templateBooks = books;
             TemplateSheets = templates;
 
             var changed = new List<string>();
             bool allWritten = true;
-            foreach (var (sheet, rel) in plan)
+            foreach (var (sheet, rel, src) in plan.Select(x => (x.Sheet, x.Rel, pkg)).Concat(extraPlan.Select(x => (x.Sheet, x.Rel, extra!))))
             {
                 var full = Path.Combine(CacheRoot, rel);
-                var fp = SheetExtractor.Fingerprint(pkg, sheet);
+                var fp = SheetExtractor.Fingerprint(src, sheet);
                 if (!force && _manifest.TryGetValue(rel, out var old) && old == fp && File.Exists(full)) continue;
                 if (force && _manifest.TryGetValue(rel, out var same) && same == fp && File.Exists(full)) continue;
                 try
                 {
-                    WriteAtomic(full, SheetExtractor.Extract(pkg, sheet));
+                    WriteAtomic(full, SheetExtractor.Extract(src, sheet));
                     _manifest[rel] = fp;
                     changed.Add(full);
                     if (rel.StartsWith(DatabaseLayout.TemplatesFolder + Path.DirectorySeparatorChar)) KeepTemplateLink(full);

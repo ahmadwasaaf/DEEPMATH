@@ -505,7 +505,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
             CategoryText = src?.CategoryText ?? SelectedCategory?.Text,
             Target = target,
             Lines = lines,
-            WorkbookPath = main.Workspace?.WorkbookPath,
+            WorkbookPath = main.Workspace?.BookFor(SelectedTemplate?.Entry.Name),   // INV2, INV3 ... live in the Templates workbook
             ThemeRgb = ThemeFor(src?.PartyName is { Length: > 0 } tn ? tn : party?.Name),
         };
         int locked = _repair?.Lines.Count ?? 0;
@@ -657,7 +657,7 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
                 CategoryText = SelectedCategory.Text,
                 Target = amount,
                 Lines = lines,
-                WorkbookPath = main.Workspace?.WorkbookPath,
+                WorkbookPath = main.Workspace?.BookFor(SelectedTemplate?.Entry.Name),   // INV2, INV3 ... live in the Templates workbook
                 ThemeRgb = ThemeFor(SelectedParty?.Name),
             };
             Lines.Clear();

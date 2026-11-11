@@ -53,7 +53,7 @@
     <sys:String x:Key="Setup.Create">إنشاء</sys:String>
     <sys:String x:Key="Setup.OpenButton">فتح مجلد…</sys:String>
 
-    <sys:String x:Key="Tpl.Intro">القوالب هي أوراق الفواتير داخل الملف (INVOICE و INV1 و Madar …). البرنامج يكتشف الخلايا المتغيرة تلقائيًا؛ راجعها ثم احفظ.</sys:String>
+    <sys:String x:Key="Tpl.Intro">القوالب هي أوراق الفواتير داخل الملف (INVOICE و INV1 و Madar …) وأوراق ملف Templates بجواره (INV2 و INV3 …). البرنامج يكتشف الخلايا المتغيرة تلقائيًا؛ راجعها ثم احفظ.</sys:String>
     <sys:String x:Key="Tpl.AddFile">إضافة قالب…</sys:String>
     <sys:String x:Key="Tpl.Detect">اكتشاف الخلايا</sys:String>
     <sys:String x:Key="Tpl.SaveMap">حفظ الربط</sys:String>
@@ -271,7 +271,7 @@
     <sys:String x:Key="Reports.Hint">اختر شركة من القائمة ثم "عرض التقرير" (يظهر هنا) أو "تصدير التقرير" (PDF على سطح المكتب).</sys:String>
     <sys:String x:Key="Reports.Count">{0} شركة</sys:String>
     <sys:String x:Key="Theme.For">لون الفاتورة على قالب {0}</sys:String>
-    <sys:String x:Key="Theme.NotSupported">الثيم يعمل مع قالبي INVOICE و INV1</sys:String>
+    <sys:String x:Key="Theme.NotSupported">الثيم يعمل مع قوالب INVOICE و INV1 و INV2 و INV3 …</sys:String>
     <sys:String x:Key="Theme.BadHex">اكتب كود لون مثل #7030A0.</sys:String>
     <sys:String x:Key="Theme.Saved">تم حفظ لون الثيم في الملف (CLIENT THEME MEMORY).</sys:String>
     <sys:String x:Key="Theme.Cleared">تمت إزالة لون الثيم - غير معيّن.</sys:String>

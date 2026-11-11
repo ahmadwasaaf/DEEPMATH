@@ -12,9 +12,13 @@ public static class ThemeMemory
 {
     public const string Sheet = "CLIENT THEME MEMORY";
 
-    public static bool Supports(string? template) =>
-        string.Equals(template?.Trim(), "INVOICE", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(template?.Trim(), "INV1", StringComparison.OrdinalIgnoreCase);
+    /// <summary>Templates with a theme: INVOICE, INV1 and the Templates workbook's INV2, INV3 ...</summary>
+    public static bool Supports(string? template)
+    {
+        var t = (template ?? "").Trim();
+        return string.Equals(t, "INVOICE", StringComparison.OrdinalIgnoreCase) ||
+               System.Text.RegularExpressions.Regex.IsMatch(t, @"^INV\d+$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    }
 
     private static string Key(string supplier, string template) =>
         supplier.Trim().ToUpperInvariant() + "|" + template.Trim().ToUpperInvariant();
@@ -67,7 +71,7 @@ public static class ThemeMemory
         {
             found = last + 1;
             sh.Set(found, 1, supplier.Trim());
-            sh.Set(found, 2, template.Trim().ToUpperInvariant() == "INV1" ? "INV1" : "INVOICE");
+            sh.Set(found, 2, Supports(template) ? template.Trim().ToUpperInvariant() : "INVOICE");
         }
         sh.Set(found, 3, (double)color);
     }

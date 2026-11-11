@@ -34,7 +34,10 @@ public sealed class WorkbookWatcher : IDisposable
 
     private void Queue(string path)
     {
-        if (!string.Equals(Path.GetFullPath(path), _ws.WorkbookPath, StringComparison.OrdinalIgnoreCase)) return;
+        var full = Path.GetFullPath(path);
+        bool system = string.Equals(full, _ws.WorkbookPath, StringComparison.OrdinalIgnoreCase);
+        bool templates = Workspace.TemplatesBookNames.Contains(Path.GetFileName(full), StringComparer.OrdinalIgnoreCase);
+        if (!system && !templates) return;
         _timer.Change(_settle, Timeout.InfiniteTimeSpan);
     }
 

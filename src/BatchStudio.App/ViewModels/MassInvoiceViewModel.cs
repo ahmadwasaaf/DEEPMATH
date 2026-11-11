@@ -400,7 +400,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
             Lines = lines,
             InvoiceNo = pl.Row.InvoiceNo.Trim(),
             Date = pl.Date,
-            WorkbookPath = main.Workspace?.WorkbookPath,
+            WorkbookPath = main.Workspace?.BookFor(pl.Tpl.Name),   // INV2, INV3 ... live in the Templates workbook
             ThemeRgb = IsClients ? null : main.ThemeFor(pl.Party.Name, pl.Tpl.Name),
         };
     }
