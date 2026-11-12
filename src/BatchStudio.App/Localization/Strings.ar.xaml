@@ -494,10 +494,32 @@
     <sys:String x:Key="Analysis.PickSupplier">اختار المورد الصح من القائمة.</sys:String>
     <sys:String x:Key="Analysis.Saving">جاري حفظ شيت الموردين ...</sys:String>
     <sys:String x:Key="Analysis.NotSaved">لسه ماقدرناش نحفظ شيت الموردين ({0}). اقفل ملف الإكسيل لو مفتوح، وبعدين اضغط اعتماد الكل تاني: مفيش حاجة هتتضاف مرتين.</sys:String>
+    <sys:String x:Key="Analysis.SelectAll">تحديد الكل / إلغاء التحديد</sys:String>
+    <sys:String x:Key="Analysis.StTestDocument">مستند اختبار</sys:String>
+    <sys:String x:Key="Analysis.Engine.test_document">المستند مكتوب فيه إنه تجريبي / للتدريب: مش متعلّم عليه</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">الاسم في المستند: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">الاسم مأخوذ من رأس المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">الاسم مأخوذ من التوقيع</sys:String>
     <sys:String x:Key="Analysis.Engine.account_unlabelled">رقم الحساب من غير عنوان جنبه</sys:String>
     <sys:String x:Key="Analysis.Engine.account_differs">القارئين لقوا حسابين مختلفين</sys:String>
     <sys:String x:Key="Analysis.Engine.no_swift">مالقيناش كود SWIFT</sys:String>
+
+    <!-- Suppliers / Clients › full check -->
+    <sys:String x:Key="Health.Tip">فحص القايمة كلها: حساب على شركتين، نفس الحساب مرتين، بيانات بنك من غير رقم حساب أو SWIFT، أسماء مكررة أو متقاربة، بيانات ناقصة</sys:String>
+    <sys:String x:Key="Health.Title">الفحص الشامل للقايمة</sys:String>
+    <sys:String x:Key="Health.Found">{0} ملاحظة في {1} سجل. اضغط على الشركة عشان تفتحها، وبعد التصليح اضغط افحص تاني.</sys:String>
+    <sys:String x:Key="Health.AllGood">مفيش أي ملاحظات: القايمة سليمة.</sys:String>
+    <sys:String x:Key="Health.BankN">بيانات البنك {0}</sys:String>
+    <sys:String x:Key="Health.Open">فتح السجل ده</sys:String>
+    <sys:String x:Key="Health.Again">افحص تاني</sys:String>
+    <sys:String x:Key="Health.Close">إغلاق</sys:String>
+    <sys:String x:Key="Health.SharedAccount">نفس رقم الحساب متسجل عند أكتر من مورد</sys:String>
+    <sys:String x:Key="Health.AccountTwice">نفس الحساب متسجل مرتين عند نفس المورد</sys:String>
+    <sys:String x:Key="Health.NoAccount">بيانات بنك من غير رقم حساب / IBAN</sys:String>
+    <sys:String x:Key="Health.NoSwift">بيانات بنك من غير SWIFT / BIC</sys:String>
+    <sys:String x:Key="Health.BankNameJunk">اسم البنك قبله كلمة غريبة من الـ OCR</sys:String>
+    <sys:String x:Key="Health.NoBank">مفيش بيانات بنك خالص</sys:String>
+    <sys:String x:Key="Health.SameName">نفس الاسم متسجل أكتر من مرة</sys:String>
+    <sys:String x:Key="Health.CloseName">أسماء متقاربة جدًا - ممكن تكون نفس الشركة؟</sys:String>
+    <sys:String x:Key="Health.NoCategory">من غير كاتجوري</sys:String>
 </ResourceDictionary>

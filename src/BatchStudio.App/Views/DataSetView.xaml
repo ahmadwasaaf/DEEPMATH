@@ -88,8 +88,14 @@
                         <TextBlock Text="{DynamicResource Common.OpenInExcel}" />
                     </StackPanel>
                 </Button>
-                <Button Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" ToolTip="{DynamicResource Common.OpenFolder}">
+                <Button Command="{Binding OpenFolderCommand}" Margin="0,0,8,0" ToolTip="{DynamicResource Common.OpenFolder}"
+                        Visibility="{Binding IsPartySheet, Converter={StaticResource InverseBoolToVis}}">
                     <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="13" />
+                </Button>
+                <!-- Suppliers / Clients: the full check of the list in place of Open folder -->
+                <Button Command="{Binding HealthCheckCommand}" Margin="0,0,8,0" ToolTip="{DynamicResource Health.Tip}"
+                        Visibility="{Binding IsPartySheet, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE9D5;" FontSize="14" />
                 </Button>
                 <StackPanel Orientation="Horizontal" Visibility="{Binding CompactGrid, Converter={StaticResource BoolToVis}}">
                     <Border Width="1" Margin="4,6,12,6" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
@@ -224,5 +230,88 @@
             </TextBlock>
             <TextBlock Text="{Binding Status}" Style="{StaticResource Muted}" VerticalAlignment="Center" />
         </DockPanel>
+        <!-- full check of the list: each finding with the records concerned (click one to open it) -->
+        <Border Grid.RowSpan="4" Panel.ZIndex="20" Background="#99000000" CornerRadius="8"
+                Visibility="{Binding IsHealthOpen, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource Card}" Padding="18,14" Margin="40,24" MaxWidth="900"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Command="{Binding CloseHealthCommand}" Padding="6,3" MinWidth="0" Background="Transparent" BorderThickness="0">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="13" />
+                        </Button>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE9D5;" FontSize="17" Margin="0,0,10,0" Foreground="{DynamicResource BrandBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Health.Title}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding HealthSummary}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding HealthItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" Padding="4,8">
+                                        <DockPanel>
+                                            <Border DockPanel.Dock="Left" Width="4" CornerRadius="2" Margin="0,2,10,2">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{StaticResource WarnBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Severe}" Value="True">
+                                                                <Setter Property="Background" Value="{StaticResource BadBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="12" FlowDirection="LeftToRight" HorizontalAlignment="Left"
+                                                           Visibility="{Binding HasDetail, Converter={StaticResource BoolToVis}}" />
+                                                <ItemsControl ItemsSource="{Binding Links}" Margin="0,4,0,0">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Command="{Binding Open}" Margin="0,2,8,2" Padding="8,3" ToolTip="{DynamicResource Health.Open}">
+                                                                <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
+                                                                    <TextBlock Text="{Binding ShortId}" Foreground="{DynamicResource BrandBrush}" FontWeight="SemiBold" Margin="0,0,6,0" />
+                                                                    <TextBlock Text="{Binding Name}" MaxWidth="320" TextTrimming="CharacterEllipsis" />
+                                                                </StackPanel>
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <DockPanel Grid.Row="2" Margin="0,12,0,0" LastChildFill="False">
+                        <Button DockPanel.Dock="Right" Command="{Binding CloseHealthCommand}" Padding="14,6" Margin="8,0,0,0">
+                            <TextBlock Text="{DynamicResource Health.Close}" />
+                        </Button>
+                        <Button DockPanel.Dock="Right" Command="{Binding HealthCheckCommand}" Padding="14,6">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" FontSize="12" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Health.Again}" />
+                            </StackPanel>
+                        </Button>
+                    </DockPanel>
+                </Grid>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

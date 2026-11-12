@@ -200,7 +200,31 @@
                     <DataGridTemplateColumn Header="{StaticResource Mass.Items}" Width="80" HeaderTemplate="{StaticResource CenterHeader}">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBox Text="{Binding CountText, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="2,2" MinHeight="30" Padding="4,2" IsEnabled="{Binding DataContext.IsBusy, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBool}}" />
+                                <!-- hover: two small arrows to add / remove one item with the mouse -->
+                                <Grid x:Name="CountCell" Background="Transparent"
+                                      IsEnabled="{Binding DataContext.IsBusy, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBool}}">
+                                    <TextBox Text="{Binding CountText, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="2,2" MinHeight="30" Padding="4,2,16,2" />
+                                    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Hidden" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsMouseOver, ElementName=CountCell}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <RepeatButton Command="{Binding CountUpCommand}" Width="16" Height="13" Padding="0" MinWidth="0" MinHeight="0" Delay="350" Interval="90"
+                                                      Background="Transparent" BorderThickness="0" Focusable="False" Cursor="Hand">
+                                            <Path Data="M0,4 L4,0 L8,4 Z" Fill="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </RepeatButton>
+                                        <RepeatButton Command="{Binding CountDownCommand}" Width="16" Height="13" Padding="0" MinWidth="0" MinHeight="0" Delay="350" Interval="90"
+                                                      Background="Transparent" BorderThickness="0" Focusable="False" Cursor="Hand">
+                                            <Path Data="M0,0 L8,0 L4,4 Z" Fill="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </RepeatButton>
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
@@ -316,7 +340,12 @@
                               HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" IsReadOnly="True"
                               EnableRowVirtualization="True">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Width="40" Header="">
+                            <DataGridTemplateColumn Width="40">
+                                <!-- select all / none (some chosen: half state) -->
+                                <DataGridTemplateColumn.Header>
+                                    <CheckBox IsChecked="{Binding DataContext.AllChosen, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              ToolTip="{DynamicResource Analysis.SelectAll}" MinWidth="0" Margin="6,0,0,0" HorizontalAlignment="Center" />
+                                </DataGridTemplateColumn.Header>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding Include, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsReady}"
@@ -379,6 +408,9 @@
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding State}" Value="new">
                                                                 <Setter Property="Foreground" Value="#8E7CFF" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding State}" Value="test">
+                                                                <Setter Property="Foreground" Value="#FF8A65" />
                                                             </DataTrigger>
                                                             <DataTrigger Binding="{Binding State}" Value="warn">
                                                                 <Setter Property="Foreground" Value="{StaticResource WarnBrush}" />

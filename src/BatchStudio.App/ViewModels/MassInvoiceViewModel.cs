@@ -52,6 +52,15 @@ public sealed partial class MassRowViewModel : ObservableObject
     }
     partial void OnAmountTextChanged(string value) { ResetStatus(); _owner.Recount(); }
     partial void OnCountTextChanged(string value) => ResetStatus();
+
+    /// <summary>The small arrows beside ITEMS (shown on hover): one item more / less, never below 1.</summary>
+    [RelayCommand]
+    private void CountUp() => CountText = (Math.Max(0, CurrentCount()) + 1).ToString(CultureInfo.InvariantCulture);
+
+    [RelayCommand]
+    private void CountDown() => CountText = Math.Max(1, CurrentCount() - 1).ToString(CultureInfo.InvariantCulture);
+
+    private int CurrentCount() => int.TryParse(CountText.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 0;
     partial void OnTemplateChanged(string value) => ResetStatus();
 
     private void ResetStatus()

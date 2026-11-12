@@ -494,10 +494,32 @@
     <sys:String x:Key="Analysis.PickSupplier">Pick the right supplier in the list.</sys:String>
     <sys:String x:Key="Analysis.Saving">Saving the Suppliers sheet ...</sys:String>
     <sys:String x:Key="Analysis.NotSaved">The Suppliers sheet could not be saved yet ({0}). Close the workbook in Excel if it is open, then press Approve all again: nothing will be added twice.</sys:String>
+    <sys:String x:Key="Analysis.SelectAll">Select all / none</sys:String>
+    <sys:String x:Key="Analysis.StTestDocument">Test document</sys:String>
+    <sys:String x:Key="Analysis.Engine.test_document">Marked as a sample / training document: not ticked</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">Name in the document: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">Name taken from the document heading</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">Name taken from the signature</sys:String>
     <sys:String x:Key="Analysis.Engine.account_unlabelled">Account number without a label</sys:String>
     <sys:String x:Key="Analysis.Engine.account_differs">The two readers found different accounts</sys:String>
     <sys:String x:Key="Analysis.Engine.no_swift">No SWIFT code found</sys:String>
+
+    <!-- Suppliers / Clients › full check -->
+    <sys:String x:Key="Health.Tip">Check the whole list: an account on two companies, the same account twice, paragraphs without account no. or SWIFT, repeated / close names, missing data</sys:String>
+    <sys:String x:Key="Health.Title">Full check of the list</sys:String>
+    <sys:String x:Key="Health.Found">{0} finding(s) in {1} records. Click a company to open it; Check again after fixing.</sys:String>
+    <sys:String x:Key="Health.AllGood">Nothing found: the list is clean.</sys:String>
+    <sys:String x:Key="Health.BankN">Banking details {0}</sys:String>
+    <sys:String x:Key="Health.Open">Open this record</sys:String>
+    <sys:String x:Key="Health.Again">Check again</sys:String>
+    <sys:String x:Key="Health.Close">Close</sys:String>
+    <sys:String x:Key="Health.SharedAccount">The same account number on more than one supplier</sys:String>
+    <sys:String x:Key="Health.AccountTwice">The same account saved twice on one supplier</sys:String>
+    <sys:String x:Key="Health.NoAccount">Banking details without an account number / IBAN</sys:String>
+    <sys:String x:Key="Health.NoSwift">Banking details without SWIFT / BIC</sys:String>
+    <sys:String x:Key="Health.BankNameJunk">Bank name with an OCR crumb in front</sys:String>
+    <sys:String x:Key="Health.NoBank">No banking details at all</sys:String>
+    <sys:String x:Key="Health.SameName">The same name saved more than once</sys:String>
+    <sys:String x:Key="Health.CloseName">Very close names - the same company?</sys:String>
+    <sys:String x:Key="Health.NoCategory">No category</sys:String>
 </ResourceDictionary>

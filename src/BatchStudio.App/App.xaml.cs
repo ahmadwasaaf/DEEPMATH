@@ -84,6 +84,13 @@ public partial class App : Application
             }
             // screenshot checks of this version: a wider name list, bank accounts, the colour picker (not saved)
             if (arg == "suppliers-wide") { vm.Settings.ListWidths["list.suppliers"] = 560; arg = "suppliers"; }
+            bool health = arg == "suppliers-health";
+            if (health)
+            {
+                arg = "suppliers";
+                Dispatcher.BeginInvoke(() => vm.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "suppliers")?.HealthCheckCommand.Execute(null),
+                    DispatcherPriority.ContextIdle);
+            }
             bool banks = arg is "suppliers-banks" or "suppliers-search2";
             bool search2 = arg == "suppliers-search2";
             if (banks) arg = "suppliers";

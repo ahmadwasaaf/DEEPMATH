@@ -402,6 +402,40 @@ public sealed partial class DataSetViewModel : ObservableObject
         _main.RefreshLists();
     }
 
+    // ---------------------------------------------------------------- full check (Suppliers / Clients)
+    public System.Collections.ObjectModel.ObservableCollection<HealthItemViewModel> HealthItems { get; } = [];
+    [ObservableProperty] private bool _isHealthOpen;
+    [ObservableProperty] private string _healthSummary = "";
+
+    /// <summary>Checks the whole list at once (shared / repeated accounts, paragraphs without account or SWIFT, same names ...).</summary>
+    [RelayCommand]
+    private void HealthCheck()
+    {
+        if (Table == null || !IsPartySheet) return;
+        var rows = Table.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Deleted)
+            .Select(r => (IReadOnlyList<string>)Enumerable.Range(0, Table.Columns.Count).Select(i => r[i] as string ?? "").ToList())
+            .ToList();
+        var issues = Session.Definition.Key == "suppliers"
+            ? BatchStudio.Core.Analysis.HealthCheck.Suppliers(Headers, rows)
+            : BatchStudio.Core.Analysis.HealthCheck.Clients(Headers, rows);
+        HealthItems.Clear();
+        foreach (var i in issues) HealthItems.Add(new HealthItemViewModel(this, i));
+        HealthSummary = issues.Count == 0 ? Loc.T("Health.AllGood") : Loc.F("Health.Found", issues.Count, rows.Count);
+        IsHealthOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseHealth() => IsHealthOpen = false;
+
+    /// <summary>A record named in the check: shown in the list and its details (the panel stays open to go on).</summary>
+    public void GoToRecord(string id)
+    {
+        if (View == null) return;
+        if (SearchText.Length > 0) SearchText = "";
+        SelectedRow = View.Cast<DataRowView>().FirstOrDefault(v => string.Equals((v[ColName(0)] as string ?? "").Trim(), id.Trim(), StringComparison.OrdinalIgnoreCase));
+        IsHealthOpen = false;
+    }
+
     /// <summary>Suppliers and Clients: a name may be saved only once.</summary>
     public bool IsPartySheet => Session.Definition.Key is "suppliers" or "clients";
 
@@ -812,4 +846,33 @@ public sealed partial class ThemeFieldViewModel : ObservableObject
         _hasPending = false;
         Status = Loc.T("Theme.Saved");
     }
+}
+
+
+/// <summary>One finding of the full check, with links to the records concerned.</summary>
+public sealed class HealthItemViewModel
+{
+    public HealthItemViewModel(DataSetViewModel owner, BatchStudio.Core.Analysis.HealthIssue issue)
+    {
+        Issue = issue;
+        Title = Loc.T("Health." + issue.Kind);
+        var detail = issue.Detail;
+        if (issue.Bank > 0) detail = (detail.Length > 0 ? detail + " · " : "") + Loc.F("Health.BankN", issue.Bank);
+        Detail = detail;
+        Links = issue.Ids.Select((id, k) => new HealthLink(id, k < issue.Names.Count ? issue.Names[k] : "", new RelayCommand(() => owner.GoToRecord(id)))).ToList();
+        Severe = issue.Kind is BatchStudio.Core.Analysis.HealthKind.SharedAccount or BatchStudio.Core.Analysis.HealthKind.SameName
+                 or BatchStudio.Core.Analysis.HealthKind.NoAccount;
+    }
+
+    public BatchStudio.Core.Analysis.HealthIssue Issue { get; }
+    public string Title { get; }
+    public string Detail { get; }
+    public bool HasDetail => Detail.Length > 0;
+    public bool Severe { get; }
+    public List<HealthLink> Links { get; }
+}
+
+public sealed record HealthLink(string Id, string Name, IRelayCommand Open)
+{
+    public string ShortId => System.Text.RegularExpressions.Regex.Replace(Id, @"-0+(\d)", "-$1");
 }

@@ -25,7 +25,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         No = no;
         _amountText = match.Result.Amount is > 0 ? NewInvoiceViewModel.FormatMoney(match.Result.Amount.Value) : "";
         _supplierName = match.Supplier?.Name ?? StripLabel(match.Result.CompanyName);
-        _include = IsReady;
+        _include = IsReady && !IsTestDocument;
     }
 
     /// <summary>"Customer: NINGBO ..." → "NINGBO ...": a label read with the name is not part of it.</summary>
@@ -41,6 +41,9 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     [ObservableProperty] private bool _include;
 
     public bool IsNewSupplier => Match.Status == AnalysisStatus.NewSupplier && Match.Owner == null;
+
+    /// <summary>The document says it is a sample / training / synthetic one: shown, but not ticked by default.</summary>
+    public bool IsTestDocument => Result.Notes.Contains("test_document");
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
     public List<Party> Candidates => Match.Candidates;
@@ -77,7 +80,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     public bool IsReady => Match.Status != AnalysisStatus.Attention && Amount != null && SupplierName.Trim().Length > 0;
 
     /// <summary>ok (known supplier, known account) | acct (new account) | new (new supplier) | warn (attention).</summary>
-    public string State => Match.Status switch
+    public string State => IsTestDocument ? "test" : Match.Status switch
     {
         AnalysisStatus.Matched => "ok",
         AnalysisStatus.NewAccount => "acct",
@@ -85,7 +88,9 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         _ => "warn",
     };
 
-    public string StatusText => Match.Status switch
+    public string StatusText => IsTestDocument ? Loc.T("Analysis.StTestDocument") + " · " + BaseStatusText : BaseStatusText;
+
+    private string BaseStatusText => Match.Status switch
     {
         AnalysisStatus.Matched => Match.BankNumber is int n && n > 1 ? Loc.F("Analysis.StMatchedN", n) : Loc.T("Analysis.StMatched"),
         AnalysisStatus.NewAccount => Loc.T("Analysis.StNewAccount"),
@@ -143,7 +148,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
 
     private void Changed()
     {
-        if (IsReady && !Include) Include = true;
+        if (IsReady && !Include && !IsTestDocument) Include = true;
         if (!IsReady && Include) Include = false;
         OnPropertyChanged(nameof(IsReady));
         OnPropertyChanged(nameof(Remarks));
@@ -252,8 +257,31 @@ public sealed partial class MassInvoiceViewModel
         IsReviewing = true;
     }
 
+    /// <summary>Header tick: all ready documents chosen (true), none (false), some (null).</summary>
+    public bool? AllChosen
+    {
+        get
+        {
+            var ready = ReviewItems.Where(i => i.IsReady).ToList();
+            if (ready.Count == 0 || ready.All(i => !i.Include)) return false;
+            return ready.All(i => i.Include) ? true : null;
+        }
+        set
+        {
+            bool on = value == true;
+            _bulk = true;
+            foreach (var i in ReviewItems.Where(i => i.IsReady)) i.Include = on;
+            _bulk = false;
+            RecountReview();
+        }
+    }
+
+    private bool _bulk;
+
     public void RecountReview()
     {
+        if (_bulk) return;
+        OnPropertyChanged(nameof(AllChosen));
         int matched = ReviewItems.Count(i => i.Match.Status == AnalysisStatus.Matched);
         int acct = ReviewItems.Count(i => i.Match.Status == AnalysisStatus.NewAccount || i.Match.OtherAccount);
         int fresh = ReviewItems.Count(i => i.IsNewSupplier);
@@ -284,6 +312,7 @@ public sealed partial class MassInvoiceViewModel
             Doc("7,250.docx", "YI WU SHI FENG IMPORT AND EXPORT CO., LIMITED", "NRA99505535358555891509", "ZJTLCNBHXXX", 7250m),
             Doc("TEST 36.jpeg", "ORION STAR EXPORTS LLP", "3383757556", "KKBKINBBXXX", null, "name_from_signature"),
             Doc("scan.pdf", "", "", "", 9000m),
+            Doc("90,000.pdf", "ORBITAL MACHINE PARTS TRADING LIMITED", "55563751544820", "EHCBHKH0XXX", 90000m, "test_document"),
         ]);
     }
 
