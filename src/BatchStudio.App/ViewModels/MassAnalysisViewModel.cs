@@ -25,7 +25,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         No = no;
         _amountText = match.Result.Amount is > 0 ? NewInvoiceViewModel.FormatMoney(match.Result.Amount.Value) : "";
         _supplierName = match.Supplier?.Name ?? StripLabel(match.Result.CompanyName);
-        _include = IsReady && !IsTestDocument;
+        _include = IsReady && !IsTestDocument && !SwiftNeedsCheck;
     }
 
     /// <summary>"Customer: NINGBO ..." → "NINGBO ...": a label read with the name is not part of it.</summary>
@@ -44,6 +44,12 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
 
     /// <summary>The document says it is a sample / training / synthetic one: shown, but not ticked by default.</summary>
     public bool IsTestDocument => Result.Notes.Contains("test_document");
+
+    /// <summary>
+    /// The SWIFT was corrected from what the document shows, or an image leaves O / 0 open in its location / branch part:
+    /// financial data is never guessed - not ticked until a person checked it against the document.
+    /// </summary>
+    public bool SwiftNeedsCheck => Result.Notes.Contains("swift_corrected") || Result.Notes.Contains("swift_check");
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
     public List<Party> Candidates => Match.Candidates;
@@ -148,7 +154,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
 
     private void Changed()
     {
-        if (IsReady && !Include && !IsTestDocument) Include = true;
+        if (IsReady && !Include && !IsTestDocument && !SwiftNeedsCheck) Include = true;
         if (!IsReady && Include) Include = false;
         OnPropertyChanged(nameof(IsReady));
         OnPropertyChanged(nameof(Remarks));

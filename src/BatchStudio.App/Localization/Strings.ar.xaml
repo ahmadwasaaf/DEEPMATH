@@ -498,6 +498,8 @@
     <sys:String x:Key="Analysis.StTestDocument">مستند اختبار</sys:String>
     <sys:String x:Key="Analysis.Engine.test_document">المستند مكتوب فيه إنه تجريبي / للتدريب: مش متعلّم عليه</sys:String>
     <sys:String x:Key="Analysis.LeftOut">كان فيه {1} صف فاضي بس: اتساب {0} مستند. اعمل Generate للفواتير دي وامسح الصفوف، وبعدين شغّل Analysis تاني على:</sys:String>
+    <sys:String x:Key="Analysis.Engine.swift_corrected">الـ SWIFT اتصحح عن اللي مكتوب في المستند - قارنه بالمستند قبل الاعتماد</sys:String>
+    <sys:String x:Key="Analysis.Engine.swift_check">صورة: حرف O والصفر شكلهم واحد في الـ SWIFT ده - قارنه بالمستند قبل الاعتماد</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">الاسم في المستند: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">الاسم مأخوذ من رأس المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">الاسم مأخوذ من التوقيع</sys:String>
