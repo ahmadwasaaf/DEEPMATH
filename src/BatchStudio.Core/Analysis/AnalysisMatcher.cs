@@ -1,0 +1,324 @@
+using System.Globalization;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using BatchStudio.Core.Invoices;
+
+namespace BatchStudio.Core.Analysis;
+
+/// <summary>One document of the Analysis folder as read by the extraction engine (one JSON line of deepmath_analyze.py).</summary>
+public sealed class AnalysisResult
+{
+    public string File { get; init; } = "";
+    public string FileName { get; init; } = "";
+    /// <summary>Invoice total read from the file name (5000, 70,000 ...); null when the name is not an amount.</summary>
+    public decimal? Amount { get; init; }
+    public bool Ok { get; init; }
+    public string? Error { get; init; }
+    public string CompanyName { get; init; } = "";
+    public string LocalName { get; init; } = "";
+    public string Address { get; init; } = "";
+    public string Bank { get; init; } = "";
+    public string Activity { get; init; } = "";
+    /// <summary>Account no., IBAN, SWIFT ... (letters and digits only, upper case) by kind.</summary>
+    public Dictionary<string, List<string>> Ids { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    public double Seconds { get; init; }
+    /// <summary>Remarks of the engine: name_from_heading, name_from_signature, account_unlabelled, account_differs, no_swift ...</summary>
+    public List<string> Notes { get; init; } = [];
+
+    public static AnalysisResult? Parse(string jsonLine)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(jsonLine);
+            var r = doc.RootElement;
+            string S(string k) => r.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
+            var ids = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            if (r.TryGetProperty("identifiers", out var idn) && idn.ValueKind == JsonValueKind.Object)
+                foreach (var p in idn.EnumerateObject())
+                    if (p.Value.ValueKind == JsonValueKind.Array)
+                        ids[p.Name] = p.Value.EnumerateArray().Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToList();
+            var notes = r.TryGetProperty("notes", out var nt) && nt.ValueKind == JsonValueKind.Array
+                ? nt.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString() ?? "").Where(x => x.Length > 0).ToList()
+                : [];
+            decimal? amount = r.TryGetProperty("amount", out var a) && a.ValueKind == JsonValueKind.Number ? a.GetDecimal() : null;
+            return new AnalysisResult
+            {
+                File = S("file"),
+                FileName = S("name"),
+                Amount = amount,
+                Ok = r.TryGetProperty("ok", out var ok) && ok.ValueKind == JsonValueKind.True,
+                Error = S("error") is { Length: > 0 } e ? e : null,
+                CompanyName = S("company_name").Trim(),
+                LocalName = S("company_name_local").Trim(),
+                Address = S("company_address").Trim(),
+                Bank = S("bank_details").Trim(),
+                Activity = S("activity").Trim(),
+                Ids = ids,
+                Notes = notes,
+                Seconds = r.TryGetProperty("seconds", out var sec) && sec.ValueKind == JsonValueKind.Number ? sec.GetDouble() : 0,
+            };
+        }
+        catch (JsonException) { return null; }
+    }
+
+    /// <summary>Account numbers and IBANs: what identifies the account money is paid to.</summary>
+    public IEnumerable<string> AccountIds =>
+        Ids.Where(kv => kv.Key is "account" or "iban").SelectMany(kv => kv.Value).Where(v => v.Length >= 6);
+}
+
+public enum AnalysisStatus
+{
+    /// <summary>Known supplier, the account in the document is one of its accounts.</summary>
+    Matched,
+    /// <summary>Known supplier, the document has an account it does not have yet (added as Banking Details N, used for this invoice only).</summary>
+    NewAccount,
+    /// <summary>The supplier is not in the Suppliers list: it is added.</summary>
+    NewSupplier,
+    /// <summary>Something to look at: no amount in the file name, nothing read, two possible suppliers ...</summary>
+    Attention,
+}
+
+/// <summary>What Analysis proposes for one document (shown for review; nothing is saved before "Approve all").</summary>
+public sealed class AnalysisMatch
+{
+    public required AnalysisResult Result { get; init; }
+    public AnalysisStatus Status { get; set; }
+    /// <summary>The known supplier (Matched / NewAccount).</summary>
+    public Party? Supplier { get; set; }
+    /// <summary>Account of the supplier used for this invoice (Matched); null = the default account.</summary>
+    public int? BankNumber { get; set; }
+    /// <summary>How the supplier was recognised: "account", "name", "similar".</summary>
+    public string MatchedBy { get; set; } = "";
+    /// <summary>Why a document needs attention / a remark (key of a program text).</summary>
+    public string Note { get; set; } = "";
+    /// <summary>Other suppliers that fit as well (ambiguous name).</summary>
+    public List<Party> Candidates { get; } = [];
+    /// <summary>
+    /// A new supplier already proposed by an earlier document of the same folder (two invoices of one new supplier):
+    /// that document adds the supplier, this one uses it (its account, or a second account when different).
+    /// </summary>
+    public AnalysisMatch? Owner { get; set; }
+    /// <summary>For a document with <see cref="Owner"/>: its account differs from the owner's (a second account).</summary>
+    public bool OtherAccount { get; set; }
+}
+
+/// <summary>
+/// Recognises the supplier of each analysed document among the suppliers already saved: first by its account
+/// number / IBAN (the strongest proof - a name read by OCR can differ by a letter, "CO., LTD" / "COMPANY LIMITED"),
+/// then by its name (the same after cleaning, or very close).
+/// </summary>
+public static partial class AnalysisMatcher
+{
+    /// <summary>Two names count as the same company from this similarity on (0..1).</summary>
+    public const double SameNameScore = 0.90;
+
+    public static List<AnalysisMatch> Match(IReadOnlyList<AnalysisResult> results, IReadOnlyList<Party> suppliers)
+    {
+        // every account number / IBAN already saved, with its supplier and account number
+        var known = new List<(string Id, Party Party, int Bank)>();
+        foreach (var p in suppliers)
+            foreach (var b in p.Banks.Where(b => b.Text.Trim().Length > 0))
+                foreach (var id in AccountIdsIn(b.Text))
+                    known.Add((id, p, b.Number));
+        var names = suppliers.Select(p => (Party: p, Key: NormalizeName(p.Name), Local: NormalizeLocal(p.NativeName))).ToList();
+
+        var list = new List<AnalysisMatch>();
+        var pending = new List<AnalysisMatch>();   // new suppliers proposed so far in this folder
+        foreach (var r in results)
+        {
+            var m = new AnalysisMatch { Result = r };
+            list.Add(m);
+            if (!r.Ok || (r.CompanyName.Length == 0 && r.Bank.Length == 0))
+            {
+                m.Status = AnalysisStatus.Attention;
+                m.Note = "Analysis.NoteNothingRead";
+                continue;
+            }
+
+            // 1. the account number / IBAN
+            var byAccount = r.AccountIds.SelectMany(id => known.Where(k => SameAccount(id, k.Id))).ToList();
+            var accountParties = byAccount.Select(k => k.Party).Distinct().ToList();
+            if (accountParties.Count == 1)
+            {
+                m.Supplier = accountParties[0];
+                m.BankNumber = byAccount.First(k => k.Party == m.Supplier).Bank;
+                m.MatchedBy = "account";
+                m.Status = AnalysisStatus.Matched;
+            }
+            else if (accountParties.Count > 1)
+            {
+                m.Candidates.AddRange(accountParties);
+                m.Status = AnalysisStatus.Attention;
+                m.Note = "Analysis.NoteTwoSuppliers";
+            }
+            else
+            {
+                // 2. the name (or the Chinese / native name)
+                var key = NormalizeName(r.CompanyName);
+                var local = NormalizeLocal(r.LocalName);
+                var scored = names
+                    .Select(n => (n.Party, Score: Math.Max(key.Length > 0 && n.Key.Length > 0 ? Similarity(key, n.Key) : 0,
+                        local.Length > 1 && n.Local.Length > 1 && local == n.Local ? 1.0 : 0)))
+                    .Where(x => x.Score >= SameNameScore)
+                    .OrderByDescending(x => x.Score)
+                    .ToList();
+                if (scored.Count > 1 && scored[1].Score >= scored[0].Score - 0.02)
+                {
+                    m.Candidates.AddRange(scored.Select(x => x.Party));
+                    m.Status = AnalysisStatus.Attention;
+                    m.Note = "Analysis.NoteTwoSuppliers";
+                }
+                else if (scored.Count >= 1)
+                {
+                    m.Supplier = scored[0].Party;
+                    m.MatchedBy = scored[0].Score >= 0.999 ? "name" : "similar";
+                    if (r.Bank.Length > 0 && r.AccountIds.Any())
+                        m.Status = AnalysisStatus.NewAccount;
+                    else
+                    {
+                        // no account in the document: the supplier's default account
+                        m.Status = AnalysisStatus.Matched;
+                        m.Note = "Analysis.NoteNoBank";
+                    }
+                }
+                else if (r.CompanyName.Length > 0 && r.Bank.Length > 0)
+                {
+                    m.Status = AnalysisStatus.NewSupplier;
+                    // the same new supplier as an earlier document of the folder (same account, or same name)
+                    var owner = pending.FirstOrDefault(o => r.AccountIds.Any(a => o.Result.AccountIds.Any(b => SameAccount(a, b))))
+                                ?? pending.FirstOrDefault(o => Similarity(key, NormalizeName(o.Result.CompanyName)) >= SameNameScore);
+                    if (owner != null)
+                    {
+                        m.Owner = owner;
+                        m.OtherAccount = r.AccountIds.Any() && !r.AccountIds.Any(a => owner.Result.AccountIds.Any(b => SameAccount(a, b)));
+                    }
+                    else pending.Add(m);
+                }
+                else
+                {
+                    m.Status = AnalysisStatus.Attention;
+                    m.Note = r.CompanyName.Length == 0 ? "Analysis.NoteNoName" : "Analysis.NoteNoBankNew";
+                }
+            }
+
+            // no amount in the file name: the supplier is still recognised; the amount is typed in the review
+            if (m.Status != AnalysisStatus.Attention && r.Amount is null or <= 0 && m.Note.Length == 0)
+                m.Note = "Analysis.NoteNoAmount";
+        }
+        return list;
+    }
+
+    // ------------------------------------------------------------------ accounts
+    [GeneratedRegex(@"(?im)^\s*(?:beneficiary\s+)?(?:account\s*(?:number|no\.?|#)|a/c\s*(?:no\.?|number)?|acct\.?\s*no\.?|iban|账号|账户号码|银行账号|收款账号)\s*[:：#\-]?\s*(.+)$")]
+    private static partial Regex LabeledAccount();
+
+    [GeneratedRegex(@"(?<![0-9A-Za-z])(?:[A-Z]{2}\d{2}[ \-]?(?:[0-9A-Z]{4}[ \-]?){2,7}[0-9A-Z]{1,4}|\d(?:[\d \-]{6,40})\d)(?![0-9A-Za-z])")]
+    private static partial Regex LongNumber();
+
+    /// <summary>Account numbers / IBANs written in a saved banking paragraph (letters and digits only).</summary>
+    public static HashSet<string> AccountIdsIn(string bankText)
+    {
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in (bankText ?? "").Split('\n'))
+        {
+            if (Regex.IsMatch(line, @"(?i)^\s*(?:intermediary|swift|bic|routing|aba|ifsc|cnaps|sort\s*code|bank\s*code|branch|phone|tel|fax|mobile)"))
+                continue;
+            var lm = LabeledAccount().Match(line);
+            if (lm.Success)
+            {
+                var v = Clean(lm.Groups[1].Value);
+                if (v.Length >= 6) ids.Add(v);
+                continue;
+            }
+            // unlabelled long numbers (an account written alone on its line ...)
+            foreach (Match n in LongNumber().Matches(line))
+            {
+                var v = Clean(n.Value);
+                if (v.Count(char.IsDigit) >= 8) ids.Add(v);
+            }
+        }
+        return ids;
+    }
+
+    public static string Clean(string s) => new string((s ?? "").Where(char.IsAsciiLetterOrDigit).ToArray()).ToUpperInvariant();
+
+    /// <summary>The same account: equal, or one inside the other (an IBAN holds the account number) when long enough.</summary>
+    public static bool SameAccount(string a, string b)
+    {
+        a = Clean(a);
+        b = Clean(b);
+        if (a.Length < 6 || b.Length < 6) return false;
+        if (a == b) return true;
+        var (shortId, longId) = a.Length < b.Length ? (a, b) : (b, a);
+        return shortId.Length >= 8 && shortId.All(char.IsDigit) && longId.EndsWith(shortId, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------------ names
+    private static readonly Dictionary<string, string> Words = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["CO"] = "COMPANY", ["COMP"] = "COMPANY", ["CORP"] = "CORPORATION", ["LTD"] = "LIMITED", ["LIMTED"] = "LIMITED",
+        ["INTL"] = "INTERNATIONAL", ["INT"] = "INTERNATIONAL", ["MFG"] = "MANUFACTURING", ["IMP"] = "IMPORT", ["EXP"] = "EXPORT",
+        ["TRADG"] = "TRADING", ["IND"] = "INDUSTRIAL", ["TECH"] = "TECHNOLOGY", ["ELEC"] = "ELECTRONICS", ["PVT"] = "PRIVATE",
+        ["LLC"] = "LLC", ["INC"] = "INCORPORATED", ["HK"] = "HONGKONG", ["&"] = "AND",
+    };
+
+    /// <summary>"Guangzhou Xenlong Trading Co.,Ltd" → "GUANGZHOU XENLONG TRADING COMPANY LIMITED".</summary>
+    public static string NormalizeName(string? name)
+    {
+        var s = (name ?? "").ToUpperInvariant().Replace("&", " AND ").Replace("HONG KONG", "HONGKONG");
+        var sb = new StringBuilder();
+        foreach (var ch in s) sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+        var words = sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(w => Words.TryGetValue(w, out var full) ? full : w)
+            .Where(w => w != "THE")
+            .ToList();
+        return string.Join(' ', words);
+    }
+
+    private static string NormalizeLocal(string? name) =>
+        new string((name ?? "").Where(c => !char.IsWhiteSpace(c) && !char.IsPunctuation(c) && !char.IsSymbol(c)).ToArray());
+
+    /// <summary>0..1: the best of the character similarity and the word overlap of two cleaned names.</summary>
+    public static double Similarity(string a, string b)
+    {
+        if (a.Length == 0 || b.Length == 0) return 0;
+        if (a == b) return 1;
+        double chars = 1.0 - (double)Levenshtein(a, b) / Math.Max(a.Length, b.Length);
+        var wa = a.Split(' ').ToHashSet();
+        var wb = b.Split(' ').ToHashSet();
+        // the legal form alone ("COMPANY LIMITED") does not make two companies the same
+        var generic = new HashSet<string> { "COMPANY", "LIMITED", "CORPORATION", "AND", "INCORPORATED", "LLC", "TRADING", "INTERNATIONAL", "GROUP", "IMPORT", "EXPORT" };
+        var ka = wa.Except(generic).ToHashSet();
+        var kb = wb.Except(generic).ToHashSet();
+        double words = ka.Count == 0 || kb.Count == 0 ? 0 : (double)ka.Intersect(kb).Count() / Math.Max(ka.Count, kb.Count);
+        // the distinctive words all equal and the rest only differs by the legal form
+        double sameCore = ka.Count > 0 && ka.SetEquals(kb) ? 0.97 : 0;
+        return Math.Max(chars, Math.Max(sameCore, words * 0.95));
+    }
+
+    private static int Levenshtein(string a, string b)
+    {
+        var prev = new int[b.Length + 1];
+        var cur = new int[b.Length + 1];
+        for (int j = 0; j <= b.Length; j++) prev[j] = j;
+        for (int i = 1; i <= a.Length; i++)
+        {
+            cur[0] = i;
+            for (int j = 1; j <= b.Length; j++)
+                cur[j] = Math.Min(Math.Min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1));
+            (prev, cur) = (cur, prev);
+        }
+        return prev[b.Length];
+    }
+
+    /// <summary>"5000", "70,000", "12500.50", "USD 5000", "5000 (2)" → the amount; null when the name is not an amount.</summary>
+    public static decimal? AmountFromName(string fileName)
+    {
+        var stem = Path.GetFileNameWithoutExtension(fileName ?? "");
+        var m = Regex.Match(stem, @"^\s*(?:(?:USD|US\$|SAR|AED|EUR|GBP|CNY|RMB|EGP|INR|HKD|\$|€|£|¥)\s*)?(\d{1,3}(?:[,\s]\d{3})+|\d+)(?:\.(\d{1,2}))?(?:\s*(?:USD|US\$|SAR|AED|EUR|GBP|CNY|RMB|EGP|INR|HKD|\$|€|£|¥))?\s*(?:[\(\[\-_ ]\s*\d+\s*[\)\]]?)?\s*$", RegexOptions.IgnoreCase);
+        if (!m.Success) return null;
+        var text = Regex.Replace(m.Groups[1].Value, @"[,\s]", "") + (m.Groups[2].Success ? "." + m.Groups[2].Value : "");
+        return decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var v) && v > 0 ? v : null;
+    }
+}

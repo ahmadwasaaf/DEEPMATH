@@ -14,6 +14,12 @@ public partial class MassInvoiceView : UserControl
         // Esc closes the new supplier / client form
         PreviewKeyDown += (_, e) =>
         {
+            if (e.Key == System.Windows.Input.Key.Escape && DataContext is MassInvoiceViewModel { IsReviewing: true, IsBusy: false } rv && !rv.IsAddingParty)
+            {
+                rv.CloseReviewCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
             if (e.Key == System.Windows.Input.Key.Escape && DataContext is MassInvoiceViewModel { IsAddingParty: true } vm)
             {
                 vm.PartyForm.CancelCommand.Execute(null);
@@ -37,6 +43,11 @@ public partial class MassInvoiceView : UserControl
     private void OnAmountLostFocus(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: MassRowViewModel row }) row.FormatAmount();
+    }
+
+    private void OnReviewAmountLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: AnalysisItemViewModel item }) item.FormatAmount();
     }
 
     private void OnInvoiceNoLostFocus(object sender, RoutedEventArgs e)

@@ -672,6 +672,57 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
+    // ---------------------------------------------------------------- Analysis engine (Mass Invoice › Analysis)
+    /// <summary>Folder of the extraction engine (deepmath_analyze.py and its .venv).</summary>
+    public string EngineFolder
+    {
+        get => _main.Settings.AnalysisEngineFolder ?? "";
+        set
+        {
+            var v = (value ?? "").Trim().Trim('"');
+            if (string.Equals(_main.Settings.AnalysisEngineFolder ?? "", v, StringComparison.Ordinal)) return;
+            _main.Settings.AnalysisEngineFolder = v.Length == 0 ? null : v;
+            _main.SaveSettings();
+            OnPropertyChanged();
+            EngineNote = "";
+            EngineOk = false;
+        }
+    }
+
+    [ObservableProperty] private string _engineNote = "";
+    [ObservableProperty] private bool _engineOk;
+    [ObservableProperty] private bool _engineTesting;
+
+    [RelayCommand]
+    private async Task BrowseEngine()
+    {
+        var start = EngineFolder.Length > 0 ? EngineFolder : _main.Root;
+        if (Dialogs.PickFolder(start) is not { } folder) return;
+        EngineFolder = folder;
+        await TestEngine();
+    }
+
+    [RelayCommand]
+    private async Task TestEngine()
+    {
+        if (EngineTesting) return;
+        if (EngineFolder.Length == 0 && AnalysisRunner.Detect(_main.Root) is { } found) EngineFolder = found;
+        EngineTesting = true;
+        EngineNote = Loc.T("Analysis.Testing");
+        try
+        {
+            var version = await AnalysisRunner.TestAsync(EngineFolder);
+            EngineOk = true;
+            EngineNote = Loc.F("Analysis.EngineReady", version);
+        }
+        catch (Exception ex)
+        {
+            EngineOk = false;
+            EngineNote = ex.Message;
+        }
+        finally { EngineTesting = false; }
+    }
+
     [RelayCommand]
     private async Task GoogleSignIn()
     {

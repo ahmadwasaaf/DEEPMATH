@@ -21,7 +21,17 @@
         <!-- ========== header band (like the BATCH STUDIO sheet) ========== -->
         <Border Grid.Row="0" CornerRadius="8" Padding="20,14" Margin="0,0,0,12" Background="#1F2D46">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0">
+                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="12,0,0,0" Orientation="Horizontal">
+                    <!-- Analysis: a folder of supplier documents → rows (suppliers only) -->
+                    <Button Command="{Binding AnalyseCommand}" Margin="0,0,10,0" Padding="12,6" VerticalAlignment="Center"
+                            ToolTip="{DynamicResource Analysis.Tip}"
+                            Visibility="{Binding IsSuppliers, Converter={StaticResource BoolToVis}}"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE723;" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{DynamicResource Analysis.Button}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <ComboBox ItemsSource="{Binding Types}" SelectedIndex="{Binding TypeIndex}" Width="170" HorizontalContentAlignment="Center"
                               IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
                 </StackPanel>
@@ -254,6 +264,151 @@
             <Border Style="{StaticResource Card}" Padding="16,12" Width="580" Margin="0,16" HorizontalAlignment="Center" VerticalAlignment="Stretch"
                     Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
                 <local:PartyFormView DataContext="{Binding PartyForm}" />
+            </Border>
+        </Border>
+
+        <!-- Analysis running: progress over the page, Cancel stops the engine -->
+        <Border Grid.RowSpan="4" Panel.ZIndex="21" Background="#99000000" CornerRadius="8"
+                Visibility="{Binding IsAnalysing, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource Card}" Padding="24,20" Width="520" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE723;" FontSize="18" Margin="0,0,10,0" Foreground="{DynamicResource BrandBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource Analysis.Title}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ProgressBar Height="6" Maximum="100" Value="{Binding AnalysisProgress}" Margin="0,0,0,10" />
+                    <TextBlock Text="{Binding AnalysisText}" Style="{StaticResource Muted}" TextTrimming="CharacterEllipsis" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
+                    <TextBlock Text="{DynamicResource Analysis.Wait}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                    <Button Command="{Binding CancelAnalysisCommand}" HorizontalAlignment="Right" Margin="0,14,0,0" Padding="16,6">
+                        <TextBlock Text="{DynamicResource Common.Cancel}" />
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Analysis review: every document with its supplier, account and amount; Approve all puts them on the rows -->
+        <Border Grid.RowSpan="4" Panel.ZIndex="22" Background="#99000000" CornerRadius="8"
+                Visibility="{Binding IsReviewing, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource Card}" Padding="18,14" Margin="24,16" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Command="{Binding CloseReviewCommand}" Padding="6,3" MinWidth="0" Background="Transparent" BorderThickness="0"
+                                ToolTip="{DynamicResource Common.Cancel}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="13" />
+                        </Button>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE723;" FontSize="17" Margin="0,0,10,0" Foreground="{DynamicResource BrandBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Analysis.ReviewTitle}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <TextBlock Text="{DynamicResource Analysis.ReviewHint}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DataGrid Grid.Row="1" ItemsSource="{Binding ReviewItems}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" IsReadOnly="True"
+                              EnableRowVirtualization="True">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="40" Header="">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding Include, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsReady}"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center" MinWidth="0" Margin="6,0,0,0" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColFile}" Width="150">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <!-- click: opens the document -->
+                                        <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" Margin="6,0" TextTrimming="CharacterEllipsis" Cursor="Hand"
+                                                   Foreground="{DynamicResource BrandBrush}" ToolTip="{DynamicResource Analysis.OpenFile}" FlowDirection="LeftToRight">
+                                            <TextBlock.InputBindings>
+                                                <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFileCommand}" />
+                                            </TextBlock.InputBindings>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColSupplier}" Width="3*" MinWidth="220">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel VerticalAlignment="Center" Margin="4,4" ToolTip="{Binding Details}">
+                                            <!-- a new supplier's name can be corrected before it is saved -->
+                                            <TextBox Text="{Binding SupplierName, UpdateSourceTrigger=LostFocus}" FlowDirection="LeftToRight" MinHeight="28" Padding="4,2"
+                                                     VerticalContentAlignment="Center" Visibility="{Binding CanEditName, Converter={StaticResource BoolToVis}}" />
+                                            <TextBlock Text="{Binding SupplierName}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="4,0,0,0" FlowDirection="LeftToRight" HorizontalAlignment="Left"
+                                                       Visibility="{Binding CanEditName, Converter={StaticResource InverseBoolToVis}}" />
+                                            <TextBlock Text="{Binding AccountText}" Style="{StaticResource Muted}" FontSize="11" Margin="4,2,0,0" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColAmount}" Width="130">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                                 Margin="2,2" MinHeight="30" Padding="4,2" FlowDirection="LeftToRight" LostFocus="OnReviewAmountLostFocus" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColStatus}" Width="2*" MinWidth="200">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel VerticalAlignment="Center" Margin="8,4">
+                                            <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" TextWrapping="Wrap">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding State}" Value="ok">
+                                                                <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding State}" Value="acct">
+                                                                <Setter Property="Foreground" Value="{DynamicResource BrandBrush}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding State}" Value="new">
+                                                                <Setter Property="Foreground" Value="#8E7CFF" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding State}" Value="warn">
+                                                                <Setter Property="Foreground" Value="{StaticResource WarnBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Remarks}" Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
+                                                       Visibility="{Binding HasRemarks, Converter={StaticResource BoolToVis}}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <DockPanel Grid.Row="2" Margin="0,12,0,0">
+                        <Button DockPanel.Dock="Right" Command="{Binding ApproveAllCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="18,7" Margin="8,0,0,0"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="13" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Analysis.ApproveAll}" />
+                            </StackPanel>
+                        </Button>
+                        <Button DockPanel.Dock="Right" Command="{Binding CloseReviewCommand}" Padding="14,7"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
+                            <TextBlock Text="{DynamicResource Common.Cancel}" />
+                        </Button>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ReviewSummary}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding ReviewError}" Foreground="{StaticResource BadBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
             </Border>
         </Border>
     </Grid>

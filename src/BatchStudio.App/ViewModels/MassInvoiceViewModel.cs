@@ -25,6 +25,10 @@ public sealed partial class MassRowViewModel : ObservableObject
     [ObservableProperty] private DateTime? _date;
     /// <summary>INVOICE NO: filled when the party is picked, editable (duplicates refused).</summary>
     [ObservableProperty] private string _invoiceNo = "";
+    /// <summary>Supplier account printed on this invoice (Analysis: the account of the document); null = the default account.</summary>
+    [ObservableProperty] private int? _bankNumber;
+    /// <summary>Document this row comes from (Analysis), shown as the row's tooltip.</summary>
+    [ObservableProperty] private string? _sourceFile;
     /// <summary>Archived file of this row after Generate (the row is then skipped by Generate, Export PDF uses the file).</summary>
     public string? ArchivedFile { get; set; }
     public bool IsArchived => ArchivedFile != null;
@@ -41,6 +45,8 @@ public sealed partial class MassRowViewModel : ObservableObject
     partial void OnPartyNameChanged(string value)
     {
         if (IsArchived) { ArchivedFile = null; InvoiceNo = ""; }
+        BankNumber = null;
+        SourceFile = null;
         _owner.OnPartyPicked(this);
         ResetStatus();
     }
@@ -94,6 +100,8 @@ public sealed partial class MassRowViewModel : ObservableObject
         ArchivedFile = null;
         PartyName = Template = CategoryText = AmountText = CountText = InvoiceNo = Status = State = "";
         Date = null;
+        BankNumber = null;
+        SourceFile = null;
     }
 
     public void Refresh()
@@ -134,6 +142,9 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
     private int _typeGuard;
 
     private bool IsClients => TypeIndex == 1;
+    private MainViewModel Main => main;
+    /// <summary>Analysis (documents folder → rows) is for suppliers only.</summary>
+    public bool IsSuppliers => TypeIndex == 0;
     public string PartyHeader => Loc.T(IsClients ? "Mass.Client" : "Mass.Supplier");
     public string AddPartyTip => Loc.T(IsClients ? "Inv.NewClient" : "Inv.NewSupplier");
 
@@ -161,6 +172,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
         foreach (var r in Rows) r.Refresh();
         OnPropertyChanged(nameof(PartyHeader));
         OnPropertyChanged(nameof(AddPartyTip));
+        OnPropertyChanged(nameof(IsSuppliers));
         Recount();
         if (_templates.Count == 0) Status = Loc.T("Inv.NoTemplates");
     }
@@ -394,7 +406,7 @@ public sealed partial class MassInvoiceViewModel(MainViewModel main) : Observabl
             PartyName = pl.Party.Name,
             NativeName = pl.Party.NativeName,
             Address = pl.Party.Address,
-            Bank = pl.Party.Bank,
+            Bank = pl.Row.BankNumber is int bank ? pl.Party.BankText(bank) : pl.Party.Bank,
             CategoryText = pl.Cat.Text,
             Target = pl.Amount,
             Lines = lines,

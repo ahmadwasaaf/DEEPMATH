@@ -98,6 +98,8 @@ jobs:
           Run 'English' 'Dark' $true 'home-mail' '36-home-mail'
           Run 'Arabic' 'Light' $true 'home-mail' '37-home-mail-ar'
           Run 'English' 'Dark' $true 'settings-google' '38-settings-google'
+          Run 'English' 'Dark' $true 'mass-analysis' '39-mass-analysis'
+          Run 'Arabic' 'Light' $true 'mass-analysis' '40-mass-analysis-ar'
           Run 'English' 'Dark' $true 'newinvoice-preview' '39-template-preview'
           Run 'English' 'Light' $true 'newinvoice-preview' '40-template-preview-light'
           Run 'English' 'Dark' $true 'home-accounts' '41-home-accounts'

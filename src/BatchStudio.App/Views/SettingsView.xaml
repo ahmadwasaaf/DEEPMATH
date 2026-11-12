@@ -295,6 +295,40 @@
                 </StackPanel>
             </Border>
 
+            <!-- ========== Analysis engine (Mass Invoice › Analysis) ========== -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Analysis.SetTitle}" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="{DynamicResource Analysis.SetHint}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,10" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Command="{Binding TestEngineCommand}" Margin="8,0,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE9D9;" FontSize="12" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Analysis.Test}" />
+                            </StackPanel>
+                        </Button>
+                        <Button DockPanel.Dock="Right" Command="{Binding BrowseEngineCommand}" Margin="8,0,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" FontSize="12" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Analysis.Browse}" />
+                            </StackPanel>
+                        </Button>
+                        <TextBox Text="{Binding EngineFolder, UpdateSourceTrigger=LostFocus}" FlowDirection="LeftToRight" VerticalContentAlignment="Center" />
+                    </DockPanel>
+                    <TextBlock Text="{Binding EngineNote}" TextWrapping="Wrap" Margin="0,8,0,0" FlowDirection="LeftToRight" HorizontalAlignment="Left">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding EngineOk}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
             <!-- ========== Appearance ========== -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>

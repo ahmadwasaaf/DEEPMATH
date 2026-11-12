@@ -62,6 +62,9 @@ public sealed class AppSettings
     /// <summary>Settings › Appearance: the accent colour part is open.</summary>
     public bool AppearanceOpen { get; set; }
 
+    /// <summary>Folder of the extraction engine used by Mass Invoice › Analysis (SMART_EXTRACT_ENGINE V15 with deepmath_analyze.py).</summary>
+    public string? AnalysisEngineFolder { get; set; }
+
     /// <summary>Windows notification for each new email (Google account in Settings).</summary>
     public bool MailToasts { get; set; } = true;
 

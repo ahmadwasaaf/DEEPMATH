@@ -218,7 +218,11 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
         Categories.Clear();
         if (cat != null) foreach (var c in InvoiceService.Categories(cat).Where(c => c.Active)) Categories.Add(c);
 
-        SelectedTemplate = Templates.FirstOrDefault(t => t.Name == keepTpl) ?? Templates.FirstOrDefault();
+        // first opening: Suppliers + INVOICE (the template sets the party type)
+        SelectedTemplate = Templates.FirstOrDefault(t => t.Name == keepTpl)
+            ?? Templates.FirstOrDefault(t => string.Equals(t.Name, "INVOICE", StringComparison.OrdinalIgnoreCase) && t.Entry.Map!.EffectivePartyType != "CLIENTS")
+            ?? Templates.FirstOrDefault(t => t.Entry.Map!.EffectivePartyType != "CLIENTS")
+            ?? Templates.FirstOrDefault();
         FillParties();
         if (string.IsNullOrEmpty(InvoiceNo)) NewNumber();
         Status = Templates.Count == 0 ? Loc.T("Inv.NoTemplates") : "";
