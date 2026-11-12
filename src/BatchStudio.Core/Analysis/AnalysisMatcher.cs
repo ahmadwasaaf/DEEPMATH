@@ -223,10 +223,10 @@ public static partial class AnalysisMatcher
     }
 
     // ------------------------------------------------------------------ accounts
-    [GeneratedRegex(@"(?im)^\s*(?:beneficiary\s+)?(?:account\s*(?:number|no\.?|#)|a/c\s*(?:no\.?|number)?|acct\.?\s*no\.?|iban|账号|账户号码|银行账号|收款账号)(?:\s*\([^)]{0,20}\))?\s*[:：#\-]?\s*(.+)$")]
+    [GeneratedRegex(@"(?im)^\s*(?:beneficiary\s+)?(?:account\s*(?:number|no\.?|#|/\s*iban)|iban\s*/\s*account(?:\s*(?:number|no\.?))?|a/c\s*(?:no\.?|number)?|acct\.?\s*no\.?|iban|账号|账户号码|银行账号|收款账号)(?:\s*\([^)]{0,20}\))?\s*[:：#\-]?\s*(.+)$")]
     private static partial Regex LabeledAccount();
 
-    [GeneratedRegex(@"(?<![0-9A-Za-z])(?:[A-Z]{2}\d{2}[ \-]?(?:[0-9A-Z]{4}[ \-]?){2,7}[0-9A-Z]{1,4}|\d(?:[\d \-]{6,40})\d)(?![0-9A-Za-z])")]
+    [GeneratedRegex(@"(?<![0-9A-Za-z])(?:[A-Z]{2}\d{2}[ \-]?(?:[0-9A-Z]{4}[ \-]?){2,7}[0-9A-Z]{1,4}|[A-Z]{2,6}[ \-]?\d[\d \-]{6,40}\d|\d(?:[\d \-]{6,40})\d)(?![0-9A-Za-z])")]
     private static partial Regex LongNumber();
 
     /// <summary>Account numbers / IBANs written in a saved banking paragraph (letters and digits only).</summary>

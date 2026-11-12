@@ -68,6 +68,13 @@ public class AnalysisTests
     }
 
     [Theory]
+    [InlineData("Account / IBAN: NRA87283813585755559721")]
+    [InlineData("IBAN / Account No.: NRA87283813585755559721")]
+    [InlineData("NRA87283813585755559721")]
+    public void Account_iban_label_and_letter_prefix(string line) =>
+        Assert.Contains("NRA87283813585755559721", AnalysisMatcher.AccountIdsIn("Beneficiary Name: EAMON\n" + line));
+
+    [Theory]
     [InlineData("Account Number (USD): NRA358555851124912")]
     [InlineData("Account Number: NRA358555851124912 (USD)")]
     [InlineData("A/C No. (USD Account): NRA 3585 5585 1124 912")]
