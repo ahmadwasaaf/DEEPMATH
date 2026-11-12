@@ -173,7 +173,8 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         if (name.Length == 0) { Error = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
         var others = (IsClients ? InvoiceService.Clients(page.Session.Current) : InvoiceService.Suppliers(page.Session.Current))
             .Where(p => !string.Equals(p.Id, _editId, StringComparison.OrdinalIgnoreCase));
-        if (others.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase))) { Error = Loc.F("Inv.PartyExists", name); return; }
+        if (others.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)) || page.SameNameId(name, _editId) != null)
+        { Error = Loc.F("Inv.PartyExists", name); return; }
 
         IsBusy = true;
         try
@@ -223,7 +224,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         var name = ValueAt(nameCol);
         if (id.Length == 0 || name.Length == 0) { Error = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
         var existing = IsClients ? InvoiceService.Clients(page.Session.Current) : InvoiceService.Suppliers(page.Session.Current);
-        if (existing.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
+        if (existing.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)) || page.SameNameId(name) != null)
         { Error = Loc.F("Inv.PartyExists", name); return; }
         if (page.Session.Current.Rows.Any(r => string.Equals(r[0], id, StringComparison.OrdinalIgnoreCase)))
         { Error = Loc.F("Inv.PartyIdExists", id); return; }

@@ -377,6 +377,50 @@ public sealed partial class DataSetViewModel : ObservableObject
     /// <summary>A save is running (the next SaveAsync returns at once and the edits wait for the auto-save).</summary>
     public bool IsSaving => _saving;
 
+    /// <summary>Suppliers and Clients: a name may be saved only once.</summary>
+    public bool IsPartySheet => Session.Definition.Key is "suppliers" or "clients";
+
+    private static string NameKey(string? name) => BatchStudio.Core.Analysis.AnalysisMatcher.NormalizeName(name);
+
+    /// <summary>
+    /// ID of another record (saved or not) with the same name: case, spacing, punctuation and the usual
+    /// abbreviations do not count ("CO., LTD." = "Company Limited"). <paramref name="exceptId"/>: the record being edited.
+    /// </summary>
+    public string? SameNameId(string name, string? exceptId = null)
+    {
+        if (Table == null || Table.Columns.Count < 2) return null;
+        var key = NameKey(name);
+        if (key.Length == 0) return null;
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted) continue;
+            var id = (r[0] as string ?? "").Trim();
+            if (exceptId != null && string.Equals(id, exceptId.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+            if (NameKey(r[1] as string) == key) return id.Length > 0 ? id : "?";
+        }
+        return null;
+    }
+
+    /// <summary>Names saved more than once (first one found), with their IDs.</summary>
+    public (string Name, List<string> Ids)? FirstDuplicateName()
+    {
+        if (Table == null || Table.Columns.Count < 2) return null;
+        var seen = new Dictionary<string, (string Name, List<string> Ids)>();
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted) continue;
+            var name = (r[1] as string ?? "").Trim();
+            var key = NameKey(name);
+            if (key.Length == 0) continue;
+            var id = (r[0] as string ?? "").Trim();
+            if (seen.TryGetValue(key, out var e)) e.Ids.Add(id);
+            else seen[key] = (name, [id]);
+        }
+        foreach (var e in seen.Values)
+            if (e.Ids.Count > 1) return e;
+        return null;
+    }
+
     /// <summary>ID of the record whose name column (column 1, or <paramref name="nameColumn"/>) is this name, saved or not.</summary>
     public string? FindIdByName(string name, int nameColumn = 1)
     {
@@ -455,6 +499,12 @@ public sealed partial class DataSetViewModel : ObservableObject
         if (data.Rows.Any(r => string.IsNullOrWhiteSpace(r[0])))
         {
             Status = Loc.T("Validate.MissingId");
+            return;
+        }
+        // the same supplier / client name twice is never saved: the user deletes or renames one first
+        if (IsPartySheet && FirstDuplicateName() is { } dup)
+        {
+            Status = Loc.F("Validate.DuplicateName", dup.Name, string.Join(", ", dup.Ids));
             return;
         }
         int version = _editVersion;

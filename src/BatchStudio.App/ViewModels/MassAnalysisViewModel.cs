@@ -352,7 +352,8 @@ public sealed partial class MassInvoiceViewModel
                 // a supplier of that name already exists (name edited in the review): it is used instead
                 if (FindParty(name) is { } known) return (known.Id, known.Name);
                 // already added by an earlier Approve whose save had not finished (no second copy)
-                if (page.FindIdByName(name) is { Length: > 0 } pendingId) return (pendingId, name);
+                if (page.SameNameId(name) is { Length: > 0 } pendingId)
+                    return (pendingId, page.RecordValues(pendingId) is { } rv && rv.Length > 1 ? rv[1] : name);
                 var id = page.NextId();
                 page.AddRecord(AnalysisRecords.NewSupplier(page.Headers, id, i.Result, name, category, template));
                 newSuppliers++;
