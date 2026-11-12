@@ -500,6 +500,9 @@
     <sys:String x:Key="Analysis.LeftOut">كان فيه {1} صف فاضي بس: اتساب {0} مستند. اعمل Generate للفواتير دي وامسح الصفوف، وبعدين شغّل Analysis تاني على:</sys:String>
     <sys:String x:Key="Analysis.Engine.swift_corrected">الـ SWIFT اتصحح عن اللي مكتوب في المستند - قارنه بالمستند قبل الاعتماد</sys:String>
     <sys:String x:Key="Analysis.Engine.swift_check">صورة: حرف O والصفر شكلهم واحد في الـ SWIFT ده - قارنه بالمستند قبل الاعتماد</sys:String>
+    <sys:String x:Key="Analysis.AltAccounts">فيه {0} حساب نشط تاني في المستند هيتحفظوا كحسابات إضافية</sys:String>
+    <sys:String x:Key="Analysis.Engine.multiple_accounts">فيه أكتر من حساب نشط ومفيش حاجة بتحدد أنهي واحد للفاتورة دي - راجع الحساب</sys:String>
+    <sys:String x:Key="Analysis.Engine.future_account">فيه حساب مستقبلي في المستند ماتحفظش (لسه مش نشط)</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">الاسم في المستند: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">الاسم مأخوذ من رأس المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">الاسم مأخوذ من التوقيع</sys:String>

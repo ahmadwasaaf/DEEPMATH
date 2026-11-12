@@ -25,6 +25,8 @@ public sealed class AnalysisResult
     public double Seconds { get; init; }
     /// <summary>Remarks of the engine: name_from_heading, name_from_signature, account_unlabelled, account_differs, no_swift ...</summary>
     public List<string> Notes { get; init; } = [];
+    /// <summary>The document's other active accounts (another currency ...), as banking paragraphs: saved as further accounts.</summary>
+    public List<string> AltBanks { get; init; } = [];
 
     public static AnalysisResult? Parse(string jsonLine)
     {
@@ -56,6 +58,9 @@ public sealed class AnalysisResult
                 Activity = S("activity").Trim(),
                 Ids = ids,
                 Notes = notes,
+                AltBanks = r.TryGetProperty("bank_details_alt", out var ab) && ab.ValueKind == JsonValueKind.Array
+                    ? ab.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => (x.GetString() ?? "").Trim()).Where(x => x.Length > 0).ToList()
+                    : [],
                 Seconds = r.TryGetProperty("seconds", out var sec) && sec.ValueKind == JsonValueKind.Number ? sec.GetDouble() : 0,
             };
         }

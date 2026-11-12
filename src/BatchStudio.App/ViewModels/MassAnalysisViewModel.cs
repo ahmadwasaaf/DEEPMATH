@@ -49,7 +49,8 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     /// The SWIFT was corrected from what the document shows, or an image leaves O / 0 open in its location / branch part:
     /// financial data is never guessed - not ticked until a person checked it against the document.
     /// </summary>
-    public bool SwiftNeedsCheck => Result.Notes.Contains("swift_corrected") || Result.Notes.Contains("swift_check");
+    public bool SwiftNeedsCheck => Result.Notes.Contains("swift_corrected") || Result.Notes.Contains("swift_check")
+                                   || Result.Notes.Contains("multiple_accounts");
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
     public List<Party> Candidates => Match.Candidates;
@@ -129,6 +130,8 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
             if (Match.Note != "Analysis.NoteNothingRead")
             foreach (var n in Result.Notes)
                 if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
+            if (Match.Note != "Analysis.NoteNothingRead" && Result.AltBanks.Count > 0)
+                list.Add(Loc.F("Analysis.AltAccounts", Result.AltBanks.Count));
             return string.Join(" · ", list.Distinct());
         }
     }
@@ -362,15 +365,18 @@ public sealed partial class MassInvoiceViewModel
             string? AccountKey(AnalysisItemViewModel i) => i.Result.AccountIds.FirstOrDefault();
 
             // a banking paragraph as the next free "Banking Details N" of a record (once per account)
-            int? AddAccount(string id, AnalysisItemViewModel i)
+            int? AddAccount(string id, AnalysisItemViewModel i) => AddBank(id, i.Result.Bank, i.Result.AccountIds.ToList());
+
+            // a banking paragraph as the next free "Banking Details N" of a record (once per account)
+            int? AddBank(string id, string bankText, List<string> accountIds)
             {
-                var key = AccountKey(i) ?? i.Result.Bank;
+                var key = accountIds.FirstOrDefault() ?? bankText;
                 if (addedAccounts.TryGetValue((id, key), out var existing)) return existing;
                 var values = page.RecordValues(id);
                 if (values == null) return null;
                 // already one of its accounts (written earlier in this approval or before)
                 foreach (var b in SupplierBanks.Accounts(page.Headers, values).Where(b => b.Text.Trim().Length > 0))
-                    if (i.Result.AccountIds.Any(a => AnalysisMatcher.AccountIdsIn(b.Text).Any(k => AnalysisMatcher.SameAccount(a, k))))
+                    if (accountIds.Any(a => AnalysisMatcher.AccountIdsIn(b.Text).Any(k => AnalysisMatcher.SameAccount(a, k))))
                         return addedAccounts[(id, key)] = b.Number;
                 int n = AnalysisRecords.FreeBankNumber(page.Headers, values);
                 if (n < 1) return null;
@@ -378,7 +384,7 @@ public sealed partial class MassInvoiceViewModel
                 values = page.RecordValues(id)!;
                 int col = page.Headers.FindIndex(h => string.Equals(h, SupplierBanks.HeaderFor(n), StringComparison.OrdinalIgnoreCase));
                 if (col < 0) col = SupplierBanks.BaseColumn(page.Headers);
-                values[col] = i.Result.Bank;
+                values[col] = bankText;
                 page.UpdateRecord(id, values);
                 newAccounts++;
                 return addedAccounts[(id, key)] = n;
@@ -427,6 +433,12 @@ public sealed partial class MassInvoiceViewModel
                     }
                 }
             }
+
+            // the document's other active accounts (USD + EUR ...): saved as further accounts of the supplier, never instead of it
+            foreach (var (i, t) in target)
+                if (t.Id is { } sid)
+                    foreach (var alt in i.Result.AltBanks)
+                        AddBank(sid, alt, AnalysisMatcher.AccountIdsIn(alt).ToList());
 
             if (newSuppliers > 0 || newAccounts > 0 || page.IsDirty)
             {

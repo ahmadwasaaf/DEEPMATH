@@ -44,6 +44,15 @@ public class AnalysisTests
     }
 
     [Fact]
+    public void Parses_the_other_accounts_of_a_document()
+    {
+        var r = AnalysisResult.Parse("{\"name\":\"1.pdf\",\"ok\":true,\"company_name\":\"A CO\",\"bank_details\":\"Account Number: 111111111\"," +
+                                     "\"bank_details_alt\":[\"Account Number: 222222222\\nCurrency: USD\"]}");
+        Assert.Single(r!.AltBanks);
+        Assert.Contains("222222222", AnalysisMatcher.AccountIdsIn(r.AltBanks[0]));
+    }
+
+    [Fact]
     public void Known_account_matches_whatever_the_name()
     {
         var m = AnalysisMatcher.Match([Doc("1.pdf", "UNION GRP TRADING LTD", "NRA87253553585745554659")], Known)[0];
