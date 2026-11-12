@@ -374,6 +374,22 @@ public sealed partial class DataSetViewModel : ObservableObject
         Table.Rows.Add(row);
     }
 
+    /// <summary>A save is running (the next SaveAsync returns at once and the edits wait for the auto-save).</summary>
+    public bool IsSaving => _saving;
+
+    /// <summary>ID of the record whose name column (column 1, or <paramref name="nameColumn"/>) is this name, saved or not.</summary>
+    public string? FindIdByName(string name, int nameColumn = 1)
+    {
+        if (Table == null || nameColumn < 0 || nameColumn >= Table.Columns.Count) return null;
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted) continue;
+            if (string.Equals((r[nameColumn] as string ?? "").Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase))
+                return (r[0] as string ?? "").Trim();
+        }
+        return null;
+    }
+
     /// <summary>The values (header order) of the record with this ID, or null.</summary>
     public string[]? RecordValues(string id)
     {

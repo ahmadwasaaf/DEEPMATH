@@ -490,6 +490,8 @@
     <sys:String x:Key="Analysis.NoteNoBankNew">New supplier without bank details.</sys:String>
     <sys:String x:Key="Analysis.NoteNoAmount">The file name is not an amount: type the amount.</sys:String>
     <sys:String x:Key="Analysis.PickSupplier">Pick the right supplier in the list.</sys:String>
+    <sys:String x:Key="Analysis.Saving">Saving the Suppliers sheet ...</sys:String>
+    <sys:String x:Key="Analysis.NotSaved">The Suppliers sheet could not be saved yet ({0}). Close the workbook in Excel if it is open, then press Approve all again: nothing will be added twice.</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">Name in the document: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">Name taken from the document heading</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">Name taken from the signature</sys:String>

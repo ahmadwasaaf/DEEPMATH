@@ -351,6 +351,8 @@ public sealed partial class MassInvoiceViewModel
                 var name = i.SupplierName.Trim();
                 // a supplier of that name already exists (name edited in the review): it is used instead
                 if (FindParty(name) is { } known) return (known.Id, known.Name);
+                // already added by an earlier Approve whose save had not finished (no second copy)
+                if (page.FindIdByName(name) is { Length: > 0 } pendingId) return (pendingId, name);
                 var id = page.NextId();
                 page.AddRecord(AnalysisRecords.NewSupplier(page.Headers, id, i.Result, name, category, template));
                 newSuppliers++;
@@ -387,10 +389,29 @@ public sealed partial class MassInvoiceViewModel
                 }
             }
 
-            if (newSuppliers > 0 || newAccounts > 0)
+            if (newSuppliers > 0 || newAccounts > 0 || page.IsDirty)
             {
-                await page.SaveAsync();
-                if (page.IsDirty) { ReviewError = page.Status; return; }
+                // the Suppliers sheet must be saved before the rows use the new suppliers / accounts.
+                // A save already running (auto-save) or Excel busy: wait for it, then save again (up to ~90 s).
+                ReviewError = Loc.T("Analysis.Saving");
+                var until = DateTime.Now.AddSeconds(90);
+                while (true)
+                {
+                    if (!page.IsSaving) await page.SaveAsync();
+                    if (!page.IsDirty) break;
+                    if (page.Status.StartsWith(Loc.T("Status.Error"), StringComparison.Ordinal) || page.Status == Loc.T("Validate.MissingId"))
+                    {
+                        ReviewError = page.Status;
+                        return;
+                    }
+                    if (DateTime.Now > until)
+                    {
+                        ReviewError = Loc.F("Analysis.NotSaved", page.Status);
+                        return;
+                    }
+                    await Task.Delay(700);
+                }
+                ReviewError = "";
             }
             Refresh();
 

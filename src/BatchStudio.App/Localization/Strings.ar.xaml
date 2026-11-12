@@ -490,6 +490,8 @@
     <sys:String x:Key="Analysis.NoteNoBankNew">مورد جديد من غير بيانات بنك.</sys:String>
     <sys:String x:Key="Analysis.NoteNoAmount">اسم الملف مش مبلغ: اكتب المبلغ.</sys:String>
     <sys:String x:Key="Analysis.PickSupplier">اختار المورد الصح من القائمة.</sys:String>
+    <sys:String x:Key="Analysis.Saving">جاري حفظ شيت الموردين ...</sys:String>
+    <sys:String x:Key="Analysis.NotSaved">لسه ماقدرناش نحفظ شيت الموردين ({0}). اقفل ملف الإكسيل لو مفتوح، وبعدين اضغط اعتماد الكل تاني: مفيش حاجة هتتضاف مرتين.</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">الاسم في المستند: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">الاسم مأخوذ من رأس المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">الاسم مأخوذ من التوقيع</sys:String>
