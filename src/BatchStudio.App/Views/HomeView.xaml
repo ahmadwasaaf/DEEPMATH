@@ -297,6 +297,11 @@
                             <Setter Property="FontWeight" Value="SemiBold" />
                             <Setter Property="VerticalAlignment" Value="Center" />
                             <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="TextDecorations" Value="Underline" />
+                                </Trigger>
+                            </Style.Triggers>
                         </Style>
                     </Grid.Resources>
                     <Grid.ColumnDefinitions>
@@ -312,13 +317,26 @@
                     </Grid.RowDefinitions>
                     <!-- companies: the wide side -->
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource Home.PulseTopSupplier}" Style="{StaticResource PulseLabel}" />
-                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PulseTopSupplier}" ToolTip="{Binding PulseTopSupplierTip}" Style="{StaticResource PulseValue}" />
+                    <!-- click: the company's full report -->
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PulseTopSupplier}" ToolTip="{Binding PulseTopSupplierTip}" Style="{StaticResource PulseValue}" Cursor="Hand">
+                        <TextBlock.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding OpenTopSupplierCommand}" />
+                        </TextBlock.InputBindings>
+                    </TextBlock>
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource Home.PulseTopClient}" Style="{StaticResource PulseLabel}" />
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PulseTopClient}" ToolTip="{Binding PulseTopClientTip}" Style="{StaticResource PulseValue}" />
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PulseTopClient}" ToolTip="{Binding PulseTopClientTip}" Style="{StaticResource PulseValue}" Cursor="Hand">
+                        <TextBlock.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding OpenTopClientCommand}" />
+                        </TextBlock.InputBindings>
+                    </TextBlock>
                     <!-- total transactions: label on top, the value large -->
                     <Border x:Name="PulseDivider" Grid.RowSpan="2" Grid.Column="2" Width="1" Margin="20,2" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
                     <StackPanel x:Name="TotalBlock" Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="2" VerticalAlignment="Center" MinWidth="170"
-                                HorizontalAlignment="Right" Margin="0,0,44,0">
+                                HorizontalAlignment="Right" Margin="0,0,44,0" Background="Transparent" Cursor="Hand">
+                        <!-- click: the Dashboard -->
+                        <StackPanel.InputBindings>
+                            <MouseBinding MouseAction="LeftClick" Command="{Binding OpenDashboardCommand}" />
+                        </StackPanel.InputBindings>
                         <TextBlock Text="{DynamicResource Home.PulseValue}" Style="{StaticResource PulseLabel}" Margin="0,0,0,2" HorizontalAlignment="Center" />
                         <TextBlock Text="{Binding PulseTotal}" ToolTip="{Binding PulseTotalTip}" FontSize="30" FontWeight="SemiBold"
                                    FlowDirection="LeftToRight" HorizontalAlignment="Center" />
@@ -343,7 +361,11 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <!-- solid base: the particles pass behind the cards, not through them -->
-<Border Width="210" Height="132" Margin="0,0,14,14" CornerRadius="8" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+<!-- click: opens the card's page -->
+<Border Width="210" Height="132" Margin="0,0,14,14" CornerRadius="8" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" Cursor="Hand">
+<Border.InputBindings>
+    <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.OpenTileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
+</Border.InputBindings>
 <Border Style="{StaticResource Card}">
                             <Grid>
                                 <Border HorizontalAlignment="Right" VerticalAlignment="Top" Width="34" Height="34" CornerRadius="10" Margin="0,-4,-4,0"

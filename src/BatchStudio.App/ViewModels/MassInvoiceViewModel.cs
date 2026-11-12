@@ -128,7 +128,7 @@ public sealed partial class MassRowViewModel : ObservableObject
 /// </summary>
 public sealed partial class MassInvoiceViewModel(MainViewModel main) : ObservableObject
 {
-    public const int MaxRows = 50;
+    public const int MaxRows = 200;
 
     public ObservableCollection<MassRowViewModel> Rows { get; } = [];
     public List<string> PartyNames { get; private set; } = [];

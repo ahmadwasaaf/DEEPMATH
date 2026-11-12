@@ -18,6 +18,13 @@ public partial class MainWindow : Window
             WindowState = WindowState.Maximized;
         }
         // Esc closes the supplier / client details
+        // mouse side buttons: back / forward between pages (like a browser)
+        PreviewMouseUp += (_, e) =>
+        {
+            if (DataContext is not MainViewModel vm) return;
+            if (e.ChangedButton == System.Windows.Input.MouseButton.XButton1) { vm.GoBack(); e.Handled = true; }
+            else if (e.ChangedButton == System.Windows.Input.MouseButton.XButton2) { vm.GoForward(); e.Handled = true; }
+        };
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == System.Windows.Input.Key.Escape && DataContext is MainViewModel { IsPartyDetailsOpen: true } vm)

@@ -281,7 +281,7 @@
     <sys:String x:Key="Inv.NoExcelFormat">Note: Excel could not write the invoice ({0}); the simple format was used.</sys:String>
     <sys:String x:Key="Nav.Mass">Mass Invoice</sys:String>
     <sys:String x:Key="Mass.Title">MASS INVOICE</sys:String>
-    <sys:String x:Key="Mass.Subtitle">Up to 50 invoices in one go: pick the companies, enter totals and item counts, then Generate.</sys:String>
+    <sys:String x:Key="Mass.Subtitle">Up to 200 invoices in one go: pick the companies, enter totals and item counts, then Generate.</sys:String>
     <sys:String x:Key="Mass.Supplier">SUPPLIERS</sys:String>
     <sys:String x:Key="Mass.Client">CLIENTS</sys:String>
     <sys:String x:Key="Mass.Template">TEMPLATE</sys:String>
@@ -454,7 +454,7 @@
     <sys:String x:Key="Analysis.Cancelled">Analysis cancelled.</sys:String>
     <sys:String x:Key="Analysis.Failed">The analysis could not run:&#10;{0}</sys:String>
     <sys:String x:Key="Analysis.NoDocuments">No documents were found in that folder.</sys:String>
-    <sys:String x:Key="Analysis.NoFreeRows">All 50 rows are in use: clear some rows first.</sys:String>
+    <sys:String x:Key="Analysis.NoFreeRows">All 200 rows are in use: clear some rows first.</sys:String>
     <sys:String x:Key="Analysis.NoEngine">The extraction engine folder is not set. Open Settings › Analysis engine and pick the engine folder.</sys:String>
     <sys:String x:Key="Analysis.ErrFolder">The engine folder does not exist.</sys:String>
     <sys:String x:Key="Analysis.ErrScript">{0} is not in the engine folder.</sys:String>
@@ -497,6 +497,7 @@
     <sys:String x:Key="Analysis.SelectAll">Select all / none</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">Test document</sys:String>
     <sys:String x:Key="Analysis.Engine.test_document">Marked as a sample / training document: not ticked</sys:String>
+    <sys:String x:Key="Analysis.LeftOut">Only {1} rows were free: {0} document(s) were left out. Generate these invoices, clear the rows, then run Analysis again for:</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">Name in the document: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">Name taken from the document heading</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">Name taken from the signature</sys:String>

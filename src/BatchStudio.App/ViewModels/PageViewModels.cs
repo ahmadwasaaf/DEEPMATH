@@ -15,6 +15,8 @@ public sealed class StatTile
     public required string Title { get; init; }
     public required string Value { get; init; }
     public required string Glyph { get; init; }
+    /// <summary>The sidebar page the card opens (Nav.Suppliers ...).</summary>
+    public string NavKey { get; init; } = "";
 }
 
 /// <summary>A colour square of the accent palette (Settings → Appearance).</summary>
@@ -71,6 +73,30 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         OpenSettings();
     }
 
+    /// <summary>A stat card: opens its page (Suppliers, Clients ... Invoice History).</summary>
+    [RelayCommand]
+    private void OpenTile(StatTile? tile)
+    {
+        if (tile != null && tile.NavKey.Length > 0) main.OpenNav(tile.NavKey);
+    }
+
+    /// <summary>Top supplier / client of the pulse: its full report (all time).</summary>
+    [RelayCommand]
+    private void OpenTopSupplier()
+    {
+        if (PulseTopSupplier is { Length: > 1 } n) main.ShowCompanyReport(n, "SUPPLIERS", new BatchStudio.Core.Reports.DashboardFilter());
+    }
+
+    [RelayCommand]
+    private void OpenTopClient()
+    {
+        if (PulseTopClient is { Length: > 1 } n) main.ShowCompanyReport(n, "CLIENTS", new BatchStudio.Core.Reports.DashboardFilter());
+    }
+
+    /// <summary>Total transactions: the Dashboard.</summary>
+    [RelayCommand]
+    private void OpenDashboard() => main.OpenNav("Nav.Dashboard");
+
     [RelayCommand]
     private void OpenSettings()
     {
@@ -92,7 +118,7 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         {
             var p = main.DataPages.FirstOrDefault(x => x.Session.Definition.Key == key);
             if (p == null) continue;
-            Tiles.Add(new StatTile { Title = p.Title, Value = p.RowCount.ToString("N0"), Glyph = main.Nav.FirstOrDefault(n => n.Key == nav)?.Glyph ?? "" });
+            Tiles.Add(new StatTile { Title = p.Title, Value = p.RowCount.ToString("N0"), Glyph = main.Nav.FirstOrDefault(n => n.Key == nav)?.Glyph ?? "", NavKey = nav });
         }
         var tpl = TemplateRegistry.Scan(root);
         Tiles.Add(new StatTile
@@ -100,6 +126,7 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             Title = Loc.T("Nav.Templates"),
             Value = $"{tpl.Count(t => t.Status == TemplateStatus.Linked)} / {tpl.Count}",
             Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.Templates")?.Glyph ?? "",
+            NavKey = "Nav.Templates",
         });
         RefreshTicker();
         foreach (var d in DataSets.All)
@@ -117,6 +144,7 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             Title = title,
             Value = count.ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
             Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.History")?.Glyph ?? "",
+            NavKey = "Nav.History",
         };
         int i = -1;
         for (int k = 0; k < Tiles.Count; k++) if (Tiles[k].Title == title) { i = k; break; }

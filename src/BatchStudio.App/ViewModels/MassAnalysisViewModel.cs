@@ -335,7 +335,10 @@ public sealed partial class MassInvoiceViewModel
         var chosen = ReviewItems.Where(i => i.Include && i.IsReady).ToList();
         if (chosen.Count == 0) { ReviewError = Loc.T("Analysis.NothingChosen"); return; }
         var freeRows = Rows.Where(r => r.IsEmpty && !r.IsArchived).ToList();
-        if (freeRows.Count < chosen.Count) { ReviewError = Loc.F("Analysis.TooMany", chosen.Count, freeRows.Count); return; }
+        if (freeRows.Count == 0) { ReviewError = Loc.T("Analysis.NoFreeRows"); return; }
+        // more documents than free rows: the first ones (review order) go on the rows, the rest is listed afterwards
+        var leftOut = chosen.Skip(freeRows.Count).ToList();
+        if (leftOut.Count > 0) chosen = chosen.Take(freeRows.Count).ToList();
         var page = Main.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "suppliers");
         if (page == null) { ReviewError = "Suppliers sheet not found."; return; }
 
@@ -461,6 +464,8 @@ public sealed partial class MassInvoiceViewModel
             IsReviewing = false;
             ReviewItems.Clear();
             Status = Loc.F("Analysis.Applied", k, newSuppliers, newAccounts);
+            if (leftOut.Count > 0)
+                Dialogs.Info(Loc.F("Analysis.LeftOut", leftOut.Count, k) + "\n\n" + string.Join("\n", leftOut.Select(i => "•  " + i.FileName)));
         }
         catch (Exception ex) { ReviewError = $"{Loc.T("Status.Error")}: {ex.Message}"; }
         finally { IsBusy = false; }

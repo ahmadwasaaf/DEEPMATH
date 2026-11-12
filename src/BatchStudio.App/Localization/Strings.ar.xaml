@@ -281,7 +281,7 @@
     <sys:String x:Key="Inv.NoExcelFormat">ملاحظة: تعذّر على Excel كتابة الفاتورة ({0})؛ تم استخدام التنسيق البسيط.</sys:String>
     <sys:String x:Key="Nav.Mass">فواتير بالجملة</sys:String>
     <sys:String x:Key="Mass.Title">MASS INVOICE</sys:String>
-    <sys:String x:Key="Mass.Subtitle">حتى 50 فاتورة مرة واحدة: اختر الشركات واكتب المبالغ وعدد الأصناف ثم اضغط إنشاء.</sys:String>
+    <sys:String x:Key="Mass.Subtitle">حتى 200 فاتورة مرة واحدة: اختر الشركات واكتب المبالغ وعدد الأصناف ثم اضغط إنشاء.</sys:String>
     <sys:String x:Key="Mass.Supplier">الموردين</sys:String>
     <sys:String x:Key="Mass.Client">العملاء</sys:String>
     <sys:String x:Key="Mass.Template">القالب</sys:String>
@@ -454,7 +454,7 @@
     <sys:String x:Key="Analysis.Cancelled">تم إلغاء التحليل.</sys:String>
     <sys:String x:Key="Analysis.Failed">التحليل ما اشتغلش:&#10;{0}</sys:String>
     <sys:String x:Key="Analysis.NoDocuments">مفيش مستندات في المجلد ده.</sys:String>
-    <sys:String x:Key="Analysis.NoFreeRows">الـ 50 صف كلهم مستخدمين: امسح شوية صفوف الأول.</sys:String>
+    <sys:String x:Key="Analysis.NoFreeRows">الـ 200 صف كلهم مستخدمين: امسح شوية صفوف الأول.</sys:String>
     <sys:String x:Key="Analysis.NoEngine">مجلد محرك الاستخراج مش متحدد. افتح الإعدادات › محرك التحليل واختار مجلد المحرك.</sys:String>
     <sys:String x:Key="Analysis.ErrFolder">مجلد المحرك مش موجود.</sys:String>
     <sys:String x:Key="Analysis.ErrScript">{0} مش موجود في مجلد المحرك.</sys:String>
@@ -497,6 +497,7 @@
     <sys:String x:Key="Analysis.SelectAll">تحديد الكل / إلغاء التحديد</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">مستند اختبار</sys:String>
     <sys:String x:Key="Analysis.Engine.test_document">المستند مكتوب فيه إنه تجريبي / للتدريب: مش متعلّم عليه</sys:String>
+    <sys:String x:Key="Analysis.LeftOut">كان فيه {1} صف فاضي بس: اتساب {0} مستند. اعمل Generate للفواتير دي وامسح الصفوف، وبعدين شغّل Analysis تاني على:</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">الاسم في المستند: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">الاسم مأخوذ من رأس المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">الاسم مأخوذ من التوقيع</sys:String>

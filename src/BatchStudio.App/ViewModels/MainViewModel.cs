@@ -154,6 +154,49 @@ public sealed partial class MainViewModel : ObservableObject
 
     private DataSetViewModel? Page(string key) => DataPages.FirstOrDefault(p => p.Session.Definition.Key == key);
 
+    // ---------------------------------------------------------------- back / forward (mouse side buttons)
+    private readonly List<object> _back = [];
+    private readonly List<object> _forward = [];
+    private bool _historyMove;
+
+    partial void OnCurrentPageChanged(object? oldValue, object? newValue)
+    {
+        if (_historyMove || oldValue == null || ReferenceEquals(oldValue, newValue) || ReferenceEquals(oldValue, Setup)) return;
+        _back.Add(oldValue);
+        if (_back.Count > 40) _back.RemoveAt(0);
+        _forward.Clear();
+    }
+
+    /// <summary>Mouse back button: the page shown before (Home → Suppliers → back = Home).</summary>
+    public void GoBack() => Move(_back, _forward);
+
+    /// <summary>Mouse forward button: the page left with Back.</summary>
+    public void GoForward() => Move(_forward, _back);
+
+    private void Move(List<object> from, List<object> to)
+    {
+        if (from.Count == 0 || CurrentPage == null || !HasEntity) return;
+        var target = from[^1];
+        from.RemoveAt(from.Count - 1);
+        to.Add(CurrentPage);
+        _historyMove = true;
+        try
+        {
+            // a sidebar page: select it there (it refreshes like a click); a report / details page: shown as it was
+            var nav = Nav.FirstOrDefault(n => ReferenceEquals(n.Page(), target));
+            if (nav != null && nav != SelectedNav) SelectedNav = nav;
+            else if (nav == null) CurrentPage = target;
+            else CurrentPage = target;
+        }
+        finally { _historyMove = false; }
+    }
+
+    /// <summary>Opens a sidebar page by its key (Home cards, pulse).</summary>
+    public void OpenNav(string key)
+    {
+        if (Nav.FirstOrDefault(n => n.Key == key) is { } nav) SelectedNav = nav;
+    }
+
     partial void OnSelectedNavChanged(NavItem? value)
     {
         if (value == null) return;
