@@ -46,6 +46,24 @@ public class HealthCheckTests
         Assert.Empty(HealthCheck.Suppliers(Headers, rows));
     }
 
+    [Fact]
+    public void Numbered_and_unrelated_names_are_not_close()
+    {
+        var rows = new List<IReadOnlyList<string>>
+        {
+            Row("SUP-001", "Supplier 001 Trading Co., Limited", "Account Number: 1234567890\nSWIFT CODE: ABCDCNSH"),
+            Row("SUP-002", "Supplier 002 Trading Co., Limited", "Account Number: 2234567890\nSWIFT CODE: ABCDCNSH"),
+            Row("SUP-003", "SHAOXING KEQIAO YIFENG IMPORT AND EXPORT CO., LTD.", "Account Number: 3234567890\nSWIFT CODE: ABCDCNSH"),
+            Row("SUP-004", "SHAOXING ZHENLONG IMPORT AND EXPORT CO., LTD.", "Account Number: 4234567890\nSWIFT CODE: ABCDCNSH"),
+            Row("SUP-005", "SHAOXING MAOLI IMPORT&EXPORT CO., LTD", "Account Number: 5234567890\nSWIFT CODE: ABCDCNSH"),
+            Row("SUP-006", "YIWU VERLAN IMP AND EXP CO., LIMITED", "Account Number: 6234567890\nSWIFT CODE: ABCDCNSH"),
+            Row("SUP-007", "YIWU ELORA STATIONERY COMPANY", "Account Number: 7234567890\nSWIFT CODE: ABCDCNSH"),
+            Row("SUP-008", "HK SHUANG MEI TRADE LIMITED", "Account Number: 8234567890\nSWIFT CODE: ABCDCNSH"),
+            Row("SUP-009", "HK LEDWAVE OPTOELECTRONIC LIMITED", "Account Number: 9234567890\nSWIFT CODE: ABCDCNSH"),
+        };
+        Assert.Empty(HealthCheck.Suppliers(Headers, rows));
+    }
+
     [Theory]
     [InlineData("Iaxghty", true)]
     [InlineData("Standard", false)]

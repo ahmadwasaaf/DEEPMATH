@@ -302,18 +302,32 @@ public static partial class AnalysisMatcher
     {
         if (a.Length == 0 || b.Length == 0) return 0;
         if (a == b) return 1;
-        double chars = 1.0 - (double)Levenshtein(a, b) / Math.Max(a.Length, b.Length);
         var wa = a.Split(' ').ToHashSet();
         var wb = b.Split(' ').ToHashSet();
-        // the legal form alone ("COMPANY LIMITED") does not make two companies the same
-        var generic = new HashSet<string> { "COMPANY", "LIMITED", "CORPORATION", "AND", "INCORPORATED", "LLC", "TRADING", "INTERNATIONAL", "GROUP", "IMPORT", "EXPORT" };
-        var ka = wa.Except(generic).ToHashSet();
-        var kb = wb.Except(generic).ToHashSet();
-        double words = ka.Count == 0 || kb.Count == 0 ? 0 : (double)ka.Intersect(kb).Count() / Math.Max(ka.Count, kb.Count);
+        // numbers in the names must agree: "SUPPLIER 001 TRADING" is not "SUPPLIER 002 TRADING"
+        var na = wa.Where(w => w.Any(char.IsDigit)).ToHashSet();
+        var nb = wb.Where(w => w.Any(char.IsDigit)).ToHashSet();
+        if ((na.Count > 0 || nb.Count > 0) && !na.SetEquals(nb)) return 0;
+        // the legal form and trade words ("IMPORT AND EXPORT COMPANY LIMITED") do not make two companies the same:
+        // they are compared on their own words
+        var ka = wa.Except(Generic).ToHashSet();
+        var kb = wb.Except(Generic).ToHashSet();
+        if (ka.Count == 0 || kb.Count == 0)
+            return 1.0 - (double)Levenshtein(a, b) / Math.Max(a.Length, b.Length);
+        var ca = string.Join(' ', wa.Where(ka.Contains));
+        var cb = string.Join(' ', wb.Where(kb.Contains));
+        double chars = 1.0 - (double)Levenshtein(ca, cb) / Math.Max(ca.Length, cb.Length);
+        double words = (double)ka.Intersect(kb).Count() / Math.Max(ka.Count, kb.Count);
         // the distinctive words all equal and the rest only differs by the legal form
-        double sameCore = ka.Count > 0 && ka.SetEquals(kb) ? 0.97 : 0;
+        double sameCore = ka.SetEquals(kb) ? 0.97 : 0;
         return Math.Max(chars, Math.Max(sameCore, words * 0.95));
     }
+
+    private static readonly HashSet<string> Generic = new(StringComparer.Ordinal)
+    {
+        "COMPANY", "LIMITED", "CORPORATION", "AND", "INCORPORATED", "LLC", "LLP", "PLC", "TRADING", "TRADE", "INTERNATIONAL",
+        "GROUP", "IMPORT", "EXPORT", "IMP", "EXP", "INDUSTRIAL", "INDUSTRY", "HONGKONG", "HK", "CHINA", "OF",
+    };
 
     private static int Levenshtein(string a, string b)
     {
