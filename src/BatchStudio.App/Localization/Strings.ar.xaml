@@ -484,11 +484,12 @@
     <sys:String x:Key="Analysis.StSameNewOther">مورد جديد (اللي فوق) · حساب تاني</sys:String>
     <sys:String x:Key="Analysis.StAttention">محتاج مراجعة</sys:String>
     <sys:String x:Key="Analysis.NoteNothingRead">ماقدرناش نقرا حاجة من المستند ده.</sys:String>
-    <sys:String x:Key="Analysis.NoteTwoSuppliers">أكتر من مورد مناسب:</sys:String>
+    <sys:String x:Key="Analysis.NoteTwoSuppliers">أكتر من مورد عليه نفس الحساب / الاسم.</sys:String>
     <sys:String x:Key="Analysis.NoteNoBank">مفيش بيانات بنك في المستند: هيتستخدم الحساب الافتراضي للمورد.</sys:String>
     <sys:String x:Key="Analysis.NoteNoName">مالقيناش اسم المورد.</sys:String>
     <sys:String x:Key="Analysis.NoteNoBankNew">مورد جديد من غير بيانات بنك.</sys:String>
     <sys:String x:Key="Analysis.NoteNoAmount">اسم الملف مش مبلغ: اكتب المبلغ.</sys:String>
+    <sys:String x:Key="Analysis.PickSupplier">اختار المورد الصح من القائمة.</sys:String>
     <sys:String x:Key="Analysis.NoteSimilar">الاسم في المستند: {0}</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_heading">الاسم مأخوذ من رأس المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.name_from_signature">الاسم مأخوذ من التوقيع</sys:String>

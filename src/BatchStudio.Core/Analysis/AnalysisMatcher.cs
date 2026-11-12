@@ -139,6 +139,19 @@ public static partial class AnalysisMatcher
             // 1. the account number / IBAN
             var byAccount = r.AccountIds.SelectMany(id => known.Where(k => SameAccount(id, k.Id))).ToList();
             var accountParties = byAccount.Select(k => k.Party).Distinct().ToList();
+            if (accountParties.Count > 1)
+            {
+                // the same account on two suppliers (copied by mistake ...): the name in the document decides
+                var docKey = NormalizeName(r.CompanyName);
+                var byName = accountParties
+                    .Select(p => (Party: p, Score: docKey.Length > 0 ? Similarity(docKey, NormalizeName(p.Name)) : 0))
+                    .Where(x => x.Score >= SameNameScore).OrderByDescending(x => x.Score).ToList();
+                if (byName.Count == 1 || (byName.Count > 1 && byName[1].Score < byName[0].Score - 0.02))
+                {
+                    byAccount = byAccount.Where(k => k.Party == byName[0].Party).ToList();
+                    accountParties = [byName[0].Party];
+                }
+            }
             if (accountParties.Count == 1)
             {
                 m.Supplier = accountParties[0];

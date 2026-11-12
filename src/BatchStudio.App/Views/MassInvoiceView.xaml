@@ -346,6 +346,10 @@
                                             <TextBlock Text="{Binding SupplierName}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="4,0,0,0" FlowDirection="LeftToRight" HorizontalAlignment="Left"
                                                        Visibility="{Binding CanEditName, Converter={StaticResource InverseBoolToVis}}" />
                                             <TextBlock Text="{Binding AccountText}" Style="{StaticResource Muted}" FontSize="11" Margin="4,2,0,0" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
+                                            <!-- more than one supplier fits: pick the right one -->
+                                            <ComboBox ItemsSource="{Binding Candidates}" SelectedItem="{Binding Picked}" DisplayMemberPath="Name" Margin="0,6,0,0"
+                                                      HorizontalAlignment="Stretch" FlowDirection="LeftToRight"
+                                                      Visibility="{Binding HasCandidates, Converter={StaticResource BoolToVis}}" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>

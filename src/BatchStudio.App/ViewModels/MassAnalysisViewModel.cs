@@ -37,6 +37,33 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     [ObservableProperty] private bool _include;
 
     public bool IsNewSupplier => Match.Status == AnalysisStatus.NewSupplier && Match.Owner == null;
+
+    /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
+    public List<Party> Candidates => Match.Candidates;
+    public bool HasCandidates => Match.Candidates.Count > 0;
+    [ObservableProperty] private Party? _picked;
+
+    partial void OnPickedChanged(Party? value)
+    {
+        if (value == null) return;
+        Match.Supplier = value;
+        Match.Owner = null;
+        Match.OtherAccount = false;
+        Match.MatchedBy = "picked";
+        // the document's account: one of the picked supplier's accounts, or a new one for it
+        var hit = value.Banks.Where(b => b.Text.Trim().Length > 0).FirstOrDefault(b =>
+            Result.AccountIds.Any(a => AnalysisMatcher.AccountIdsIn(b.Text).Any(k => AnalysisMatcher.SameAccount(a, k))));
+        if (hit != null) { Match.Status = AnalysisStatus.Matched; Match.BankNumber = hit.Number; }
+        else if (Result.AccountIds.Any() && Result.Bank.Length > 0) { Match.Status = AnalysisStatus.NewAccount; Match.BankNumber = null; }
+        else { Match.Status = AnalysisStatus.Matched; Match.BankNumber = null; }
+        Match.Note = Result.Amount is null or <= 0 ? "Analysis.NoteNoAmount" : "";
+        SupplierName = value.Name;
+        OnPropertyChanged(nameof(State));
+        OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(IsNewSupplier));
+        OnPropertyChanged(nameof(CanEditName));
+        Changed();
+    }
     public bool CanEditName => IsNewSupplier;
 
     public decimal? Amount =>
@@ -83,7 +110,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
             if (Match.Note.Length > 0 && !(Match.Note == "Analysis.NoteNoAmount" && Amount != null)) list.Add(Loc.T(Match.Note));
             if (Match.Status == AnalysisStatus.Attention && Result.Error is { Length: > 0 } err && Match.Note == "Analysis.NoteNothingRead") list.Add(err);
             if (Match.MatchedBy == "similar" && Match.Supplier != null) list.Add(Loc.F("Analysis.NoteSimilar", Result.CompanyName));
-            if (Match.Candidates.Count > 0) list.Add(string.Join(" / ", Match.Candidates.Select(c => c.Name)));
+            if (Match.Candidates.Count > 0 && Picked == null) list.Add(Loc.T("Analysis.PickSupplier"));
             foreach (var n in Result.Notes)
                 if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
             return string.Join(" · ", list.Distinct());

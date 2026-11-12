@@ -54,6 +54,20 @@ public class AnalysisTests
     }
 
     [Fact]
+    public void Account_on_two_suppliers_is_decided_by_the_name()
+    {
+        List<Party> parties =
+        [
+            Supplier("SUP-12", "JIANGMEN AXO MOTOBIKE CO., LTD.", "Swift Code: BKCHCNBJ44E\nAccount Number: 691808261764"),
+            Supplier("SUP-29", "LIRAN GROUP TRADING CO LIMITED", "Account Number: 642-329090-009", "Account Number: 6918 0826 1764"),
+        ];
+        var m = AnalysisMatcher.Match([Doc("70000.jpeg", "JIANGMEN AXO MOTOBIKE CO LTD", "691808261764", "BKCHCNBJ44E", 70000m)], parties)[0];
+        Assert.Equal(AnalysisStatus.Matched, m.Status);
+        Assert.Equal("SUP-12", m.Supplier!.Id);
+        Assert.Equal(1, m.BankNumber);
+    }
+
+    [Fact]
     public void Second_account_of_a_supplier_is_used()
     {
         var m = AnalysisMatcher.Match([Doc("2.pdf", "JIANGMEN KORVEN TECHNOLOGY CO., LTD", "675458598093558", "CMBCCNBS200")], Known)[0];
