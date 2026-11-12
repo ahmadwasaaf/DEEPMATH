@@ -116,6 +116,7 @@ public sealed partial class DataSetViewModel : ObservableObject
             BuildTable(Session.Current);
             IsDirty = false;
             Status = Loc.T("Status.Synced");
+            RenumberIds();
         }
         catch (Exception ex)
         {
@@ -377,6 +378,30 @@ public sealed partial class DataSetViewModel : ObservableObject
     /// <summary>A save is running (the next SaveAsync returns at once and the edits wait for the auto-save).</summary>
     public bool IsSaving => _saving;
 
+    /// <summary>
+    /// Suppliers / Clients: the IDs stay a serial without gaps (SUP-001 ...). After a delete (here or in Excel) the
+    /// records after it move up one number; the change is saved like any edit. Invoices do not keep these IDs.
+    /// </summary>
+    private void RenumberIds()
+    {
+        if (!IsPartySheet || Table == null) return;
+        var rows = Table.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Deleted).ToList();
+        var fresh = BatchStudio.Core.Data.IdSequence.Renumber(rows.Select(r => r[0] as string).ToList(), Session.Definition.IdPrefix);
+        if (fresh == null) return;
+        var keepSel = SelectedRow != null && SelectedRow.Row.RowState != DataRowState.Deleted ? SelectedRow.Row : null;
+        int changed = 0;
+        for (int i = 0; i < rows.Count; i++)
+        {
+            if (string.Equals((rows[i][0] as string ?? "").Trim(), fresh[i], StringComparison.Ordinal)) continue;
+            rows[i][0] = fresh[i];
+            changed++;
+        }
+        if (changed == 0) return;
+        Status = Loc.F("Status.Renumbered", changed);
+        if (keepSel != null) SelectedRow = View?.Cast<DataRowView>().FirstOrDefault(v => v.Row == keepSel);
+        _main.RefreshLists();
+    }
+
     /// <summary>Suppliers and Clients: a name may be saved only once.</summary>
     public bool IsPartySheet => Session.Definition.Key is "suppliers" or "clients";
 
@@ -485,6 +510,7 @@ public sealed partial class DataSetViewModel : ObservableObject
         if (!Dialogs.Confirm($"{Loc.T("Common.Delete")} {id}?")) return;
         SelectedRow.Delete();
         SelectedRow = null;
+        RenumberIds();
     }
 
     /// <summary>Saves into the workbook in the background (Excel writes it); edits made meanwhile stay pending.</summary>
@@ -610,6 +636,7 @@ public sealed partial class DataSetViewModel : ObservableObject
                     BuildTable(Session.Current);
                     IsDirty = false;
                     Status = Loc.T("Status.Reloaded") + $"  ·  {DateTime.Now:HH:mm:ss}";
+                    RenumberIds();                   // a row deleted in Excel: the serial is closed up and written back
                     break;
                 case ExternalChangeOutcome.Merged:
                     BuildTable(Session.Current);

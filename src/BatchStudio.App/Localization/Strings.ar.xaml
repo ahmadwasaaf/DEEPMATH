@@ -35,6 +35,7 @@
     <sys:String x:Key="Conflict.Title">تعارض في المزامنة</sys:String>
     <sys:String x:Key="Conflict.Message">هذه السجلات تم تعديلها في البرنامج وفي Excel معًا:&#x0a;&#x0a;{0}&#x0a;&#x0a;نعم = الاحتفاظ بنسخة البرنامج&#x0a;لا = استخدام نسخة Excel</sys:String>
     <sys:String x:Key="Validate.DuplicateName">ماتحفظش: الاسم &quot;{0}&quot; متسجل أكتر من مرة ({1}). امسح أو غيّر اسم الزيادة.</sys:String>
+    <sys:String x:Key="Status.Renumbered">اتصلّح المسلسل ({0} سجل) · جاري الحفظ ...</sys:String>
     <sys:String x:Key="Validate.MissingId">يوجد صفوف بدون رقم تعريف. املأ العمود الأول قبل الحفظ.</sys:String>
     <sys:String x:Key="Close.Pending">بعض التغييرات لم تُحفظ بعد لأن ملفًا مفتوح في Excel. هل تريد الإغلاق؟</sys:String>
 
