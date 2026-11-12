@@ -97,6 +97,27 @@ public partial class App : Application
                 }, DispatcherPriority.ContextIdle);
             }
             if (arg == "newinvoice-banks") ScreenshotBanks(vm);
+            // screenshot checks: the supplier / client details from Reports (ID), the preview on the Templates page
+            if (arg == "reports-party")
+            {
+                arg = "reports";
+                Dispatcher.BeginInvoke(async () =>
+                {
+                    await Task.Delay(2000);
+                    if (vm.Reports.Rows.FirstOrDefault() is { } p) vm.Reports.OpenPartyCommand.Execute(p);
+                }, DispatcherPriority.ContextIdle);
+            }
+            if (arg == "templates-preview")
+            {
+                arg = "templates";
+                Dispatcher.BeginInvoke(async () =>
+                {
+                    await Task.Delay(2500);
+                    var list = FindAll<System.Windows.Controls.ListBox>(window).FirstOrDefault(l => ReferenceEquals(l.ItemsSource, vm.Templates.Items));
+                    if (list?.ItemContainerGenerator.ContainerFromIndex(Math.Min(1, list.Items.Count - 1)) is System.Windows.Controls.ListBoxItem item)
+                        await TemplatePreview.ShowAsync(item);
+                }, DispatcherPriority.ContextIdle);
+            }
             bool preview = arg == "newinvoice-preview";
             if (preview)
             {

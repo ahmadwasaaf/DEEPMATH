@@ -72,5 +72,14 @@
 
         <!-- page -->
         <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" Margin="28,22,28,20" Focusable="False" />
+
+        <!-- supplier / client details opened from History, Dashboard, Reports (same form as Mass Invoice); Esc / Cancel closes -->
+        <Border Grid.Column="1" Panel.ZIndex="30" Background="#99000000"
+                Visibility="{Binding IsPartyDetailsOpen, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource Card}" Padding="16,12" Width="580" Margin="0,24" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                <views:PartyFormView DataContext="{Binding PartyDetails}" />
+            </Border>
+        </Border>
     </Grid>
 </Window>

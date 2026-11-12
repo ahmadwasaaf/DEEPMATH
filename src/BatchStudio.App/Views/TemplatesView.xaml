@@ -57,7 +57,8 @@
             <!-- template list -->
             <Border Style="{StaticResource Card}" Padding="6">
                 <Grid>
-                    <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0">
+                    <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0"
+                             MouseDoubleClick="OnTemplateDoubleClick">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="6,6">

@@ -149,7 +149,7 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
     [DllImport("ole32.dll")] private static extern int GetRunningObjectTable(int reserved, out IRunningObjectTable prot);
     [DllImport("ole32.dll")] private static extern int CreateBindCtx(int reserved, out IBindCtx ctx);
 
-    private static dynamic? FindOpenWorkbook(string fullPath)
+    internal static dynamic? FindOpenWorkbook(string fullPath)
     {
         if (GetRunningObjectTable(0, out var rot) != 0 || rot == null) return null;
         if (CreateBindCtx(0, out var ctx) != 0) return null;

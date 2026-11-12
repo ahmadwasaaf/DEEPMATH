@@ -84,7 +84,18 @@
                           CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="34" SelectionMode="Single"
                           MouseDoubleClick="OnRowDoubleClick">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="ID" Binding="{Binding Id, Converter={StaticResource ShortId}}" Width="Auto" MinWidth="60" ElementStyle="{StaticResource ListCell}" />
+                        <DataGridTemplateColumn Header="ID" Width="Auto" MinWidth="64" SortMemberPath="Id">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Id, Converter={StaticResource ShortId}}" Style="{StaticResource PartyLink}">
+                                    <TextBlock.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" CommandParameter="{Binding}"
+                                                      Command="{Binding DataContext.OpenPartyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" />
+                                    </TextBlock.InputBindings>
+                                </TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="{StaticResource Col.Company}" Width="*" SortMemberPath="Name">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

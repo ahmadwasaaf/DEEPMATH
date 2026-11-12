@@ -437,4 +437,8 @@
     <sys:String x:Key="Google.InUse">In use</sys:String>
     <sys:String x:Key="Google.RemoveConfirm">Remove {0} from DEEPMATH? Its saved sign-in and photo are deleted, and Google forgets the access.</sys:String>
     <sys:String x:Key="Google.ExpiredFor">The sign-in of {0} has ended. Sign in again from the account list.</sys:String>
+    <sys:String x:Key="Party.OpenTip">Open the supplier / client details</sys:String>
+    <sys:String x:Key="Party.NotFound">“{0}” was not found in the Suppliers or Clients list.</sys:String>
+    <sys:String x:Key="Preview.OpenHint">Double-click to open this template in Excel and change its design</sys:String>
+    <sys:String x:Key="Tpl.OpenMissing">The workbook was not found: {0}</sys:String>
 </ResourceDictionary>

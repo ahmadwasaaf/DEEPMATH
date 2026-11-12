@@ -32,6 +32,13 @@ public sealed partial class HistoryViewModel : ObservableObject
     private readonly DispatcherTimer _searchDelay;
     private List<HistoryRow> _all = [];
 
+    /// <summary>The invoice number (#) clicked: the details of the supplier / client in the Name column.</summary>
+    [RelayCommand]
+    private void OpenParty(HistoryRow? row)
+    {
+        if (row != null) _main.ShowParty(row.PartyType, null, row.Name);
+    }
+
     public ObservableCollection<HistoryRow> Rows { get; } = [];
     public IReadOnlyList<string> Periods => HistoryPeriods.All;
     public IReadOnlyList<string> WeekDays { get; } = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];

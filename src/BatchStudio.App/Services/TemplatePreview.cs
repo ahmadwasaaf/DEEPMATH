@@ -32,19 +32,21 @@ public static class TemplatePreview
 
     private static Popup? _popup;
     private static Image? _image;
-    private static TextBlock? _title, _note;
+    private static TextBlock? _title, _note, _hint;
     private static Border? _swatch;
     private static readonly DispatcherTimer ShowTimer = new() { Interval = TimeSpan.FromMilliseconds(180) };
     private static readonly DispatcherTimer HideTimer = new() { Interval = TimeSpan.FromMilliseconds(140) };
-    private static ComboBoxItem? _pending;
+    private static ListBoxItem? _pending;
     private static int _request;
     private static readonly HashSet<ComboBox> Hooked = [];
+    private static readonly HashSet<ItemsControl> HookedLists = [];
 
     /// <summary>Called once at start-up: every ComboBoxItem of the program gets the hover preview (template names only).</summary>
     public static void Register()
     {
-        EventManager.RegisterClassHandler(typeof(ComboBoxItem), UIElement.MouseEnterEvent, new MouseEventHandler(OnEnter));
-        EventManager.RegisterClassHandler(typeof(ComboBoxItem), UIElement.MouseLeaveEvent, new MouseEventHandler(OnLeave));
+        // ListBoxItem: the items of drop-down lists (ComboBoxItem) and of the Templates page list
+        EventManager.RegisterClassHandler(typeof(ListBoxItem), UIElement.MouseEnterEvent, new MouseEventHandler(OnEnter));
+        EventManager.RegisterClassHandler(typeof(ListBoxItem), UIElement.MouseLeaveEvent, new MouseEventHandler(OnLeave));
         ShowTimer.Tick += (_, _) => { ShowTimer.Stop(); if (_pending != null) _ = ShowAsync(_pending); };
         HideTimer.Tick += (_, _) => { HideTimer.Stop(); Hide(); };
     }
@@ -52,7 +54,7 @@ public static class TemplatePreview
     // ------------------------------------------------------------------ hover
     private static void OnEnter(object sender, MouseEventArgs e)
     {
-        if (sender is not ComboBoxItem item || TemplateName(item) is not { } name || Find(name) == null) return;
+        if (sender is not ListBoxItem item || TemplateName(item) is not { } name || Find(name) == null) return;
         HideTimer.Stop();
         _pending = item;
         ShowTimer.Stop();
@@ -75,7 +77,7 @@ public static class TemplatePreview
         if (_popup != null) _popup.IsOpen = false;
     }
 
-    private static string? TemplateName(ComboBoxItem item)
+    private static string? TemplateName(ListBoxItem item)
     {
         var dc = item.DataContext ?? item.Content;
         if (dc is string s) return s.Trim();
@@ -83,17 +85,20 @@ public static class TemplatePreview
     }
 
     /// <summary>Shows the picture of a template beside a list item (also used by the screenshot check).</summary>
-    public static async Task ShowAsync(ComboBoxItem item)
+    public static async Task ShowAsync(ListBoxItem item)
     {
         var name = TemplateName(item);
         if (name == null || Find(name) is not { } entry) return;
         int request = ++_request;
-        var combo = ItemsControl.ItemsControlFromItemContainer(item) as ComboBox;
+        var list = ItemsControl.ItemsControlFromItemContainer(item);
+        var combo = list as ComboBox;
         var (supplier, color) = ThemeFor(combo, entry.Name);
         EnsurePopup();
         _title!.Text = entry.Name;
         _note!.Text = color != null && supplier.Length > 0 ? Loc.F("Preview.ThemeOf", supplier) : color != null ? Loc.T("Preview.Theme") : "";
         _swatch!.Visibility = color != null ? Visibility.Visible : Visibility.Collapsed;
+        // the Templates page list: a double-click opens the sheet in Excel
+        _hint!.Visibility = combo == null ? Visibility.Visible : Visibility.Collapsed;
         if (color is { } c) _swatch.Background = new SolidColorBrush(Color.FromRgb((byte)(c >> 16), (byte)(c >> 8), (byte)c));
         var bmp = await PictureAsync(entry, color);
         if (request != _request) return;
@@ -102,6 +107,7 @@ public static class TemplatePreview
         _popup!.PlacementTarget = item;
         _popup.FlowDirection = item.FlowDirection;
         if (combo != null && Hooked.Add(combo)) combo.DropDownClosed += (_, _) => Hide();
+        if (list != null && combo == null && HookedLists.Add(list)) list.Unloaded += (_, _) => Hide();
         _popup.IsOpen = false;   // re-place next to the new item
         _popup.IsOpen = true;
     }
@@ -121,9 +127,13 @@ public static class TemplatePreview
         footer.Children.Add(_title);
         footer.Children.Add(_swatch);
         footer.Children.Add(_note);
+        _hint = new TextBlock { FontSize = 12, Margin = new Thickness(4, 6, 4, 0), Text = "" };
+        _hint.SetResourceReference(TextBlock.TextProperty, "Preview.OpenHint");
+        _hint.SetResourceReference(TextBlock.ForegroundProperty, "BrandBrush");
         var stack = new StackPanel();
         stack.Children.Add(paper);
         stack.Children.Add(footer);
+        stack.Children.Add(_hint);
         var card = new Border
         {
             Margin = new Thickness(12),

@@ -277,10 +277,13 @@
                             <TextBlock Text="LIVE" Foreground="{StaticResource GoodBrush}" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
-                    <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Top">
-                        <TextBlock Text="{DynamicResource Home.Pulse}" FontSize="12" FontWeight="SemiBold" Opacity="0.85" VerticalAlignment="Center" />
-                        <TextBlock Style="{StaticResource Icon}" Text="&#xE9D2;" FontSize="13" Foreground="{StaticResource GoodBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
+                    <!-- BUSINESS PULSE: the same box as the total below (same width and right margin), centred over it -->
+                    <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,44,0" Width="{Binding ActualWidth, ElementName=TotalBlock}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="{DynamicResource Home.Pulse}" FontSize="12" FontWeight="SemiBold" Opacity="0.85" VerticalAlignment="Center" />
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE9D2;" FontSize="13" Foreground="{StaticResource GoodBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Grid>
                     <Grid Grid.Row="1" Margin="0,12,0,0">
                     <Grid.Resources>
                         <Style x:Key="PulseLabel" TargetType="TextBlock" BasedOn="{StaticResource Muted}">
@@ -314,10 +317,11 @@
                     <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding PulseTopClient}" ToolTip="{Binding PulseTopClientTip}" Style="{StaticResource PulseValue}" />
                     <!-- total transactions: label on top, the value large -->
                     <Border Grid.RowSpan="2" Grid.Column="2" Width="1" Margin="20,2" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
-                    <StackPanel Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="2" VerticalAlignment="Center" MinWidth="170" Margin="0,0,44,0">
-                        <TextBlock Text="{DynamicResource Home.PulseValue}" Style="{StaticResource PulseLabel}" Margin="0,0,0,2" HorizontalAlignment="Right" />
+                    <StackPanel x:Name="TotalBlock" Grid.RowSpan="2" Grid.Column="3" Grid.ColumnSpan="2" VerticalAlignment="Center" MinWidth="170"
+                                HorizontalAlignment="Right" Margin="0,0,44,0">
+                        <TextBlock Text="{DynamicResource Home.PulseValue}" Style="{StaticResource PulseLabel}" Margin="0,0,0,2" HorizontalAlignment="Center" />
                         <TextBlock Text="{Binding PulseTotal}" ToolTip="{Binding PulseTotalTip}" FontSize="30" FontWeight="SemiBold"
-                                   FlowDirection="LeftToRight" HorizontalAlignment="Right" />
+                                   FlowDirection="LeftToRight" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Grid>
                 </Grid>

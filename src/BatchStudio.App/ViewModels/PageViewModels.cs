@@ -237,6 +237,13 @@ public sealed partial class FieldRowViewModel : ObservableObject
 public sealed partial class TemplatesViewModel(MainViewModel main) : ObservableObject
 {
     public ObservableCollection<TemplateItemViewModel> Items { get; } = [];
+
+    /// <summary>Double-click on a template: its sheet opens in Excel (system workbook or Templates workbook) to change its design.</summary>
+    public void OpenInExcel(TemplateItemViewModel? item)
+    {
+        if (item == null || main.Workspace is not { } ws) return;
+        ExcelSheetOpener.Open(ws.BookFor(item.Name), item.Entry.Map?.Sheet ?? item.Name);
+    }
     public ObservableCollection<FieldRowViewModel> Fields { get; } = [];
     public ObservableCollection<string> Warnings { get; } = [];
 

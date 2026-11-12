@@ -437,4 +437,8 @@
     <sys:String x:Key="Google.InUse">قيد الاستخدام</sys:String>
     <sys:String x:Key="Google.RemoveConfirm">إزالة {0} من DEEPMATH؟ سيتم حذف تسجيل الدخول المحفوظ والصورة، وسينسى جوجل الصلاحية.</sys:String>
     <sys:String x:Key="Google.ExpiredFor">انتهى تسجيل دخول {0}. سجّل الدخول مرة أخرى من قائمة الحسابات.</sys:String>
+    <sys:String x:Key="Party.OpenTip">فتح بيانات المورد / العميل</sys:String>
+    <sys:String x:Key="Party.NotFound">لم يتم العثور على “{0}” في قائمة الموردين أو العملاء.</sys:String>
+    <sys:String x:Key="Preview.OpenHint">انقر نقرًا مزدوجًا لفتح القالب في Excel وتعديل تصميمه</sys:String>
+    <sys:String x:Key="Tpl.OpenMissing">لم يتم العثور على ملف العمل: {0}</sys:String>
 </ResourceDictionary>

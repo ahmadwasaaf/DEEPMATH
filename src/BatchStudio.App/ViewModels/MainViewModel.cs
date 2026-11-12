@@ -3,6 +3,7 @@ using System.Windows;
 using BatchStudio.App.Services;
 using BatchStudio.Core.Data;
 using BatchStudio.Core.Entities;
+using BatchStudio.Core.Invoices;
 using BatchStudio.Core.Workbook;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -46,6 +47,52 @@ public sealed partial class MainViewModel : ObservableObject
     public HistoryViewModel History { get; }
     public DashboardViewModel Dashboard { get; }
     public ReportsViewModel Reports { get; }
+    // ------------------------------------------------------------------ supplier / client details over any page
+    private PartyFormViewModel? _partyDetails;
+
+    /// <summary>
+    /// The supplier / client details panel (view, change, Save) opened from the first cell of a company list: Invoice
+    /// History (#), Dashboard (Rank), Reports (ID) - the same form as the row number of Mass Invoice.
+    /// </summary>
+    public PartyFormViewModel PartyDetails
+    {
+        get
+        {
+            if (_partyDetails != null) return _partyDetails;
+            _partyDetails = new PartyFormViewModel(this);
+            _partyDetails.Closed += _ => IsPartyDetailsOpen = false;
+            return _partyDetails;
+        }
+    }
+
+    [ObservableProperty] private bool _isPartyDetailsOpen;
+
+    /// <summary>
+    /// Opens a company's details: <paramref name="type"/> "SUPPLIERS" / "CLIENTS" (empty = looked up in both lists);
+    /// by <paramref name="id"/> when known, else by its name.
+    /// </summary>
+    public bool ShowParty(string? type, string? id, string? name)
+    {
+        var t = (type ?? "").Trim().ToUpperInvariant();
+        bool[] lists = t == "CLIENTS" ? [true] : t == "SUPPLIERS" ? [false] : [false, true];
+        foreach (var clients in lists)
+        {
+            var page = DataPages.FirstOrDefault(p => p.Session.Definition.Key == (clients ? "clients" : "suppliers"));
+            if (page == null) continue;
+            var pid = id;
+            if (string.IsNullOrWhiteSpace(pid) && !string.IsNullOrWhiteSpace(name))
+            {
+                var list = clients ? InvoiceService.Clients(page.Session.Current) : InvoiceService.Suppliers(page.Session.Current);
+                pid = list.FirstOrDefault(p => string.Equals(p.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase))?.Id
+                      ?? list.FirstOrDefault(p => BatchStudio.Core.Reports.DashboardEngine.SameCompany(p.Name, name))?.Id;
+            }
+            if (string.IsNullOrWhiteSpace(pid)) continue;
+            if (PartyDetails.OpenExisting(clients, pid)) { IsPartyDetailsOpen = true; return true; }
+        }
+        Dialogs.Info(Loc.F("Party.NotFound", name ?? id ?? ""));
+        return false;
+    }
+
     public MassInvoiceViewModel Mass { get; }
 
     [ObservableProperty] private EntityProfile? _activeEntity;

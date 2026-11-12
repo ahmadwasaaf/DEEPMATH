@@ -33,6 +33,13 @@ public sealed partial class ReportsViewModel(MainViewModel main) : ObservableObj
     private bool IsClients => TypeIndex == 1;
     private string PartyType => IsClients ? "CLIENTS" : "SUPPLIERS";
 
+    /// <summary>The ID clicked: the details of that supplier / client.</summary>
+    [RelayCommand]
+    private void OpenParty(ReportParty? party)
+    {
+        if (party != null) main.ShowParty(PartyType, party.Id, party.Name);
+    }
+
     partial void OnTypeIndexChanged(int value)
     {
         Report = null;

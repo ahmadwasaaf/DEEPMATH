@@ -26,6 +26,13 @@ public sealed class RankItem
 public sealed partial class DashboardViewModel : ObservableObject
 {
     private readonly MainViewModel _main;
+
+    /// <summary>The rank clicked: the details of that company (supplier or client, by its Type).</summary>
+    [RelayCommand]
+    private void OpenParty(RankItem? item)
+    {
+        if (item != null) _main.ShowParty(item.Type, null, item.Name);
+    }
     private readonly DispatcherTimer _writeDelay;
     private List<HistoryRecord> _history = [];
     private DashboardResult? _result;

@@ -17,6 +17,15 @@ public partial class MainWindow : Window
             Height = Math.Min(Height, area.Height);
             WindowState = WindowState.Maximized;
         }
+        // Esc closes the supplier / client details
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.Escape && DataContext is MainViewModel { IsPartyDetailsOpen: true } vm)
+            {
+                vm.PartyDetails.CancelCommand.Execute(null);
+                e.Handled = true;
+            }
+        };
     }
 
     protected override void OnClosing(CancelEventArgs e)

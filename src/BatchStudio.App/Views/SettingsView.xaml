@@ -30,150 +30,6 @@
                 <TextBlock Text="{DynamicResource Nav.Settings}" Style="{StaticResource PageTitle}" />
             </StackPanel>
 
-            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                <StackPanel>
-                    <!-- the arrow opens / closes the accent colours; Language and Theme stay visible -->
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Command="{Binding ToggleAppearanceCommand}" Padding="8,5" VerticalAlignment="Top"
-                                ToolTip="{DynamicResource Set.Accent}">
-                            <TextBlock FontSize="12">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
-                                        <Setter Property="Text" Value="&#xE70D;" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding AppearanceOpen}" Value="True">
-                                                <Setter Property="Text" Value="&#xE70E;" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </Button>
-                        <TextBlock Text="{DynamicResource Set.Appearance}" Style="{StaticResource SectionTitle}" />
-                    </DockPanel>
-                    <Grid Margin="0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="200" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="{DynamicResource Set.Language}" VerticalAlignment="Center" />
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <RadioButton Content="English" IsChecked="{Binding IsArabic, Converter={StaticResource InverseBool}}" GroupName="lang" Margin="0,0,20,0" />
-                            <RadioButton Content="العربية" IsChecked="{Binding IsArabic}" GroupName="lang" />
-                        </StackPanel>
-                    </Grid>
-                    <Grid Margin="0,10,0,4">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="200" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="{DynamicResource Set.Theme}" VerticalAlignment="Center" />
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <RadioButton Content="{DynamicResource Set.Dark}" IsChecked="{Binding IsLight, Converter={StaticResource InverseBool}}" GroupName="theme" Margin="0,0,20,0" />
-                            <RadioButton Content="{DynamicResource Set.Light}" IsChecked="{Binding IsLight}" GroupName="theme" />
-                        </StackPanel>
-                    </Grid>
-                    <!-- accent colour (like Windows "Choose your accent color") -->
-                    <Grid Margin="0,14,0,4" Visibility="{Binding AppearanceOpen, Converter={StaticResource BoolToVis}}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="200" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="{DynamicResource Set.Accent}" VerticalAlignment="Top" Margin="0,4,0,0" />
-                        <StackPanel Grid.Column="1">
-                            <CheckBox Content="{DynamicResource Set.AccentAuto}" IsChecked="{Binding UseWindowsAccent}" Margin="0,0,0,10" />
-                            <TextBlock Text="{DynamicResource Set.AccentRecent}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,6"
-                                       Visibility="{Binding HasRecentAccents, Converter={StaticResource BoolToVis}}" />
-                            <ItemsControl ItemsSource="{Binding RecentAccents}" Margin="0,0,0,12" Visibility="{Binding HasRecentAccents, Converter={StaticResource BoolToVis}}">
-                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Command="{Binding DataContext.PickAccentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"
-                                                Template="{StaticResource SwatchButton}" ToolTip="{Binding Hex}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Text="{DynamicResource Set.AccentColors}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,6" />
-                            <ItemsControl ItemsSource="{Binding AccentPalette}" HorizontalAlignment="Left">
-                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Command="{Binding DataContext.PickAccentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"
-                                                Template="{StaticResource SwatchButton}" ToolTip="{Binding Hex}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <Button Command="{Binding CustomAccentCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" Padding="10,6">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0" />
-                                    <TextBlock Text="{DynamicResource Set.AccentCustom}" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- ========== Home background (particle animation) ========== -->
-            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                <StackPanel>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Command="{Binding ResetBackgroundCommand}" Content="{DynamicResource Bg.Reset}" />
-                        <TextBlock Text="{DynamicResource Bg.Title}" Style="{StaticResource SectionTitle}" />
-                    </DockPanel>
-                    <Grid Margin="0,6,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="20" />
-                            <ColumnDefinition Width="300" />
-                        </Grid.ColumnDefinitions>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="130" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                                <RowDefinition Height="40" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="{DynamicResource Bg.Show}" VerticalAlignment="Center" />
-                            <CheckBox Grid.Row="0" Grid.Column="1" IsChecked="{Binding BgEnabled}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Row="1" Text="{DynamicResource Bg.Style}" VerticalAlignment="Center" />
-                            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding BgStyles}" SelectedIndex="{Binding BgStyleIndex}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
-                            <TextBlock Grid.Row="2" Text="{DynamicResource Bg.Speed}" VerticalAlignment="Center" />
-                            <Slider Grid.Row="2" Grid.Column="1" Minimum="0.2" Maximum="3" Value="{Binding BgSpeed}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Row="3" Text="{DynamicResource Bg.Opacity}" VerticalAlignment="Center" />
-                            <Slider Grid.Row="3" Grid.Column="1" Minimum="0.05" Maximum="1" Value="{Binding BgOpacity}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Row="4" Text="{DynamicResource Bg.Density}" VerticalAlignment="Center" />
-                            <Slider Grid.Row="4" Grid.Column="1" Minimum="0.4" Maximum="2" Value="{Binding BgDensity}" VerticalAlignment="Center" />
-                            <TextBlock Grid.Row="5" Text="{DynamicResource Bg.Color}" VerticalAlignment="Center" />
-                            <DockPanel Grid.Row="5" Grid.Column="1" VerticalAlignment="Center">
-                                <Button DockPanel.Dock="Right" Command="{Binding PickBgColorCommand}" Margin="8,0,0,0" Padding="4" ToolTip="{DynamicResource Bg.Color.Custom}">
-                                    <Border Width="20" Height="20" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                                            Background="{Binding BgCustomHex}" />
-                                </Button>
-                                <ComboBox ItemsSource="{Binding BgColors}" SelectedIndex="{Binding BgColorIndex}" HorizontalAlignment="Stretch" />
-                            </DockPanel>
-                            <TextBlock Grid.Row="6" Text="{DynamicResource Bg.Mouse}" VerticalAlignment="Center" />
-                            <CheckBox Grid.Row="6" Grid.Column="1" IsChecked="{Binding BgMouse}" VerticalAlignment="Center" />
-                        </Grid>
-                        <!-- live preview -->
-                        <Border Grid.Column="2" CornerRadius="10" Background="#181A1F" ClipToBounds="True" Height="250" VerticalAlignment="Top"
-                                MouseMove="OnPreviewMouseMove" MouseLeave="OnPreviewMouseLeave">
-                            <Grid>
-                                <ctl:ParticleNetwork x:Name="Preview" Tint="White" />
-                                <TextBlock Text="{DynamicResource Bg.Preview}" Foreground="White" Opacity="0.55" FontSize="11" Margin="10,8" VerticalAlignment="Top" HorizontalAlignment="Left" />
-                            </Grid>
-                        </Border>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
             <!-- ========== Google account: new emails on Home + Windows notifications ========== -->
             <Border x:Name="GoogleCard" Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>
@@ -358,6 +214,7 @@
                 </StackPanel>
             </Border>
 
+            <!-- ========== Synchronization ========== -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource Set.Sync}" Style="{StaticResource SectionTitle}" />
@@ -369,6 +226,7 @@
                 </StackPanel>
             </Border>
 
+            <!-- ========== Entities ========== -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>
                     <DockPanel Margin="0,0,0,8">
@@ -434,6 +292,151 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <TextBlock Text="{DynamicResource Set.RemoveNote}" Style="{StaticResource Muted}" FontSize="12" Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- ========== Appearance ========== -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <!-- the arrow opens / closes the accent colours; Language and Theme stay visible -->
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Command="{Binding ToggleAppearanceCommand}" Padding="8,5" VerticalAlignment="Top"
+                                ToolTip="{DynamicResource Set.Accent}">
+                            <TextBlock FontSize="12">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                        <Setter Property="Text" Value="&#xE70D;" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding AppearanceOpen}" Value="True">
+                                                <Setter Property="Text" Value="&#xE70E;" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                        <TextBlock Text="{DynamicResource Set.Appearance}" Style="{StaticResource SectionTitle}" />
+                    </DockPanel>
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource Set.Language}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <RadioButton Content="English" IsChecked="{Binding IsArabic, Converter={StaticResource InverseBool}}" GroupName="lang" Margin="0,0,20,0" />
+                            <RadioButton Content="العربية" IsChecked="{Binding IsArabic}" GroupName="lang" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid Margin="0,10,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource Set.Theme}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <RadioButton Content="{DynamicResource Set.Dark}" IsChecked="{Binding IsLight, Converter={StaticResource InverseBool}}" GroupName="theme" Margin="0,0,20,0" />
+                            <RadioButton Content="{DynamicResource Set.Light}" IsChecked="{Binding IsLight}" GroupName="theme" />
+                        </StackPanel>
+                    </Grid>
+                    <!-- accent colour (like Windows "Choose your accent color") -->
+                    <Grid Margin="0,14,0,4" Visibility="{Binding AppearanceOpen, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource Set.Accent}" VerticalAlignment="Top" Margin="0,4,0,0" />
+                        <StackPanel Grid.Column="1">
+                            <CheckBox Content="{DynamicResource Set.AccentAuto}" IsChecked="{Binding UseWindowsAccent}" Margin="0,0,0,10" />
+                            <TextBlock Text="{DynamicResource Set.AccentRecent}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,6"
+                                       Visibility="{Binding HasRecentAccents, Converter={StaticResource BoolToVis}}" />
+                            <ItemsControl ItemsSource="{Binding RecentAccents}" Margin="0,0,0,12" Visibility="{Binding HasRecentAccents, Converter={StaticResource BoolToVis}}">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Command="{Binding DataContext.PickAccentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"
+                                                Template="{StaticResource SwatchButton}" ToolTip="{Binding Hex}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{DynamicResource Set.AccentColors}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,6" />
+                            <ItemsControl ItemsSource="{Binding AccentPalette}" HorizontalAlignment="Left">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Command="{Binding DataContext.PickAccentCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}"
+                                                Template="{StaticResource SwatchButton}" ToolTip="{Binding Hex}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Command="{Binding CustomAccentCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" Padding="10,6">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,8,0" />
+                                    <TextBlock Text="{DynamicResource Set.AccentCustom}" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- ========== Home background (particle animation) ========== -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Command="{Binding ResetBackgroundCommand}" Content="{DynamicResource Bg.Reset}" />
+                        <TextBlock Text="{DynamicResource Bg.Title}" Style="{StaticResource SectionTitle}" />
+                    </DockPanel>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="300" />
+                        </Grid.ColumnDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="130" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                                <RowDefinition Height="40" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Text="{DynamicResource Bg.Show}" VerticalAlignment="Center" />
+                            <CheckBox Grid.Row="0" Grid.Column="1" IsChecked="{Binding BgEnabled}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="1" Text="{DynamicResource Bg.Style}" VerticalAlignment="Center" />
+                            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding BgStyles}" SelectedIndex="{Binding BgStyleIndex}" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
+                            <TextBlock Grid.Row="2" Text="{DynamicResource Bg.Speed}" VerticalAlignment="Center" />
+                            <Slider Grid.Row="2" Grid.Column="1" Minimum="0.2" Maximum="3" Value="{Binding BgSpeed}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="3" Text="{DynamicResource Bg.Opacity}" VerticalAlignment="Center" />
+                            <Slider Grid.Row="3" Grid.Column="1" Minimum="0.05" Maximum="1" Value="{Binding BgOpacity}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="4" Text="{DynamicResource Bg.Density}" VerticalAlignment="Center" />
+                            <Slider Grid.Row="4" Grid.Column="1" Minimum="0.4" Maximum="2" Value="{Binding BgDensity}" VerticalAlignment="Center" />
+                            <TextBlock Grid.Row="5" Text="{DynamicResource Bg.Color}" VerticalAlignment="Center" />
+                            <DockPanel Grid.Row="5" Grid.Column="1" VerticalAlignment="Center">
+                                <Button DockPanel.Dock="Right" Command="{Binding PickBgColorCommand}" Margin="8,0,0,0" Padding="4" ToolTip="{DynamicResource Bg.Color.Custom}">
+                                    <Border Width="20" Height="20" CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                            Background="{Binding BgCustomHex}" />
+                                </Button>
+                                <ComboBox ItemsSource="{Binding BgColors}" SelectedIndex="{Binding BgColorIndex}" HorizontalAlignment="Stretch" />
+                            </DockPanel>
+                            <TextBlock Grid.Row="6" Text="{DynamicResource Bg.Mouse}" VerticalAlignment="Center" />
+                            <CheckBox Grid.Row="6" Grid.Column="1" IsChecked="{Binding BgMouse}" VerticalAlignment="Center" />
+                        </Grid>
+                        <!-- live preview -->
+                        <Border Grid.Column="2" CornerRadius="10" Background="#181A1F" ClipToBounds="True" Height="250" VerticalAlignment="Top"
+                                MouseMove="OnPreviewMouseMove" MouseLeave="OnPreviewMouseLeave">
+                            <Grid>
+                                <ctl:ParticleNetwork x:Name="Preview" Tint="White" />
+                                <TextBlock Text="{DynamicResource Bg.Preview}" Foreground="White" Opacity="0.55" FontSize="11" Margin="10,8" VerticalAlignment="Top" HorizontalAlignment="Left" />
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </StackPanel>
             </Border>
 

@@ -101,7 +101,18 @@
                     </DataTemplate>
                 </DataGrid.Resources>
                 <DataGrid.Columns>
-                    <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.No}" Binding="{Binding No}" Width="Auto" MinWidth="64" />
+                    <DataGridTemplateColumn Header="{StaticResource Col.No}" Width="Auto" MinWidth="64" SortMemberPath="No">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding No}" Style="{StaticResource PartyLink}">
+                                    <TextBlock.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" CommandParameter="{Binding}"
+                                                      Command="{Binding DataContext.OpenPartyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" />
+                                    </TextBlock.InputBindings>
+                                </TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Name}" Binding="{Binding Name}" Width="*" MinWidth="150" />
                     <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" HeaderTemplate="{StaticResource CenterHeader}" Header="{StaticResource Col.Amount}" Binding="{Binding Amount, StringFormat=N2}" Width="Auto" MinWidth="100" SortMemberPath="Amount" />
                     <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" HeaderTemplate="{StaticResource CenterHeader}" Header="{StaticResource Col.Date}" Binding="{Binding DateText}" Width="Auto" MinWidth="90" SortMemberPath="SortDate" />

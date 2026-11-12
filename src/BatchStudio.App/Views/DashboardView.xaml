@@ -129,7 +129,18 @@
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
-                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Rank}" Binding="{Binding RankText}" Width="Auto" MinWidth="70" />
+                        <DataGridTemplateColumn Header="{StaticResource Col.Rank}" Width="Auto" MinWidth="64" SortMemberPath="Row.Rank">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding RankText}" Style="{StaticResource PartyLink}">
+                                    <TextBlock.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" CommandParameter="{Binding}"
+                                                      Command="{Binding DataContext.OpenPartyCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" />
+                                    </TextBlock.InputBindings>
+                                </TextBlock>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                         <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Company}" Binding="{Binding Name}" Width="*" MinWidth="180" />
                         <DataGridTemplateColumn Header="{StaticResource Col.Amount}" Width="170" SortMemberPath="Amount">
                             <DataGridTemplateColumn.CellTemplate>
