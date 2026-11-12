@@ -101,6 +101,18 @@ public class AnalysisTests
     }
 
     [Fact]
+    public void A_label_read_with_the_name_does_not_make_another_supplier()
+    {
+        var list = AnalysisMatcher.Match(
+        [
+            Doc("12,345.67.docx", "NINGBO SEABRIGHT HOUSEWARE CO., LTD.", "68585833555991726", "DTBKCNSHNBO"),
+            Doc("USD 30000.pdf", "Customer: NINGBO SEABRIGHT HOUSEWARE CO., LTD.", "NRA330099887766554433", "DTBKCNSHNBO"),
+        ], Known);
+        Assert.Same(list[0], list[1].Owner);
+        Assert.True(list[1].OtherAccount);
+    }
+
+    [Fact]
     public void Missing_amount_keeps_the_supplier_with_a_note()
     {
         var m = AnalysisMatcher.Match([Doc("TEST 36.pdf", "UNION GROUP TRADING LIMITED", "NRA87253553585745554659", amount: null)], Known)[0];

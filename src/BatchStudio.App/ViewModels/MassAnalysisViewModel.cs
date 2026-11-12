@@ -24,9 +24,13 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         Match = match;
         No = no;
         _amountText = match.Result.Amount is > 0 ? NewInvoiceViewModel.FormatMoney(match.Result.Amount.Value) : "";
-        _supplierName = match.Supplier?.Name ?? match.Result.CompanyName;
+        _supplierName = match.Supplier?.Name ?? StripLabel(match.Result.CompanyName);
         _include = IsReady;
     }
+
+    /// <summary>"Customer: NINGBO ..." → "NINGBO ...": a label read with the name is not part of it.</summary>
+    private static string StripLabel(string name) =>
+        Regex.Replace(name ?? "", @"^\s*(?:beneficiary\s+)?(?:customer|name|company|beneficiary|account\s*name|payee)\s*[:：]\s*", "", RegexOptions.IgnoreCase).Trim();
 
     public int No { get; }
     public string FileName => Result.FileName.Length > 0 ? Result.FileName : Path.GetFileName(Result.File);
@@ -108,9 +112,10 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         {
             var list = new List<string>();
             if (Match.Note.Length > 0 && !(Match.Note == "Analysis.NoteNoAmount" && Amount != null)) list.Add(Loc.T(Match.Note));
-            if (Match.Status == AnalysisStatus.Attention && Result.Error is { Length: > 0 } err && Match.Note == "Analysis.NoteNothingRead") list.Add(err);
             if (Match.MatchedBy == "similar" && Match.Supplier != null) list.Add(Loc.F("Analysis.NoteSimilar", Result.CompanyName));
             if (Match.Candidates.Count > 0 && Picked == null) list.Add(Loc.T("Analysis.PickSupplier"));
+            // nothing read: the engine's own remarks (no account, no SWIFT ...) add nothing
+            if (Match.Note != "Analysis.NoteNothingRead")
             foreach (var n in Result.Notes)
                 if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
             return string.Join(" · ", list.Distinct());

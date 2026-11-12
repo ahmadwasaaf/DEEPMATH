@@ -279,7 +279,11 @@ public static partial class AnalysisMatcher
     /// <summary>"Guangzhou Xenlong Trading Co.,Ltd" → "GUANGZHOU XENLONG TRADING COMPANY LIMITED".</summary>
     public static string NormalizeName(string? name)
     {
-        var s = (name ?? "").ToUpperInvariant().Replace("&", " AND ").Replace("HONG KONG", "HONGKONG");
+        // a label left in front of the name ("Customer: NINGBO ...", "Beneficiary Name: ...")
+        var n = System.Text.RegularExpressions.Regex.Replace(name ?? "",
+            @"^\s*(?:beneficiary\s+)?(?:customer|name|company|beneficiary|account\s*name|payee)\s*[:：]\s*", "",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        var s = n.ToUpperInvariant().Replace("&", " AND ").Replace("HONG KONG", "HONGKONG");
         var sb = new StringBuilder();
         foreach (var ch in s) sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
         var words = sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries)
