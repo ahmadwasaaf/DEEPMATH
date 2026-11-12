@@ -67,6 +67,13 @@ public class AnalysisTests
         Assert.Equal(1, m.BankNumber);
     }
 
+    [Theory]
+    [InlineData("Account Number (USD): NRA358555851124912")]
+    [InlineData("Account Number: NRA358555851124912 (USD)")]
+    [InlineData("A/C No. (USD Account): NRA 3585 5585 1124 912")]
+    public void Currency_note_beside_the_account_is_ignored(string line) =>
+        Assert.Contains("NRA358555851124912", AnalysisMatcher.AccountIdsIn("Beneficiary Name: X\n" + line));
+
     [Fact]
     public void Second_account_of_a_supplier_is_used()
     {

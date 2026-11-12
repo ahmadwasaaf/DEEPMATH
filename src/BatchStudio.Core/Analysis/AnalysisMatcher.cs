@@ -223,7 +223,7 @@ public static partial class AnalysisMatcher
     }
 
     // ------------------------------------------------------------------ accounts
-    [GeneratedRegex(@"(?im)^\s*(?:beneficiary\s+)?(?:account\s*(?:number|no\.?|#)|a/c\s*(?:no\.?|number)?|acct\.?\s*no\.?|iban|账号|账户号码|银行账号|收款账号)\s*[:：#\-]?\s*(.+)$")]
+    [GeneratedRegex(@"(?im)^\s*(?:beneficiary\s+)?(?:account\s*(?:number|no\.?|#)|a/c\s*(?:no\.?|number)?|acct\.?\s*no\.?|iban|账号|账户号码|银行账号|收款账号)(?:\s*\([^)]{0,20}\))?\s*[:：#\-]?\s*(.+)$")]
     private static partial Regex LabeledAccount();
 
     [GeneratedRegex(@"(?<![0-9A-Za-z])(?:[A-Z]{2}\d{2}[ \-]?(?:[0-9A-Z]{4}[ \-]?){2,7}[0-9A-Z]{1,4}|\d(?:[\d \-]{6,40})\d)(?![0-9A-Za-z])")]
@@ -240,7 +240,8 @@ public static partial class AnalysisMatcher
             var lm = LabeledAccount().Match(line);
             if (lm.Success)
             {
-                var v = Clean(lm.Groups[1].Value);
+                // "NRA2010... (USD)" / "(USD) NRA2010...": a note in brackets is not part of the number
+                var v = Clean(Regex.Replace(lm.Groups[1].Value, @"\([^)]*\)", " "));
                 if (v.Length >= 6) ids.Add(v);
                 continue;
             }
