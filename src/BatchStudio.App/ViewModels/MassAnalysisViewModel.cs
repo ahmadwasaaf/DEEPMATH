@@ -199,7 +199,8 @@ public sealed partial class MassInvoiceViewModel
         }
         if (AnalysisRunner.PythonFor(engine) == null) { Dialogs.Error(Loc.T("Analysis.ErrPython")); return; }
 
-        var documents = Dialogs.PickFolder(_lastDocumentsFolder);
+        // the folder picker opens on the Desktop (where the documents are usually saved)
+        var documents = Dialogs.PickFolder(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
         if (documents == null) return;
         _lastDocumentsFolder = documents;
         int free = Rows.Count(r => r.IsEmpty && !r.IsArchived);
