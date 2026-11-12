@@ -18,6 +18,8 @@ public partial class HomeView : UserControl
     {
         InitializeComponent();
         _clock.Tick += (_, _) => UpdateClock();
+        // the Wi-Fi icon stands right above the divider of the pulse card (the clock block moves with it)
+        LayoutUpdated += (_, _) => AlignClock();
         Loaded += (_, _) =>
         {
             UpdateClock();
@@ -68,6 +70,22 @@ public partial class HomeView : UserControl
         MailGlowScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, grow);
         MailGlowScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, grow);
         MailGlow.BeginAnimation(OpacityProperty, fade);
+    }
+
+    private void AlignClock()
+    {
+        if (!IsLoaded || ClockPanel.Parent is not UIElement header || !PulseDivider.IsVisible || !NetIcon.IsVisible) return;
+        try
+        {
+            double divider = PulseDivider.TranslatePoint(new Point(PulseDivider.ActualWidth / 2, 0), header).X;
+            double icon = NetIcon.TranslatePoint(new Point(NetIcon.ActualWidth / 2, 0), header).X;
+            double delta = icon - divider;
+            if (Math.Abs(delta) < 0.5) return;
+            var m = ClockPanel.Margin;
+            double right = Math.Max(0, m.Right + delta);
+            if (Math.Abs(right - m.Right) >= 0.5) ClockPanel.Margin = new Thickness(m.Left, m.Top, right, m.Bottom);
+        }
+        catch (InvalidOperationException) { }
     }
 
     private void StartPulse()
