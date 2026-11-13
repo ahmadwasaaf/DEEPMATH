@@ -83,11 +83,16 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     public decimal? Amount =>
         decimal.TryParse(AmountText.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var a) && a > 0 ? a : null;
 
-    /// <summary>Can be put on a row: a supplier (known or new) and an amount.</summary>
-    public bool IsReady => Match.Status != AnalysisStatus.Attention && Amount != null && SupplierName.Trim().Length > 0;
+    /// <summary>
+    /// The document contradicts itself: the engine refuses to decide (no tick, cannot be approved here) and says why.
+    /// </summary>
+    public bool HasConflict => Result.HasConflict;
+
+    /// <summary>Can be put on a row: a supplier (known or new) and an amount, and no contradiction in the document.</summary>
+    public bool IsReady => !HasConflict && Match.Status != AnalysisStatus.Attention && Amount != null && SupplierName.Trim().Length > 0;
 
     /// <summary>ok (known supplier, known account) | acct (new account) | new (new supplier) | warn (attention).</summary>
-    public string State => IsTestDocument ? "test" : Match.Status switch
+    public string State => HasConflict ? "block" : IsTestDocument ? "test" : Match.Status switch
     {
         AnalysisStatus.Matched => "ok",
         AnalysisStatus.NewAccount => "acct",
@@ -95,7 +100,8 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         _ => "warn",
     };
 
-    public string StatusText => IsTestDocument ? Loc.T("Analysis.StTestDocument") + " · " + BaseStatusText : BaseStatusText;
+    public string StatusText => (IsTestDocument ? Loc.T("Analysis.StTestDocument") + " · " : "")
+                                + (HasConflict ? Loc.T("Analysis.StBlocked") : BaseStatusText);
 
     private string BaseStatusText => Match.Status switch
     {
@@ -123,12 +129,17 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         get
         {
             var list = new List<string>();
+            // the contradictions first: what they are and between what
+            foreach (var c in Result.Conflicts)
+                if (Application.Current?.TryFindResource("Analysis.Conflict." + c.Code) is string ct)
+                    list.Add(c.Detail.Length > 0 ? ct + " (" + c.Detail + ")" : ct);
+            if (HasConflict) list.Add(Loc.T("Analysis.ConflictManual"));
             if (Match.Note.Length > 0 && !(Match.Note == "Analysis.NoteNoAmount" && Amount != null)) list.Add(Loc.T(Match.Note));
             if (Match.MatchedBy == "similar" && Match.Supplier != null) list.Add(Loc.F("Analysis.NoteSimilar", Result.CompanyName));
             if (Match.Candidates.Count > 0 && Picked == null) list.Add(Loc.T("Analysis.PickSupplier"));
             // nothing read: the engine's own remarks (no account, no SWIFT ...) add nothing
             if (Match.Note != "Analysis.NoteNothingRead")
-            foreach (var n in Result.Notes)
+            foreach (var n in Result.Notes.Where(n => Result.Conflicts.All(c => c.Code != n)))
                 if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
             if (Match.Note != "Analysis.NoteNothingRead" && Result.AltBanks.Count > 0)
                 list.Add(Loc.F("Analysis.AltAccounts", Result.AltBanks.Count));
@@ -322,6 +333,11 @@ public sealed partial class MassInvoiceViewModel
             Doc("TEST 36.jpeg", "ORION STAR EXPORTS LLP", "3383757556", "KKBKINBBXXX", null, "name_from_signature"),
             Doc("scan.pdf", "", "", "", 9000m),
             Doc("90,000.pdf", "ORBITAL MACHINE PARTS TRADING LIMITED", "55563751544820", "EHCBHKH0XXX", 90000m, "test_document"),
+            new AnalysisResult
+            {
+                File = @"C:\Docs\18,750.pdf", FileName = "18,750.pdf", Amount = 18750m, Ok = true, CompanyName = "VANTAGE PRECISION INDUSTRIES LIMITED",
+                Notes = ["conflicting_instructions"], Conflicts = [new("conflicting_instructions", "HKEUR50187742 / HKUSD50187743")],
+            },
         ]);
     }
 

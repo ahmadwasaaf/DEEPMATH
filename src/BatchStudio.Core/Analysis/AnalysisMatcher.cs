@@ -27,6 +27,12 @@ public sealed class AnalysisResult
     public List<string> Notes { get; init; } = [];
     /// <summary>The document's other active accounts (another currency ...), as banking paragraphs: saved as further accounts.</summary>
     public List<string> AltBanks { get; init; } = [];
+    /// <summary>
+    /// The document contradicts itself (two payment directives, the invoice issuer is not the account holder, a SWIFT given
+    /// two ways, a third-party payee ...): never decided automatically - a person verifies it with the supplier.
+    /// </summary>
+    public List<AnalysisConflict> Conflicts { get; init; } = [];
+    public bool HasConflict => Conflicts.Count > 0;
 
     public static AnalysisResult? Parse(string jsonLine)
     {
@@ -61,6 +67,13 @@ public sealed class AnalysisResult
                 AltBanks = r.TryGetProperty("bank_details_alt", out var ab) && ab.ValueKind == JsonValueKind.Array
                     ? ab.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => (x.GetString() ?? "").Trim()).Where(x => x.Length > 0).ToList()
                     : [],
+                Conflicts = r.TryGetProperty("conflicts", out var cf) && cf.ValueKind == JsonValueKind.Array
+                    ? cf.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Object)
+                        .Select(x => new AnalysisConflict(
+                            x.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() ?? "" : "",
+                            x.TryGetProperty("detail", out var d) && d.ValueKind == JsonValueKind.String ? d.GetString() ?? "" : ""))
+                        .Where(x => x.Code.Length > 0).ToList()
+                    : [],
                 Seconds = r.TryGetProperty("seconds", out var sec) && sec.ValueKind == JsonValueKind.Number ? sec.GetDouble() : 0,
             };
         }
@@ -71,6 +84,9 @@ public sealed class AnalysisResult
     public IEnumerable<string> AccountIds =>
         Ids.Where(kv => kv.Key is "account" or "iban").SelectMany(kv => kv.Value).Where(v => v.Length >= 6);
 }
+
+/// <summary>One contradiction found in a document: its kind (conflicting_instructions ...) and what contradicts (accounts, names).</summary>
+public sealed record AnalysisConflict(string Code, string Detail);
 
 public enum AnalysisStatus
 {

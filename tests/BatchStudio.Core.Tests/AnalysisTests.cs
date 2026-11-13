@@ -53,6 +53,16 @@ public class AnalysisTests
     }
 
     [Fact]
+    public void Parses_the_conflicts_of_a_document()
+    {
+        var r = AnalysisResult.Parse("{\"name\":\"1.pdf\",\"ok\":true,\"company_name\":\"A CO\",\"bank_details\":\"\"," +
+            "\"notes\":[\"conflicting_instructions\"],\"conflicts\":[{\"code\":\"conflicting_instructions\",\"detail\":\"HKEUR1 / HKUSD2\"}]}")!;
+        Assert.True(r.HasConflict);
+        Assert.Equal(new AnalysisConflict("conflicting_instructions", "HKEUR1 / HKUSD2"), Assert.Single(r.Conflicts));
+        Assert.False(AnalysisResult.Parse("{\"name\":\"2.pdf\",\"ok\":true}")!.HasConflict);
+    }
+
+    [Fact]
     public void Known_account_matches_whatever_the_name()
     {
         var m = AnalysisMatcher.Match([Doc("1.pdf", "UNION GRP TRADING LTD", "NRA87253553585745554659")], Known)[0];

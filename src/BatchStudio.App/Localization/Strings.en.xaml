@@ -496,6 +496,12 @@
     <sys:String x:Key="Analysis.NotSaved">The Suppliers sheet could not be saved yet ({0}). Close the workbook in Excel if it is open, then press Approve all again: nothing will be added twice.</sys:String>
     <sys:String x:Key="Analysis.SelectAll">Select all / none</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">Test document</sys:String>
+    <sys:String x:Key="Analysis.StBlocked">Cannot decide safely - manual verification required</sys:String>
+    <sys:String x:Key="Analysis.ConflictManual">Not ticked and cannot be approved here: verify it with the supplier through a channel you trust, then enter it yourself</sys:String>
+    <sys:String x:Key="Analysis.Conflict.conflicting_instructions">Conflicting payment instructions: the document directs payment to different accounts</sys:String>
+    <sys:String x:Key="Analysis.Conflict.beneficiary_mismatch">Beneficiary mismatch: the invoice issuer is not the holder of the bank account</sys:String>
+    <sys:String x:Key="Analysis.Conflict.ambiguous_swift">Ambiguous SWIFT: the document gives it in two forms (O / 0) - it was not guessed</sys:String>
+    <sys:String x:Key="Analysis.Conflict.third_party_payment">Third-party payment without a signed authorisation in the document</sys:String>
     <sys:String x:Key="Analysis.Engine.test_document">Marked as a sample / training document: not ticked</sys:String>
     <sys:String x:Key="Analysis.LeftOut">Only {1} rows were free: {0} document(s) were left out. Generate these invoices, clear the rows, then run Analysis again for:</sys:String>
     <sys:String x:Key="Analysis.Engine.swift_corrected">SWIFT corrected from the document's reading - compare it with the document before approving</sys:String>

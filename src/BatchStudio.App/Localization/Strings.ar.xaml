@@ -496,6 +496,12 @@
     <sys:String x:Key="Analysis.NotSaved">لسه ماقدرناش نحفظ شيت الموردين ({0}). اقفل ملف الإكسيل لو مفتوح، وبعدين اضغط اعتماد الكل تاني: مفيش حاجة هتتضاف مرتين.</sys:String>
     <sys:String x:Key="Analysis.SelectAll">تحديد الكل / إلغاء التحديد</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">مستند اختبار</sys:String>
+    <sys:String x:Key="Analysis.StBlocked">مينفعش يتقرر بأمان - محتاج تحقق يدوي</sys:String>
+    <sys:String x:Key="Analysis.ConflictManual">مش متعلّم عليه ومينفعش يتعمد من هنا: اتأكد من المورد بطريقة موثوقة، وبعدين دخّله بنفسك</sys:String>
+    <sys:String x:Key="Analysis.Conflict.conflicting_instructions">تعليمات دفع متعارضة: المستند بيوجّه الدفع لحسابات مختلفة</sys:String>
+    <sys:String x:Key="Analysis.Conflict.beneficiary_mismatch">اختلاف المستفيد: الشركة اللي أصدرت الفاتورة مش هي صاحبة الحساب البنكي</sys:String>
+    <sys:String x:Key="Analysis.Conflict.ambiguous_swift">SWIFT ملتبس: المستند كاتبه بشكلين (O / 0) - ومتخمّنش</sys:String>
+    <sys:String x:Key="Analysis.Conflict.third_party_payment">دفع لطرف تالت من غير تفويض موقّع في المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.test_document">المستند مكتوب فيه إنه تجريبي / للتدريب: مش متعلّم عليه</sys:String>
     <sys:String x:Key="Analysis.LeftOut">كان فيه {1} صف فاضي بس: اتساب {0} مستند. اعمل Generate للفواتير دي وامسح الصفوف، وبعدين شغّل Analysis تاني على:</sys:String>
     <sys:String x:Key="Analysis.Engine.swift_corrected">الـ SWIFT اتصحح عن اللي مكتوب في المستند - قارنه بالمستند قبل الاعتماد</sys:String>

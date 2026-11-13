@@ -416,6 +416,9 @@
                                                             <DataTrigger Binding="{Binding State}" Value="warn">
                                                                 <Setter Property="Foreground" Value="{StaticResource WarnBrush}" />
                                                             </DataTrigger>
+                                                            <DataTrigger Binding="{Binding State}" Value="block">
+                                                                <Setter Property="Foreground" Value="#EF5350" />
+                                                            </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </TextBlock.Style>
