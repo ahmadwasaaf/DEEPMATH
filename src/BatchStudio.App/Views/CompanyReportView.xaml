@@ -97,8 +97,12 @@
 
         <!-- invoices -->
         <Border Grid.Row="2" Style="{StaticResource Card}" Padding="6">
-            <DataGrid ItemsSource="{Binding Lines}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
-                      CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="36" SelectionMode="Single">
+            <!-- the invoices, then their total right under the Amount column (the list and the total scroll together) -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
+            <StackPanel>
+            <DataGrid x:Name="InvoiceGrid" ItemsSource="{Binding Lines}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
+                      CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="36" SelectionMode="Single"
+                      VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="OnGridWheel">
                 <DataGrid.Resources>
                         <Style x:Key="Mid" TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center" />
@@ -129,6 +133,20 @@
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
+            <Grid Margin="0,14,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="{Binding Columns[0].ActualWidth, ElementName=InvoiceGrid}" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                    <TextBlock Text="{DynamicResource Rep.Total}" Style="{StaticResource Muted}" FontSize="11" />
+                    <TextBlock FontSize="22" FontWeight="SemiBold" FlowDirection="LeftToRight" HorizontalAlignment="Left">
+                        <Run Text="{Binding TotalText, Mode=OneWay}" /><Run Text=" USD" />
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+            </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <!-- status line only while there is something to say: the report ends level with the list beside it -->

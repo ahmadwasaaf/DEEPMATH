@@ -276,6 +276,7 @@ public static class InvoiceService
 
         var tmp = Path.Combine(Path.GetTempPath(), $"BS_{Guid.NewGuid():N}.xlsx");
         var rollback = full + $".BS_REPLACE_{DateTime.Now:yyyyMMddHHmmss}.bak";
+        InvoiceTotalGuard.Check(d);   // the items must add up to the amount entered, or nothing is written
         FileWriter(d, tmp);
         try
         {
@@ -335,6 +336,7 @@ public static class InvoiceService
         var tmp = Path.Combine(Path.GetTempPath(), $"BS_{Guid.NewGuid():N}.xlsx");
         try
         {
+            InvoiceTotalGuard.Check(d);   // the items must add up to the amount entered, or nothing is written
             FileWriter(d, tmp);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);
             File.Move(tmp, full);

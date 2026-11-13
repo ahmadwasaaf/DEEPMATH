@@ -16,6 +16,12 @@ public partial class App : Application
         BatchStudio.Core.Workbook.Workspace.EditorFactory = Services.ExcelWorkbookEditor.Open;
         // invoices are written by Excel from the workbook's template sheet (shapes, heights, theme as in Excel)
         BatchStudio.Core.Invoices.InvoiceService.FileWriter = Services.ExcelInvoiceEngine.Fill;
+        // the items-total guard speaks the user's language
+        BatchStudio.Core.Invoices.InvoiceTotalMismatchException.Describe = (entered, items, diff, where) =>
+            Services.Loc.F("Guard.MismatchShort",
+                entered.ToString("N2", System.Globalization.CultureInfo.InvariantCulture),
+                items.ToString("N2", System.Globalization.CultureInfo.InvariantCulture),
+                (diff > 0 ? "+" : "") + diff.ToString("N2", System.Globalization.CultureInfo.InvariantCulture));
 
         // Alt+Enter / Shift+Enter: a new line inside the text fields, like Excel
         TextNewLine.Register();

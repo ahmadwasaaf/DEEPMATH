@@ -139,6 +139,8 @@
     <sys:String x:Key="Inv.Repeated">The category has only {0} items, so some items repeat.</sys:String>
     <sys:String x:Key="Inv.GenerateFirst">Generate the items first.</sys:String>
     <sys:String x:Key="Inv.Unbalanced">The total ({0}) differs from the target ({1}) after your edits. Save anyway?</sys:String>
+    <sys:String x:Key="Guard.Mismatch">The invoice was stopped: the items do not add up to the invoice total.&#10;&#10;Invoice total entered: {0}&#10;Items total: {1}&#10;Difference: {2}&#10;&#10;Nothing was saved. Generate the items again or correct them.</sys:String>
+    <sys:String x:Key="Guard.MismatchShort">Stopped: items total {1} ≠ invoice total {0} (difference {2}). Nothing was written.</sys:String>
     <sys:String x:Key="Inv.Saved">Invoice saved to the archive and added to INVOICE HISTORY.</sys:String>
     <sys:String x:Key="Inv.HistoryLocked">"{0}" is locked by another program. Close it there and try again.</sys:String>
     <sys:String x:Key="Inv.PdfSaved">PDF exported next to the invoice.</sys:String>
@@ -510,6 +512,10 @@
     <sys:String x:Key="Analysis.SelectAll">Select all / none</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">Test document</sys:String>
     <sys:String x:Key="Analysis.StBlocked">Cannot decide safely - manual verification required</sys:String>
+    <sys:String x:Key="Analysis.MovedShort">Moved to Rejected files</sys:String>
+    <sys:String x:Key="Analysis.PackagedMany">{0} document(s) moved to the Desktop folder "{1}"</sys:String>
+    <sys:String x:Key="Analysis.PackageAll">Package All</sys:String>
+    <sys:String x:Key="Analysis.Moved">Moved</sys:String>
     <sys:String x:Key="Analysis.ConflictSaveTip">Save turns on once you change the bank details (edit an account, add one, or make another one the default)</sys:String>
     <sys:String x:Key="Analysis.SupplierName">Supplier name</sys:String>
     <sys:String x:Key="Analysis.Minimize">Minimize: work on the rows and come back to the documents left here</sys:String>

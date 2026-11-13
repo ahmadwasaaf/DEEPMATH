@@ -132,6 +132,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     /// </summary>
     public string ShortRemarks => HasConflict
         ? string.Join(" · ", Result.Conflicts.Select(c => Application.Current?.TryFindResource("Analysis.ConflictShort." + c.Code) as string ?? c.Code).Distinct())
+          + (IsMoved ? " · " + Loc.T("Analysis.MovedShort") : "")
         : Remarks;
 
     /// <summary>The conflicts in full: what contradicts what, and what to do.</summary>
@@ -142,6 +143,17 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     /// <summary>Where the document is now (Package moves it to the Desktop).</summary>
     [ObservableProperty] private string? _movedTo;
     public string FilePath => MovedTo ?? Result.File;
+    public bool IsMoved => MovedTo != null;
+
+    partial void OnMovedToChanged(string? value)
+    {
+        OnPropertyChanged(nameof(FilePath));
+        OnPropertyChanged(nameof(IsMoved));
+        OnPropertyChanged(nameof(Remarks));
+        OnPropertyChanged(nameof(ShortRemarks));
+        OnPropertyChanged(nameof(HasRemarks));
+        OnPropertyChanged(nameof(ShowShortRemarks));
+    }
 
     /// <summary>"View conflict details": the conflict window (details, copy, package, the right bank accounts).</summary>
     [RelayCommand]
@@ -150,6 +162,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     private List<string> RemarkList()
     {
         var list = new List<string>();
+        if (IsMoved) list.Add(Loc.T("Analysis.MovedShort"));
         // the contradictions first: what they are and between what
         foreach (var c in Result.Conflicts)
             if (Application.Current?.TryFindResource("Analysis.Conflict." + c.Code) is string ct)
@@ -280,6 +293,25 @@ public sealed partial class MassInvoiceViewModel
         File.Move(source, dest);
         item.MovedTo = dest;
         return dest;
+    }
+
+    [ObservableProperty] private string _reviewNote = "";
+
+    /// <summary>
+    /// Right-click › Package All: every selected document (blocked, "needs a look" or normal) moved to "Rejected files"
+    /// in one go; documents already moved are skipped. The rows stay in the review.
+    /// </summary>
+    public void PackageMany(IReadOnlyList<AnalysisItemViewModel> items)
+    {
+        int moved = 0;
+        var failed = new List<string>();
+        foreach (var i in items.Where(i => !i.IsMoved).Distinct())
+        {
+            try { PackageFile(i); moved++; }
+            catch (Exception ex) { failed.Add(i.FileName + " — " + ex.Message); }
+        }
+        ReviewNote = moved > 0 ? Loc.F("Analysis.PackagedMany", moved, RejectedFolder) : "";
+        ReviewError = failed.Count > 0 ? Loc.F("Analysis.PackageFailed", string.Join("; ", failed)) : "";
     }
 
     /// <summary>The Desktop folder Package moves blocked documents to (one folder for every kind of conflict).</summary>
@@ -440,6 +472,7 @@ public sealed partial class MassInvoiceViewModel
     [RelayCommand]
     private void CloseReview()
     {
+        ReviewNote = "";
         IsReviewing = false;
         ReviewHidden = false;
         ConflictEditor = null;

@@ -25,7 +25,10 @@ public sealed partial class ConflictEditorViewModel : ObservableObject
     [ObservableProperty] private string _supplierName;
     [ObservableProperty] private bool _isCopied;
     [ObservableProperty] private string _message = "";
+    [NotifyPropertyChangedFor(nameof(PackageTip))]
     [ObservableProperty] private bool _isPackaged;
+    /// <summary>Before: what Package does; after: where the document went.</summary>
+    public string PackageTip => IsPackaged && Item.MovedTo != null ? Loc.F("Analysis.Packaged", Item.MovedTo) : Loc.T("Analysis.PackageTip");
 
     /// <summary>The bank data the window opened with: Save stays off until the user really changes it.</summary>
     private readonly string _initial;

@@ -55,8 +55,9 @@ public static class ExcelInvoiceEngine
             TemplateFiller.Fill(d, outputPath);
             return;
         }
+        InvoiceTotalGuard.Check(d);
         try { FillWithExcel(d, outputPath); }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not InvoiceTotalMismatchException)   // a total mismatch stops the invoice: no fallback
         {
             LastFallbackReason = ex.Message;
             Log(ex);
@@ -207,6 +208,21 @@ public static class ExcelInvoiceEngine
             if (d.ThemeRgb is { } theme && ThemeMemory.Supports(sheetName)) ApplyTheme(wb, ws, sheetName, theme);
 
             app.Calculate();
+
+            // ---- safety: the invoice as Excel calculated it - its item amounts, VAT and total - must match the amount entered
+            if (cAmt > 0)
+            {
+                var amounts = new List<double>(n);
+                for (int i = 0; i < n; i++)
+                {
+                    object v = Top(ws.Cells[first + i, cAmt]).Value2;
+                    amounts.Add(v is double dv ? dv : 0d);
+                }
+                double? vatShown = null, totalShown = null;
+                if (CellOf(TemplateFields.VatAmount) is { } vc2 && Top(ws.Range[vc2]).Value2 is double vv) vatShown = vv;
+                if (CellOf(TemplateFields.Total) is { } tc2 && Top(ws.Range[tc2]).Value2 is double tv) totalShown = tv;
+                InvoiceTotalGuard.CheckSheet(d, amounts, vatShown, totalShown);
+            }
 
             // ---- the invoice becomes its own workbook. We already work on a private copy of the system file, so instead of
             // Worksheet.Copy (whose new workbook a hidden Excel does not reliably hand back) every other sheet is removed

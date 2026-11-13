@@ -705,8 +705,12 @@ public sealed partial class NewInvoiceViewModel(MainViewModel main) : Observable
     private async Task SaveAsync()
     {
         if (_draft == null) { Status = Loc.T("Inv.GenerateFirst"); return; }
-        if (!IsBalanced && !Dialogs.Confirm(Loc.F("Inv.Unbalanced", TotalText, _draft.Target.ToString("N2", CultureInfo.InvariantCulture))))
+        // safety: the items must add up to the amount entered - an unbalanced invoice is never saved
+        if (!IsBalanced)
+        {
+            Dialogs.Error(Loc.F("Guard.Mismatch", _draft.Target.ToString("N2", CultureInfo.InvariantCulture), TotalText, DifferenceText));
             return;
+        }
         _draft.InvoiceNo = InvoiceNo.Trim();
         _draft.Date = Date ?? DateTime.Today;
         var ws = main.Workspace ?? throw new InvalidOperationException("No entity is open.");

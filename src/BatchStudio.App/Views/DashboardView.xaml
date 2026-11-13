@@ -3,6 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <!-- centred column title: the header itself is centred from code (keeps the Fluent header look) -->
+        <DataTemplate x:Key="CenterHeader">
+            <TextBlock Text="{Binding}" Loaded="OnCenterHeaderLoaded" />
+        </DataTemplate>
         <Style x:Key="KpiValue" TargetType="TextBlock">
             <Setter Property="FontSize" Value="24" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -141,8 +145,8 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Company}" Binding="{Binding Name}" Width="*" MinWidth="180" />
-                        <DataGridTemplateColumn Header="{StaticResource Col.Amount}" Width="170" SortMemberPath="Amount">
+                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Company}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Name}" Width="*" MinWidth="180" />
+                        <DataGridTemplateColumn Header="{StaticResource Col.Amount}" HeaderTemplate="{StaticResource CenterHeader}" Width="170" SortMemberPath="Amount">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Margin="6,0" VerticalAlignment="Center">
@@ -152,13 +156,14 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" Header="{StaticResource Col.InvCount}" Binding="{Binding Count}" Width="Auto" MinWidth="80" />
-                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Type}" Binding="{Binding Type}" Width="Auto" MinWidth="90" />
-                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Category}" Binding="{Binding Category}" Width="Auto" MinWidth="120" />
-                        <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="190">
+                        <DataGridTextColumn ElementStyle="{StaticResource MidCenter}" Header="{StaticResource Col.InvCount}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Count}" Width="Auto" MinWidth="80" />
+                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Type}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Type}" Width="Auto" MinWidth="90" />
+                        <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Category}" HeaderTemplate="{StaticResource CenterHeader}" Binding="{Binding Category}" Width="Auto" MinWidth="120" />
+                        <DataGridTemplateColumn Header="{StaticResource Col.Actions}" HeaderTemplate="{StaticResource CenterHeader}" Width="190">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="4,0" VerticalAlignment="Center">
+                                    <!-- centred in the column -->
+                                    <Grid Width="160" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <ComboBox x:Name="Act" SelectionChanged="OnActionChosen" HorizontalAlignment="Stretch" MinHeight="28" Padding="10,3">
                                             <ComboBoxItem Tag="report" Content="{DynamicResource Act.ViewReport}" />
                                             <ComboBoxItem Tag="exportreport" Content="{DynamicResource Act.ExportReport}" />

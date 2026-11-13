@@ -350,9 +350,19 @@
                         </StackPanel>
                     </DockPanel>
 
-                    <DataGrid Grid.Row="1" ItemsSource="{Binding ReviewItems}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
-                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" IsReadOnly="True"
-                              EnableRowVirtualization="True">
+                    <!-- Ctrl / Shift + click: several rows; right-click: Package All (moves them to "Rejected files") -->
+                    <DataGrid x:Name="ReviewGrid" Grid.Row="1" ItemsSource="{Binding ReviewItems}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserSortColumns="False"
+                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Extended" SelectionUnit="FullRow" IsReadOnly="True"
+                              EnableRowVirtualization="True" PreviewMouseRightButtonDown="OnReviewRightClick">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{DynamicResource Analysis.PackageAll}" Click="OnPackageSelected">
+                                    <MenuItem.Icon>
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE7B8;" FontSize="13" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Width="64" MinWidth="64">
                                 <!-- select all / none (some chosen: half state): a blue outlined box on a white header, so it stands out -->
@@ -498,6 +508,7 @@
                         </Button>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="{Binding ReviewSummary}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding ReviewNote}" Foreground="{StaticResource GoodBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
                             <TextBlock Text="{Binding ReviewError}" Foreground="{StaticResource BadBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
                         </StackPanel>
                     </DockPanel>
@@ -517,11 +528,50 @@
                                 ToolTip="{DynamicResource Common.Cancel}" VerticalAlignment="Top">
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="13" />
                         </Button>
+                        <!-- Package: presses in when clicked, then a green tick and "Moved"; its tooltip says what it does / where the file went -->
                         <Button DockPanel.Dock="Right" Command="{Binding PackageCommand}" Padding="10,5" Margin="0,0,8,0" VerticalAlignment="Top"
-                                ToolTip="{DynamicResource Analysis.PackageTip}" IsEnabled="{Binding IsPackaged, Converter={StaticResource InverseBool}}">
+                                ToolTip="{Binding PackageTip}" ToolTipService.ShowOnDisabled="True" RenderTransformOrigin="0.5,0.5"
+                                IsEnabled="{Binding IsPackaged, Converter={StaticResource InverseBool}}">
+                            <Button.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                            </Button.RenderTransform>
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.PreviewMouseLeftButtonDown">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.88" Duration="0:0:0.08" AutoReverse="True" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.88" Duration="0:0:0.08" AutoReverse="True" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7B8;" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                <TextBlock Text="{DynamicResource Analysis.Package}" VerticalAlignment="Center" />
+                                <TextBlock FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                            <Setter Property="Text" Value="&#xE7B8;" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsPackaged}" Value="True">
+                                                    <Setter Property="Text" Value="&#xE73E;" />
+                                                    <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{DynamicResource Analysis.Package}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsPackaged}" Value="True">
+                                                    <Setter Property="Text" Value="{DynamicResource Analysis.Moved}" />
+                                                    <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </Button>
                         <Button DockPanel.Dock="Right" Command="{Binding CopyCommand}" Padding="8,5" Margin="0,0,8,0" VerticalAlignment="Top"

@@ -17,6 +17,8 @@ public sealed class StatTile
     public required string Glyph { get; init; }
     /// <summary>The sidebar page the card opens (Nav.Suppliers ...).</summary>
     public string NavKey { get; init; } = "";
+    /// <summary>A card without a number (Mass Invoice): its icon, large, in place of the number.</summary>
+    public bool HasValue => Value.Length > 0;
 }
 
 /// <summary>A colour square of the accent palette (Settings → Appearance).</summary>
@@ -128,6 +130,7 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.Templates")?.Glyph ?? "",
             NavKey = "Nav.Templates",
         });
+        SetMassTile();
         RefreshTicker();
         foreach (var d in DataSets.All)
             if (!ws.Sheets.Contains(d.SheetName, StringComparer.OrdinalIgnoreCase)) Missing.Add(Loc.F("Home.MissingSheet", d.SheetName));
@@ -149,6 +152,21 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         int i = -1;
         for (int k = 0; k < Tiles.Count; k++) if (Tiles[k].Title == title) { i = k; break; }
         if (i >= 0) Tiles[i] = tile; else Tiles.Add(tile);
+        SetMassTile();
+    }
+
+    /// <summary>The "Mass Invoice" card: its name and icon only (no number), always the last card; opens Mass Invoice.</summary>
+    private void SetMassTile()
+    {
+        var title = Loc.T("Nav.Mass");
+        for (int k = Tiles.Count - 1; k >= 0; k--) if (Tiles[k].NavKey == "Nav.Mass") Tiles.RemoveAt(k);
+        Tiles.Add(new StatTile
+        {
+            Title = title,
+            Value = "",
+            Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.Mass")?.Glyph ?? "\uE8FD",
+            NavKey = "Nav.Mass",
+        });
     }
 
     /// <summary>$5.19M / $812.5K / $950 style amount for the pulse strip.</summary>

@@ -139,6 +139,8 @@
     <sys:String x:Key="Inv.Repeated">التصنيف به {0} أصناف فقط، لذلك تكررت بعض الأصناف.</sys:String>
     <sys:String x:Key="Inv.GenerateFirst">ولّد الأصناف أولًا.</sys:String>
     <sys:String x:Key="Inv.Unbalanced">الإجمالي ({0}) لا يساوي المبلغ المطلوب ({1}) بعد تعديلاتك. هل تريد الحفظ؟</sys:String>
+    <sys:String x:Key="Guard.Mismatch">الفاتورة اتوقفت: مجموع الأصناف مش مساوي لإجمالي الفاتورة.&#10;&#10;إجمالي الفاتورة اللي اتكتب: {0}&#10;مجموع الأصناف: {1}&#10;الفرق: {2}&#10;&#10;ماتحفظش حاجة. ولّد الأصناف تاني أو صلّحها.</sys:String>
+    <sys:String x:Key="Guard.MismatchShort">اتوقفت: مجموع الأصناف {1} ≠ إجمالي الفاتورة {0} (الفرق {2}). ماتكتبش حاجة.</sys:String>
     <sys:String x:Key="Inv.Saved">تم حفظ الفاتورة في الأرشيف وإضافتها إلى INVOICE HISTORY.</sys:String>
     <sys:String x:Key="Inv.HistoryLocked">الملف "{0}" مقفول من برنامج آخر. أغلقه هناك ثم حاول مرة أخرى.</sys:String>
     <sys:String x:Key="Inv.PdfSaved">تم تصدير PDF بجانب ملف الفاتورة.</sys:String>
@@ -510,6 +512,10 @@
     <sys:String x:Key="Analysis.SelectAll">تحديد الكل / إلغاء التحديد</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">مستند اختبار</sys:String>
     <sys:String x:Key="Analysis.StBlocked">مينفعش يتقرر بأمان - محتاج تحقق يدوي</sys:String>
+    <sys:String x:Key="Analysis.MovedShort">اتنقل لـ Rejected files</sys:String>
+    <sys:String x:Key="Analysis.PackagedMany">اتنقل {0} مستند لمجلد "{1}" على سطح المكتب</sys:String>
+    <sys:String x:Key="Analysis.PackageAll">Package All</sys:String>
+    <sys:String x:Key="Analysis.Moved">اتنقل</sys:String>
     <sys:String x:Key="Analysis.ConflictSaveTip">زرار الحفظ بيشتغل لما تعدّل البيانات البنكية (تعدّل حساب، أو تضيف حساب، أو تختار حساب تاني افتراضي)</sys:String>
     <sys:String x:Key="Analysis.SupplierName">اسم المورد</sys:String>
     <sys:String x:Key="Analysis.Minimize">تصغير: اشتغل على الصفوف وارجع للمستندات اللي فاضلة هنا</sys:String>
