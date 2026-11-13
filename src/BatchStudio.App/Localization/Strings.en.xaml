@@ -510,6 +510,7 @@
     <sys:String x:Key="Analysis.SelectAll">Select all / none</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">Test document</sys:String>
     <sys:String x:Key="Analysis.StBlocked">Cannot decide safely - manual verification required</sys:String>
+    <sys:String x:Key="Analysis.SupplierName">Supplier name</sys:String>
     <sys:String x:Key="Analysis.Minimize">Minimize: work on the rows and come back to the documents left here</sys:String>
     <sys:String x:Key="Analysis.Restore">Review the documents ({0})</sys:String>
     <sys:String x:Key="Analysis.RestoreTip">Back to the documents left in the review</sys:String>

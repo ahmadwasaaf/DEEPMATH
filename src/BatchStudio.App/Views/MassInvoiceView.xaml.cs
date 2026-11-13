@@ -64,6 +64,7 @@ public partial class MassInvoiceView : UserControl
         {
             h.Background = System.Windows.Media.Brushes.White;
             h.Padding = new Thickness(0);
+            h.MinWidth = 0;
             h.HorizontalContentAlignment = HorizontalAlignment.Center;
             h.VerticalContentAlignment = VerticalAlignment.Center;
         }

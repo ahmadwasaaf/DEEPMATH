@@ -354,7 +354,7 @@
                               HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" IsReadOnly="True"
                               EnableRowVirtualization="True">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Width="44">
+                            <DataGridTemplateColumn Width="64" MinWidth="64">
                                 <!-- select all / none (some chosen: half state): a blue outlined box on a white header, so it stands out -->
                                 <DataGridTemplateColumn.Header>
                                     <CheckBox IsChecked="{Binding DataContext.AllChosen, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -565,7 +565,7 @@
                                 <TextBlock Text="{Binding Details}" TextWrapping="Wrap" FontSize="12.5" LineHeight="19" />
                             </Border>
                             <TextBlock Text="{DynamicResource Analysis.ConflictFix}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,6,10" />
-                            <TextBlock Text="{DynamicResource Analysis.ColSupplier}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4" />
+                            <TextBlock Text="{DynamicResource Analysis.SupplierName}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4" />
                             <TextBox Text="{Binding SupplierName, UpdateSourceTrigger=PropertyChanged}" Padding="11,9" Margin="0,0,6,12" FlowDirection="LeftToRight" />
                             <!-- the same bank editor as the supplier form: + adds another account -->
                             <ContentControl Content="{Binding Banks}" Focusable="False" />

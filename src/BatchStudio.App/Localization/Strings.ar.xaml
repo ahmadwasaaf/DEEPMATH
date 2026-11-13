@@ -510,6 +510,7 @@
     <sys:String x:Key="Analysis.SelectAll">تحديد الكل / إلغاء التحديد</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">مستند اختبار</sys:String>
     <sys:String x:Key="Analysis.StBlocked">مينفعش يتقرر بأمان - محتاج تحقق يدوي</sys:String>
+    <sys:String x:Key="Analysis.SupplierName">اسم المورد</sys:String>
     <sys:String x:Key="Analysis.Minimize">تصغير: اشتغل على الصفوف وارجع للمستندات اللي فاضلة هنا</sys:String>
     <sys:String x:Key="Analysis.Restore">مراجعة المستندات ({0})</sys:String>
     <sys:String x:Key="Analysis.RestoreTip">الرجوع للمستندات اللي فاضلة في المراجعة</sys:String>
