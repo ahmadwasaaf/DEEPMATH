@@ -33,6 +33,15 @@
                             <TextBlock Text="{DynamicResource Analysis.Button}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
+                    <!-- the review, minimized: back to the documents left in it -->
+                    <Button Command="{Binding RestoreReviewCommand}" Margin="0,0,10,0" Padding="12,6" VerticalAlignment="Center"
+                            ToolTip="{DynamicResource Analysis.RestoreTip}"
+                            Visibility="{Binding IsReviewMinimized, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8A7;" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding RestoreText}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <ComboBox ItemsSource="{Binding Types}" SelectedIndex="{Binding TypeIndex}" Width="170" HorizontalContentAlignment="Center"
                               IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
                 </StackPanel>
@@ -315,7 +324,7 @@
 
         <!-- Analysis review: every document with its supplier, account and amount; Approve all puts them on the rows -->
         <Border Grid.RowSpan="4" Panel.ZIndex="22" Background="#99000000" CornerRadius="8"
-                Visibility="{Binding IsReviewing, Converter={StaticResource BoolToVis}}">
+                Visibility="{Binding ShowReview, Converter={StaticResource BoolToVis}}">
             <Border Style="{StaticResource Card}" Padding="18,14" Margin="24,16" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -327,6 +336,10 @@
                         <Button DockPanel.Dock="Right" Command="{Binding CloseReviewCommand}" Padding="6,3" MinWidth="0" Background="Transparent" BorderThickness="0"
                                 ToolTip="{DynamicResource Common.Cancel}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}">
                             <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="13" />
+                        </Button>
+                        <Button DockPanel.Dock="Right" Command="{Binding MinimizeReviewCommand}" Padding="6,3" MinWidth="0" Background="Transparent" BorderThickness="0"
+                                Margin="0,0,4,0" ToolTip="{DynamicResource Analysis.Minimize}">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE921;" FontSize="13" />
                         </Button>
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
@@ -341,11 +354,33 @@
                               HeadersVisibility="Column" GridLinesVisibility="Horizontal" SelectionMode="Single" IsReadOnly="True"
                               EnableRowVirtualization="True">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Width="40">
-                                <!-- select all / none (some chosen: half state) -->
+                            <DataGridTemplateColumn Width="44">
+                                <!-- select all / none (some chosen: half state): a blue outlined box on a white header, so it stands out -->
                                 <DataGridTemplateColumn.Header>
                                     <CheckBox IsChecked="{Binding DataContext.AllChosen, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                              ToolTip="{DynamicResource Analysis.SelectAll}" MinWidth="0" Margin="6,0,0,0" HorizontalAlignment="Center" />
+                                              ToolTip="{DynamicResource Analysis.SelectAll}" Cursor="Hand" Focusable="False" Loaded="OnSelectAllLoaded">
+                                        <CheckBox.Template>
+                                            <ControlTemplate TargetType="CheckBox">
+                                                <Border x:Name="Box" Width="18" Height="18" CornerRadius="3" BorderThickness="2" Background="Transparent"
+                                                        BorderBrush="{DynamicResource BrandBrush}">
+                                                    <Path x:Name="Mark" Stretch="Uniform" Margin="2" Fill="{DynamicResource BrandBrush}" Visibility="Collapsed"
+                                                          Data="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsChecked" Value="{x:Null}">
+                                                        <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
+                                                        <Setter TargetName="Mark" Property="Data" Value="M5 11h14v2H5z" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Box" Property="BorderThickness" Value="2.5" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </CheckBox.Template>
+                                    </CheckBox>
                                 </DataGridTemplateColumn.Header>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -354,7 +389,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColFile}" Width="150">
+                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColFile}" HeaderTemplate="{StaticResource CenterHeader}" Width="150">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <!-- click: opens the document -->
@@ -367,7 +402,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColSupplier}" Width="3*" MinWidth="220">
+                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColSupplier}" HeaderTemplate="{StaticResource CenterHeader}" Width="3*" MinWidth="220">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel VerticalAlignment="Center" Margin="4,4" ToolTip="{Binding Details}">
@@ -385,7 +420,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColAmount}" Width="130">
+                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColAmount}" HeaderTemplate="{StaticResource CenterHeader}" Width="130">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBox Text="{Binding AmountText, UpdateSourceTrigger=PropertyChanged}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
@@ -393,11 +428,12 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColStatus}" Width="2*" MinWidth="200">
+                            <DataGridTemplateColumn Header="{StaticResource Analysis.ColStatus}" HeaderTemplate="{StaticResource CenterHeader}" Width="2*" MinWidth="200">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <StackPanel VerticalAlignment="Center" Margin="8,4">
-                                            <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" TextWrapping="Wrap">
+                                            <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                                       Visibility="{Binding HasConflict, Converter={StaticResource InverseBoolToVis}}">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Style.Triggers>
@@ -423,49 +459,21 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                            <!-- two lines at most; a blocked document opens the full conflict below -->
+                                            <!-- two lines at most -->
                                             <TextBlock Text="{Binding ShortRemarks}" Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
                                                        MaxHeight="30" TextTrimming="CharacterEllipsis" ToolTip="{Binding Remarks}"
-                                                       Visibility="{Binding HasRemarks, Converter={StaticResource BoolToVis}}" />
-                                            <Button Command="{Binding ToggleDetailsCommand}" Cursor="Hand" HorizontalAlignment="Left" Margin="0,3,0,0" Padding="0"
-                                                    Background="Transparent" BorderThickness="0" Focusable="False"
-                                                    Visibility="{Binding HasConflict, Converter={StaticResource BoolToVis}}">
-                                                <Button.Template>
-                                                    <ControlTemplate TargetType="Button">
-                                                        <ContentPresenter />
-                                                    </ControlTemplate>
-                                                </Button.Template>
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Path Width="12" Height="12" Stretch="Uniform" Fill="#EF5350" VerticalAlignment="Center">
-                                                        <Path.Style>
-                                                            <Style TargetType="Path">
-                                                                <Setter Property="Data" Value="M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding ShowDetails}" Value="True">
-                                                                        <Setter Property="Data" Value="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Path.Style>
-                                                    </Path>
-                                                    <TextBlock Margin="4,0,0,0" FontSize="11" Foreground="#EF5350" VerticalAlignment="Center">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Text" Value="{DynamicResource Analysis.ViewConflict}" />
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding ShowDetails}" Value="True">
-                                                                        <Setter Property="Text" Value="{DynamicResource Analysis.HideConflict}" />
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </StackPanel>
-                                            </Button>
-                                            <Border Margin="0,4,0,2" Padding="8,6" CornerRadius="6" Background="#22EF5350" BorderBrush="#55EF5350" BorderThickness="1"
-                                                    Visibility="{Binding ShowDetails, Converter={StaticResource BoolToVis}}">
-                                                <TextBlock Text="{Binding ConflictDetails}" FontSize="11" TextWrapping="Wrap" />
-                                            </Border>
+                                                       Visibility="{Binding ShowShortRemarks, Converter={StaticResource BoolToVis}}" />
+                                            <!-- blocked: only the reason, in red; the whole conflict opens in its own window -->
+                                            <StackPanel Visibility="{Binding HasConflict, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="{Binding ShortRemarks}" Foreground="#EF5350" FontWeight="SemiBold" TextWrapping="Wrap"
+                                                           MaxHeight="40" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Margin="0,3,0,0" FontSize="11" HorizontalAlignment="Left" Cursor="Hand" Foreground="#EF5350"
+                                                           Text="{DynamicResource Analysis.ViewConflict}" TextDecorations="Underline">
+                                                    <TextBlock.InputBindings>
+                                                        <MouseBinding MouseAction="LeftClick" Command="{Binding ViewConflictCommand}" />
+                                                    </TextBlock.InputBindings>
+                                                </TextBlock>
+                                            </StackPanel>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -491,6 +499,79 @@
                         </StackPanel>
                     </DockPanel>
                 </Grid>
+            </Border>
+        </Border>
+
+        <!-- conflict window of a blocked document: the whole conflict, Copy, Package, and the right bank accounts (Save = the user's decision) -->
+        <Border Grid.RowSpan="4" Panel.ZIndex="23" Background="#99000000" CornerRadius="8"
+                Visibility="{Binding HasConflictEditor, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource Card}" Padding="18,14" Width="640" Margin="0,16" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" DataContext="{Binding ConflictEditor}">
+                <DockPanel>
+                    <!-- top: title, copy, package, close -->
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Command="{Binding CloseCommand}" Padding="6,3" MinWidth="0" Background="Transparent" BorderThickness="0"
+                                ToolTip="{DynamicResource Common.Cancel}" VerticalAlignment="Top">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="13" />
+                        </Button>
+                        <Button DockPanel.Dock="Right" Command="{Binding PackageCommand}" Padding="10,5" Margin="0,0,8,0" VerticalAlignment="Top"
+                                ToolTip="{DynamicResource Analysis.PackageTip}" IsEnabled="{Binding IsPackaged, Converter={StaticResource InverseBool}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7B8;" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{DynamicResource Analysis.Package}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button DockPanel.Dock="Right" Command="{Binding CopyCommand}" Padding="8,5" Margin="0,0,8,0" VerticalAlignment="Top"
+                                ToolTip="{DynamicResource Analysis.CopyConflict}">
+                            <TextBlock FontSize="13">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                        <Setter Property="Text" Value="&#xE8C8;" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsCopied}" Value="True">
+                                                <Setter Property="Text" Value="&#xE73E;" />
+                                                <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Button>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Title}" Foreground="#EF5350" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock Margin="0,4,0,0" FontSize="12" Cursor="Hand" Foreground="{DynamicResource BrandBrush}" FlowDirection="LeftToRight" HorizontalAlignment="Left"
+                                       Text="{Binding FileName}" ToolTip="{DynamicResource Analysis.OpenFile}">
+                                <TextBlock.InputBindings>
+                                    <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFileCommand}" />
+                                </TextBlock.InputBindings>
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
+                    <!-- bottom: message, cancel, save -->
+                    <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                        <Button DockPanel.Dock="Right" Command="{Binding SaveCommand}" Padding="22,9" Margin="8,0,0,0" Style="{DynamicResource AccentButtonStyle}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" FontSize="13" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Common.Save}" />
+                            </StackPanel>
+                        </Button>
+                        <Button DockPanel.Dock="Right" Command="{Binding CloseCommand}" Content="{DynamicResource Common.Cancel}" Padding="18,9" />
+                        <TextBlock Text="{Binding Message}" Style="{StaticResource Muted}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    </DockPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,0,6,0">
+                            <!-- the conflict in full -->
+                            <Border Padding="12,10" CornerRadius="6" Background="#22EF5350" BorderBrush="#55EF5350" BorderThickness="1" Margin="0,0,6,14">
+                                <TextBlock Text="{Binding Details}" TextWrapping="Wrap" FontSize="12.5" LineHeight="19" />
+                            </Border>
+                            <TextBlock Text="{DynamicResource Analysis.ConflictFix}" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,6,10" />
+                            <TextBlock Text="{DynamicResource Analysis.ColSupplier}" Style="{StaticResource Muted}" FontSize="12" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding SupplierName, UpdateSourceTrigger=PropertyChanged}" Padding="11,9" Margin="0,0,6,12" FlowDirection="LeftToRight" />
+                            <!-- the same bank editor as the supplier form: + adds another account -->
+                            <ContentControl Content="{Binding Banks}" Focusable="False" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Border>
     </Grid>

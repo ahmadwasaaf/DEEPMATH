@@ -305,7 +305,139 @@ public sealed partial class DataSetViewModel : ObservableObject
             row[name] = value;
             row.EndEdit();
         }
-        return new BankGroupViewModel(headers, Get, Set, expanded: false);
+        var group = new BankGroupViewModel(headers, Get, Set, expanded: false);
+        if (Session.Definition.Key == "suppliers")
+            group.Exporter = acc => ExportBankAsync(Get, headers, acc);
+        return group;
+    }
+
+    public bool IsSuppliersSheet => Session.Definition.Key == "suppliers";
+    [ObservableProperty] private bool _isExportingAll;
+    [ObservableProperty] private string _exportAllText = "";
+
+    /// <summary>
+    /// Every bank account of every supplier as a PDF, in a Desktop folder "All Registered Suppliers Bank Accounts"
+    /// ("... (2)" when that folder already exists, so an earlier export is never mixed with this one). One hidden Excel.
+    /// </summary>
+    [RelayCommand]
+    private async Task ExportAllBanksAsync()
+    {
+        if (IsExportingAll || Table == null || !IsSuppliersSheet) return;
+        var book = Session.Workspace?.WorkbookPath;
+        if (book == null || !File.Exists(book)) { Dialogs.Error(Loc.T("BankPdf.NoWorkbook")); return; }
+        var headers = Table.Columns.Cast<DataColumn>().Select(c => c.Caption).ToList();
+        int nativeCol = headers.FindIndex(h => h.Contains("Chinese", StringComparison.OrdinalIgnoreCase));
+        int templateCol = headers.FindIndex(h => h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase));
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        var folder = Path.Combine(desktop, "All Registered Suppliers Bank Accounts");
+        for (int i = 2; Directory.Exists(folder) || File.Exists(folder); i++)
+            folder = Path.Combine(desktop, $"All Registered Suppliers Bank Accounts ({i})");
+
+        var jobs = new List<BankAccountPdf.Job>();
+        var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted || Table.Columns.Count < 2) continue;
+            var row = Table.Columns.Cast<DataColumn>().Select(c => r[c] as string ?? "").ToList();
+            var name = row[1].Trim();
+            if (name.Length == 0) continue;
+            string native = nativeCol >= 0 ? row[nativeCol] : "";
+            string template = templateCol >= 0 ? row[templateCol].Trim() : "";
+            int? theme = _main.ThemeFor(name, template.Length > 0 ? template : "INVOICE");
+            foreach (var account in SupplierBanks.Accounts(headers, row).Where(a => a.Text.Trim().Length > 0))
+            {
+                // two suppliers with the same file name (or the same account twice): "(2)"
+                var file = BankAccountPdf.FileName(name, account.Number);
+                var stem = Path.GetFileNameWithoutExtension(file);
+                for (int k = 2; !taken.Add(file); k++) file = $"{stem} ({k}).pdf";
+                jobs.Add(new BankAccountPdf.Job(name, native, account.Text, theme, Path.Combine(folder, file)));
+            }
+        }
+        if (jobs.Count == 0) { Status = Loc.T("BankPdf.NoAccounts"); return; }
+
+        IsExportingAll = true;
+        ExportAllText = $"0 / {jobs.Count}";
+        Status = Loc.F("BankPdf.ExportingAll", jobs.Count);
+        var ui = System.Windows.Application.Current?.Dispatcher;
+        try
+        {
+            List<(BankAccountPdf.Job Job, string Error)> failed = [];
+            await Task.Run(() =>
+            {
+                Exception? error = null;
+                var t = new Thread(() =>
+                {
+                    try
+                    {
+                        failed = BankAccountPdf.ExportMany(book, jobs,
+                            (done, total) => ui?.InvokeAsync(() => ExportAllText = $"{done} / {total}"));
+                    }
+                    catch (Exception ex) { error = ex; }
+                });
+                t.SetApartmentState(ApartmentState.STA);
+                t.Start();
+                t.Join();
+                if (error != null) throw error;
+            });
+            int ok = jobs.Count - failed.Count;
+            Status = Loc.F("BankPdf.AllDone", ok, Path.GetFileName(folder));
+            if (failed.Count > 0)
+                Dialogs.Error(Loc.F("BankPdf.SomeFailed", failed.Count) + "\n\n" +
+                              string.Join("\n", failed.Take(15).Select(f => "•  " + Path.GetFileName(f.Job.PdfPath) + " — " + f.Error)));
+            if (Directory.Exists(folder)) Shell.Open(folder);
+        }
+        catch (Exception ex)
+        {
+            Status = "";
+            Dialogs.Error(Loc.F("BankPdf.Failed", ex.Message));
+        }
+        finally
+        {
+            IsExportingAll = false;
+            ExportAllText = "";
+        }
+    }
+
+    /// <summary>
+    /// A supplier's bank account as a PDF on the Desktop ("Bank Account" sheet): its name, Chinese name and theme colour,
+    /// "NAME Bank Account.pdf" (account 1) / "NAME Bank Account 3.pdf" (Banking Details 3), "(2)" when the name is taken.
+    /// </summary>
+    private async Task ExportBankAsync(Func<string, string> get, IReadOnlyList<string> headers, BankAccountViewModel account)
+    {
+        var book = Session.Workspace?.WorkbookPath;
+        if (book == null || !File.Exists(book)) { Dialogs.Error(Loc.T("BankPdf.NoWorkbook")); return; }
+        string name = headers.Count > 1 ? get(headers[1]).Trim() : "";
+        if (name.Length == 0) { Dialogs.Error(Loc.T("BankPdf.NoName")); return; }
+        string native = headers.FirstOrDefault(h => h.Contains("Chinese", StringComparison.OrdinalIgnoreCase)) is { } nh ? get(nh) : "";
+        string template = headers.FirstOrDefault(h => h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase)) is { } th ? get(th).Trim() : "";
+        int? theme = _main.ThemeFor(name, template.Length > 0 ? template : "INVOICE");
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        var pdf = BankAccountPdf.FreePath(desktop, BankAccountPdf.FileName(name, account.Number));
+        string bank = account.Value;
+        Status = Loc.T("BankPdf.Exporting");
+        try
+        {
+            await Task.Run(() =>
+            {
+                Exception? error = null;
+                var t = new Thread(() =>
+                {
+                    try { BankAccountPdf.Export(book, name, native, bank, theme, pdf); }
+                    catch (Exception ex) { error = ex; }
+                });
+                t.SetApartmentState(ApartmentState.STA);
+                t.Start();
+                t.Join();
+                if (error != null) throw error;
+            });
+            Status = Loc.F("BankPdf.Done", Path.GetFileName(pdf));
+            Shell.ShowInFolder(pdf);
+        }
+        catch (Exception ex)
+        {
+            Status = "";
+            Dialogs.Error(Loc.F("BankPdf.Failed", ex.Message));
+        }
     }
 
     /// <summary>Column for this header, added to the table when new (written to the sheet on save). Returns its name.</summary>

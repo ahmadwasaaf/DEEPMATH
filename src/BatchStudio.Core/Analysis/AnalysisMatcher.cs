@@ -80,6 +80,32 @@ public sealed class AnalysisResult
         catch (JsonException) { return null; }
     }
 
+    /// <summary>
+    /// The document after a person resolved its conflict (checked with the supplier): the name and bank accounts they
+    /// entered, no conflict left, marked verified_manually. The first account is the one paid; the others are further accounts.
+    /// </summary>
+    public AnalysisResult Verified(string file, string name, IReadOnlyList<string> banks)
+    {
+        var texts = banks.Select(b => (b ?? "").Trim()).Where(b => b.Length > 0).ToList();
+        var first = texts.FirstOrDefault() ?? "";
+        return new AnalysisResult
+        {
+            File = file,
+            FileName = FileName,
+            Amount = Amount,
+            Ok = true,
+            CompanyName = (name ?? "").Trim(),
+            LocalName = LocalName,
+            Address = Address,
+            Bank = first,
+            Activity = Activity,
+            Ids = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase) { ["account"] = AnalysisMatcher.AccountIdsIn(first).ToList() },
+            Seconds = Seconds,
+            Notes = Notes.Where(n => n == "test_document").Append("verified_manually").ToList(),
+            AltBanks = texts.Skip(1).ToList(),
+        };
+    }
+
     /// <summary>Account numbers and IBANs: what identifies the account money is paid to.</summary>
     public IEnumerable<string> AccountIds =>
         Ids.Where(kv => kv.Key is "account" or "iban").SelectMany(kv => kv.Value).Where(v => v.Length >= 6);

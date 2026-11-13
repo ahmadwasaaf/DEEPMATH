@@ -137,10 +137,15 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     /// <summary>The conflicts in full: what contradicts what, and what to do.</summary>
     public string ConflictDetails => string.Join("\n", RemarkList().Select(r => "• " + r));
 
-    [ObservableProperty] private bool _showDetails;
+    public bool ShowShortRemarks => HasRemarks && !HasConflict;
 
+    /// <summary>Where the document is now (Package moves it to the Desktop).</summary>
+    [ObservableProperty] private string? _movedTo;
+    public string FilePath => MovedTo ?? Result.File;
+
+    /// <summary>"View conflict details": the conflict window (details, copy, package, the right bank accounts).</summary>
     [RelayCommand]
-    private void ToggleDetails() => ShowDetails = !ShowDetails;
+    private void ViewConflict() => _owner.OpenConflict(this);
 
     private List<string> RemarkList()
     {
@@ -195,6 +200,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         OnPropertyChanged(nameof(Remarks));
         OnPropertyChanged(nameof(ShortRemarks));
         OnPropertyChanged(nameof(HasRemarks));
+        OnPropertyChanged(nameof(ShowShortRemarks));
         _owner.RecountReview();
     }
 
@@ -208,7 +214,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     {
         try
         {
-            if (File.Exists(Result.File)) Process.Start(new ProcessStartInfo(Result.File) { UseShellExecute = true });
+            if (File.Exists(FilePath)) Process.Start(new ProcessStartInfo(FilePath) { UseShellExecute = true });
         }
         catch (Exception ex) { Dialogs.Error(ex.Message); }
     }
@@ -219,7 +225,73 @@ public sealed partial class MassInvoiceViewModel
 {
     public ObservableCollection<AnalysisItemViewModel> ReviewItems { get; } = [];
     [ObservableProperty] private bool _isAnalysing;
+    [NotifyPropertyChangedFor(nameof(ShowReview), nameof(IsReviewMinimized))]
     [ObservableProperty] private bool _isReviewing;
+    /// <summary>Minimized: the review keeps its documents while the user works on the rows, and comes back with one click.</summary>
+    [NotifyPropertyChangedFor(nameof(ShowReview), nameof(IsReviewMinimized))]
+    [ObservableProperty] private bool _reviewHidden;
+    public bool ShowReview => IsReviewing && !ReviewHidden;
+    public bool IsReviewMinimized => IsReviewing && ReviewHidden;
+    public string RestoreText => Loc.F("Analysis.Restore", ReviewItems.Count);
+    /// <summary>The conflict window of a blocked document (null = closed).</summary>
+    [NotifyPropertyChangedFor(nameof(HasConflictEditor))]
+    [ObservableProperty] private ConflictEditorViewModel? _conflictEditor;
+    public bool HasConflictEditor => ConflictEditor != null;
+
+    [RelayCommand]
+    private void MinimizeReview() => ReviewHidden = true;
+
+    [RelayCommand]
+    private void RestoreReview() => ReviewHidden = false;
+
+    internal void OpenConflict(AnalysisItemViewModel item) => ConflictEditor = new ConflictEditorViewModel(this, item);
+
+    /// <summary>
+    /// The conflict window's Save (on the user's responsibility, after checking with the supplier): the document is matched
+    /// again with the name and bank accounts entered, and leaves the blocked state.
+    /// </summary>
+    internal void ResolveConflict(AnalysisItemViewModel item, string name, IReadOnlyList<string> banks)
+    {
+        int index = ReviewItems.IndexOf(item);
+        if (index < 0) return;
+        Refresh();
+        var result = item.Result.Verified(item.FilePath, name, banks);
+        var match = AnalysisMatcher.Match([result], _parties)[0];
+        var fresh = new AnalysisItemViewModel(this, match, item.No) { MovedTo = item.MovedTo };
+        fresh.Include = fresh.IsReady;
+        ReviewItems[index] = fresh;
+        ConflictEditor = null;
+        RecountReview();
+    }
+
+    /// <summary>
+    /// Package: the document is moved (not copied) to a Desktop folder named after its conflict, keeping its name
+    /// ("5000.pdf"; "5000 (2).pdf" when that name is taken there). Returns where it went.
+    /// </summary>
+    internal string PackageFile(AnalysisItemViewModel item)
+    {
+        var source = item.FilePath;
+        if (!File.Exists(source)) throw new FileNotFoundException(Loc.F("Analysis.PackageMissing", Path.GetFileName(source)));
+        var code = item.Result.Conflicts.FirstOrDefault()?.Code ?? "";
+        var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), ConflictFolder(code));
+        Directory.CreateDirectory(folder);
+        if (string.Equals(Path.GetDirectoryName(Path.GetFullPath(source)), Path.GetFullPath(folder), StringComparison.OrdinalIgnoreCase))
+            return source;   // already there
+        var dest = BankAccountPdf.FreePath(folder, Path.GetFileName(source));
+        File.Move(source, dest);
+        item.MovedTo = dest;
+        return dest;
+    }
+
+    /// <summary>The Desktop folder of a conflict (always in English, so the folders stay the same in both languages).</summary>
+    public static string ConflictFolder(string code) => code switch
+    {
+        "conflicting_instructions" => "Conflicting payment instructions",
+        "beneficiary_mismatch" => "Beneficiary mismatch",
+        "ambiguous_swift" => "Ambiguous SWIFT",
+        "third_party_payment" => "Third-party payment",
+        _ => "Conflicting documents",
+    };
     [ObservableProperty] private string _analysisText = "";
     [ObservableProperty] private double _analysisProgress;
     [ObservableProperty] private string _reviewSummary = "";
@@ -296,6 +368,7 @@ public sealed partial class MassInvoiceViewModel
         foreach (var m in matches) ReviewItems.Add(new AnalysisItemViewModel(this, m, no++));
         ReviewError = "";
         RecountReview();
+        ReviewHidden = false;
         IsReviewing = true;
     }
 
@@ -327,6 +400,7 @@ public sealed partial class MassInvoiceViewModel
         int matched = ReviewItems.Count(i => !i.HasConflict && i.Match.Status == AnalysisStatus.Matched);
         int acct = ReviewItems.Count(i => !i.HasConflict && (i.Match.Status == AnalysisStatus.NewAccount || i.Match.OtherAccount));
         int fresh = ReviewItems.Count(i => i.IsNewSupplier);
+        OnPropertyChanged(nameof(RestoreText));
         int blocked = ReviewItems.Count(i => i.HasConflict);
         int attention = ReviewItems.Count(i => !i.IsReady && !i.HasConflict);
         int chosen = ReviewItems.Count(i => i.Include && i.IsReady);
@@ -337,6 +411,12 @@ public sealed partial class MassInvoiceViewModel
     }
 
     /// <summary>Screenshot smoke test: the review with one document of each kind.</summary>
+    /// <summary>Screenshots: the conflict window of the sample's blocked document.</summary>
+    public void OpenSampleConflict()
+    {
+        if (ReviewItems.FirstOrDefault(i => i.HasConflict) is { } blocked) OpenConflict(blocked);
+    }
+
     public void ShowSampleReview()
     {
         Refresh();
@@ -369,7 +449,10 @@ public sealed partial class MassInvoiceViewModel
     private void CloseReview()
     {
         IsReviewing = false;
+        ReviewHidden = false;
+        ConflictEditor = null;
         ReviewItems.Clear();
+        OnPropertyChanged(nameof(RestoreText));
     }
 
     /// <summary>
@@ -513,14 +596,16 @@ public sealed partial class MassInvoiceViewModel
                 var row = freeRows[k++];
                 row.PartyName = t.Name;
                 row.BankNumber = t.Bank;
-                row.SourceFile = i.Result.File;
+                row.SourceFile = i.FilePath;
                 row.AmountText = NewInvoiceViewModel.FormatMoney(i.Amount!.Value);
                 row.Status = i.FileName;
                 row.State = "";
             }
             Recount();
-            IsReviewing = false;
-            ReviewItems.Clear();
+            // only the documents put on rows leave the review; the rest (blocked, not ticked, no free row) stay in it
+            foreach (var i in chosen.Where(target.ContainsKey).Take(k).ToList()) ReviewItems.Remove(i);
+            if (ReviewItems.Count == 0) CloseReview();
+            else RecountReview();
             Status = Loc.F("Analysis.Applied", k, newSuppliers, newAccounts);
             if (leftOut.Count > 0)
                 Dialogs.Info(Loc.F("Analysis.LeftOut", leftOut.Count, k) + "\n\n" + string.Join("\n", leftOut.Select(i => "•  " + i.FileName)));

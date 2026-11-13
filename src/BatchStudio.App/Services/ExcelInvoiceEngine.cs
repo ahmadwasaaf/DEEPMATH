@@ -258,7 +258,7 @@ public static class ExcelInvoiceEngine
     }
 
     // ------------------------------------------------------------------ cells
-    private static dynamic? FindSheet(dynamic wb, string name)
+    internal static dynamic? FindSheet(dynamic wb, string name)
     {
         foreach (dynamic s in wb.Worksheets)
             if (string.Equals((string)s.Name, name, StringComparison.OrdinalIgnoreCase)) return s;
@@ -273,7 +273,7 @@ public static class ExcelInvoiceEngine
         SetText(Top(ws.Range[address]), text);
     }
 
-    private static void SetText(dynamic cell, string text)
+    internal static void SetText(dynamic cell, string text)
     {
         dynamic c = Top(cell);
         if ((bool)c.HasArray) c.CurrentArray.ClearContents();
@@ -300,7 +300,7 @@ public static class ExcelInvoiceEngine
         letters.Trim().ToUpperInvariant().Aggregate(0, (n, ch) => n * 26 + (ch - 'A' + 1));
 
     /// <summary>BankFit.FitBankRow: the banking row grows with its text (merged cells measured with a text box).</summary>
-    private static void FitBankRow(dynamic ws, dynamic bankCell)
+    internal static void FitBankRow(dynamic ws, dynamic bankCell)
     {
         const double top = 20, bottom = 24, safety = 10, minH = 48, maxH = 409.5;
         try
@@ -430,7 +430,7 @@ public static class ExcelInvoiceEngine
         catch { /* theme is cosmetic: never stop an invoice */ }
     }
 
-    private static void RecolorShape(dynamic shp, int oldColor, int newColor)
+    internal static void RecolorShape(dynamic shp, int oldColor, int newColor)
     {
         try
         {

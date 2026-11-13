@@ -53,6 +53,21 @@ public class AnalysisTests
     }
 
     [Fact]
+    public void A_resolved_conflict_keeps_the_entered_accounts_and_no_conflict()
+    {
+        var r = AnalysisResult.Parse("{\"name\":\"5000.pdf\",\"file\":\"C:\\\\a\\\\5000.pdf\",\"amount\":5000,\"ok\":true,\"company_name\":\"A CO\"," +
+            "\"notes\":[\"test_document\",\"conflicting_instructions\"],\"conflicts\":[{\"code\":\"conflicting_instructions\",\"detail\":\"X / Y\"}]}")!;
+        var v = r.Verified(@"D:\\Desktop\\5000.pdf", " B CO ", ["Account Number: 123456789012\nSWIFT: ABCDHKHHXXX", "", "Account Number: 998877665544"]);
+        Assert.False(v.HasConflict);
+        Assert.Equal("B CO", v.CompanyName);
+        Assert.Equal(@"D:\\Desktop\\5000.pdf", v.File);
+        Assert.Equal(5000m, v.Amount);
+        Assert.Contains("123456789012", v.AccountIds);
+        Assert.Single(v.AltBanks);
+        Assert.Equal(["test_document", "verified_manually"], v.Notes);
+    }
+
+    [Fact]
     public void Parses_the_conflicts_of_a_document()
     {
         var r = AnalysisResult.Parse("{\"name\":\"1.pdf\",\"ok\":true,\"company_name\":\"A CO\",\"bank_details\":\"\"," +

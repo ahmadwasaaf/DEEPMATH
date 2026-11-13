@@ -143,7 +143,8 @@ public partial class App : Application
             }
             bool massParty = arg == "mass-newparty";
             bool massDetails = arg == "mass-details";
-            bool massReview = arg == "mass-analysis";
+            bool massConflict = arg == "mass-conflict";
+            bool massReview = arg == "mass-analysis" || massConflict;
             if (massParty || massDetails || massReview) arg = "mass";
             var key = arg is "newinvoice" or "newparty" or "newinvoice-details" or "newinvoice-banks" ? "Nav.NewInvoice" : arg == "reportview" ? "Nav.Reports" : arg == "mass" ? "Nav.Mass" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
             var nav = vm.Nav.FirstOrDefault(n => n.Key == key);
@@ -154,6 +155,7 @@ public partial class App : Application
             if (massParty) vm.Mass.AddPartyFor(vm.Mass.Rows[3]);
             if (massDetails) vm.Mass.OpenDetailsFor(vm.Mass.Rows[0]);
             if (massReview) vm.Mass.ShowSampleReview();
+            if (massConflict) vm.Mass.OpenSampleConflict();
             if (arg == "mass" && !massParty && !massDetails && !massReview) vm.Mass.SelectedRowIndex = 1;
             if (arg == "newinvoice-details")
             {

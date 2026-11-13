@@ -45,6 +45,39 @@
                                     <TextBlock Text="{Binding DataContext.CountText, RelativeSource={RelativeSource AncestorType=ItemsControl}}" FontSize="11"
                                                Foreground="{DynamicResource BrandBrush}" FontWeight="SemiBold" />
                                 </Border>
+                                <!-- copy (one click), export (PDF on the Desktop) -->
+                                <Button Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False"
+                                        ToolTip="{DynamicResource Bank.Copy}" Command="{Binding CopyCommand}">
+                                    <TextBlock FontSize="11">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                                <Setter Property="Text" Value="&#xE8C8;" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsCopied}" Value="True">
+                                                        <Setter Property="Text" Value="&#xE73E;" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource GoodBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
+                                <Button Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False"
+                                        ToolTip="{DynamicResource Bank.Export}" Command="{Binding ExportCommand}"
+                                        Visibility="{Binding CanExport, Converter={StaticResource BankBoolToVis}}">
+                                    <TextBlock FontSize="11">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                                <Setter Property="Text" Value="&#xEA90;" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsExporting}" Value="True">
+                                                        <Setter Property="Text" Value="&#xE895;" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Button>
                                 <!-- delete (accounts 2, 3 ...), arrow (this account), + (new account at the bottom) -->
                                 <Button Padding="7,3" MinHeight="0" MinWidth="0" Margin="6,0,0,0" VerticalAlignment="Center" Focusable="False"
                                         ToolTip="{DynamicResource Bank.Remove}" Command="{Binding RemoveCommand}"

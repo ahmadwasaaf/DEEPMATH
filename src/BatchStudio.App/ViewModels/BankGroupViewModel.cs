@@ -63,6 +63,33 @@ public sealed partial class BankAccountViewModel : ObservableObject
     [RelayCommand]
     private void Toggle() => IsCollapsed = !IsCollapsed;
 
+    /// <summary>Copy: the paragraph to the clipboard in one click (the icon turns into a tick for a moment).</summary>
+    [ObservableProperty] private bool _isCopied;
+
+    [RelayCommand]
+    private async Task Copy()
+    {
+        if (Value.Trim().Length == 0) return;
+        try { System.Windows.Clipboard.SetText(Value); }
+        catch { return; }   // the clipboard is busy (another program holds it)
+        IsCopied = true;
+        await Task.Delay(1500);
+        IsCopied = false;
+    }
+
+    public bool CanExport => _group.Exporter != null;
+    [ObservableProperty] private bool _isExporting;
+
+    /// <summary>Export: this account as a PDF on the Desktop (the "Bank Account" sheet).</summary>
+    [RelayCommand]
+    private async Task Export()
+    {
+        if (_group.Exporter == null || IsExporting || Value.Trim().Length == 0) return;
+        IsExporting = true;
+        try { await _group.Exporter(this); }
+        finally { IsExporting = false; }
+    }
+
     [RelayCommand]
     private void Remove() => _group.Remove(this);
 
@@ -95,6 +122,9 @@ public sealed partial class BankGroupViewModel : ObservableObject
     public bool HasMany => Accounts.Count > 1;
     public string CountText => Accounts.Count > 1 ? Loc.F("Bank.Count", Accounts.Count) : "";
     public string DefaultText => Loc.F("Bank.DefaultIs", DefaultNumber);
+
+    /// <summary>Exports one account as a PDF (suppliers page); null hides the Export icon.</summary>
+    public Func<BankAccountViewModel, Task>? Exporter { get; set; }
 
     /// <summary>Raised when an account's text or the default account changes.</summary>
     public event Action? Changed;

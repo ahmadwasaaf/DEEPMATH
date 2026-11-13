@@ -51,6 +51,16 @@
                         <Run Text="{DynamicResource Common.Rows}" />
                     </TextBlock>
                 </Border>
+                <!-- suppliers: every bank account of every supplier as PDFs, in one Desktop folder -->
+                <Button Command="{Binding ExportAllBanksCommand}" Padding="8,4" MinWidth="0" Margin="10,4,0,0" VerticalAlignment="Center"
+                        ToolTip="{DynamicResource BankPdf.AllTip}"
+                        Visibility="{Binding IsSuppliersSheet, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xEA90;" FontSize="13" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ExportAllText}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                   Visibility="{Binding IsExportingAll, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </DockPanel>
 

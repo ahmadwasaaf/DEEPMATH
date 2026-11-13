@@ -55,6 +55,20 @@ public partial class MassInvoiceView : UserControl
         if (sender is FrameworkElement { DataContext: MassRowViewModel row }) row.CommitInvoiceNo();
     }
 
+    /// <summary>Review › Select all: its header cell white (the blue outlined box stands out on it), the box centred.</summary>
+    private void OnSelectAllLoaded(object sender, RoutedEventArgs e)
+    {
+        DependencyObject? d = sender as DependencyObject;
+        while (d != null && d is not DataGridColumnHeader) d = VisualTreeHelper.GetParent(d);
+        if (d is DataGridColumnHeader h)
+        {
+            h.Background = System.Windows.Media.Brushes.White;
+            h.Padding = new Thickness(0);
+            h.HorizontalContentAlignment = HorizontalAlignment.Center;
+            h.VerticalContentAlignment = VerticalAlignment.Center;
+        }
+    }
+
     private void OnCenterHeaderLoaded(object sender, RoutedEventArgs e)
     {
         DependencyObject? d = sender as DependencyObject;
