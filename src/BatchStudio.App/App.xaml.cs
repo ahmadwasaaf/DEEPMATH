@@ -25,6 +25,7 @@ public partial class App : Application
 
         // Alt+Enter / Shift+Enter: a new line inside the text fields, like Excel
         TextNewLine.Register();
+        TextPaste.Register();   // Ctrl+V works in every text field, whatever the keyboard layout
         // hovering a template in any list shows its picture
         TemplatePreview.Register();
         // a click on an email notification opens the message in Gmail
