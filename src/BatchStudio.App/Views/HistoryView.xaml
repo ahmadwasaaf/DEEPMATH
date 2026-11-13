@@ -139,14 +139,14 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Grid Margin="4,0" VerticalAlignment="Center">
-                                    <ComboBox x:Name="Act" SelectionChanged="OnActionChosen" HorizontalAlignment="Stretch" MinHeight="28" Padding="10,3">
+                                    <ComboBox x:Name="Act" SelectionChanged="OnActionChosen" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="28" Padding="10,3">
                                         <ComboBoxItem Tag="open" Content="{DynamicResource Act.Open}" />
                                         <ComboBoxItem Tag="remove" Content="{DynamicResource Act.Remove}" />
                                         <ComboBoxItem Tag="pdf" Content="{DynamicResource Act.Pdf}" />
                                         <ComboBoxItem Tag="report" Content="{DynamicResource Act.ViewReport}" />
                                         <ComboBoxItem Tag="exportreport" Content="{DynamicResource Act.ExportReport}" />
                                     </ComboBox>
-                                    <TextBlock Text="{DynamicResource Col.Actions}" IsHitTestVisible="False" VerticalAlignment="Center" Margin="11,0,26,0" Opacity="0.75">
+                                    <TextBlock Text="{DynamicResource Col.Actions}" IsHitTestVisible="False" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,22,0" Opacity="0.75">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="Visibility" Value="Collapsed" />
