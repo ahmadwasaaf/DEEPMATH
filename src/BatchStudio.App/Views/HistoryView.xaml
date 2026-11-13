@@ -86,7 +86,18 @@
             <DataGrid x:Name="HistoryGrid" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
                       CanUserAddRows="False" CanUserDeleteRows="False" SelectionMode="Single" HeadersVisibility="Column"
                       GridLinesVisibility="Horizontal" RowHeight="38" EnableRowVirtualization="True"
-                      MouseDoubleClick="OnRowDoubleClick">
+                      MouseDoubleClick="OnRowDoubleClick" PreviewMouseRightButtonDown="OnRowRightClick">
+                <!-- right-click on a row: the same choices as its Actions list -->
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Tag="open" Header="{DynamicResource Act.Open}" Click="OnMenuAction" />
+                        <MenuItem Tag="remove" Header="{DynamicResource Act.Remove}" Click="OnMenuAction" />
+                        <MenuItem Tag="pdf" Header="{DynamicResource Act.Pdf}" Click="OnMenuAction" />
+                        <MenuItem Tag="report" Header="{DynamicResource Act.ViewReport}" Click="OnMenuAction" />
+                        <MenuItem Tag="exportreport" Header="{DynamicResource Act.ExportReport}" Click="OnMenuAction" />
+                        <MenuItem Tag="location" Header="{DynamicResource Act.Location}" Click="OnMenuAction" />
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
                 <DataGrid.Resources>
                     <Style x:Key="Mid" TargetType="TextBlock">
                         <Setter Property="VerticalAlignment" Value="Center" />
@@ -145,6 +156,7 @@
                                         <ComboBoxItem Tag="pdf" Content="{DynamicResource Act.Pdf}" />
                                         <ComboBoxItem Tag="report" Content="{DynamicResource Act.ViewReport}" />
                                         <ComboBoxItem Tag="exportreport" Content="{DynamicResource Act.ExportReport}" />
+                                        <ComboBoxItem Tag="location" Content="{DynamicResource Act.Location}" />
                                     </ComboBox>
                                     <TextBlock Text="{DynamicResource Col.Actions}" IsHitTestVisible="False" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,22,0" Opacity="0.75">
                                         <TextBlock.Style>

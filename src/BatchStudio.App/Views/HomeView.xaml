@@ -354,15 +354,48 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="28,0,28,20">
                 <StackPanel>
             <!-- ========== stat cards ========== -->
+            <!-- "Needs your attention": only when something is wrong; red, each line opens where the problem is -->
+            <Border Style="{StaticResource Card}" Margin="0,0,14,14" BorderBrush="#EF5350" BorderThickness="1"
+                    Visibility="{Binding HasAttention, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE7BA;" FontSize="15" Foreground="#EF5350" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource Home.Attention}" Foreground="#EF5350" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Attention}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Text, StringFormat='•  {0}'}" Foreground="#EF5350" Margin="0,3,0,0" Cursor="Hand" TextWrapping="Wrap">
+                                    <TextBlock.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.OpenAttentionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                      CommandParameter="{Binding}" />
+                                    </TextBlock.InputBindings>
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="TextDecorations" Value="Underline" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- the cards fill the width evenly: 4 per row, stretching with the window (a short last row keeps the same width) -->
             <ItemsControl ItemsSource="{Binding Tiles}">
                 <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    <ItemsPanelTemplate><UniformGrid Columns="4" VerticalAlignment="Top" /></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <!-- solid base: the particles pass behind the cards, not through them -->
 <!-- click: opens the card's page -->
-<Border Width="210" Height="132" Margin="0,0,14,14" CornerRadius="8" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" Cursor="Hand">
+<Border Height="132" Margin="0,0,14,14" CornerRadius="8" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" Cursor="Hand">
 <Border.InputBindings>
     <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.OpenTileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
 </Border.InputBindings>

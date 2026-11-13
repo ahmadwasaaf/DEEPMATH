@@ -537,6 +537,22 @@ public sealed partial class DataSetViewModel : ObservableObject
     [ObservableProperty] private bool _isHealthOpen;
     [ObservableProperty] private string _healthSummary = "";
 
+    /// <summary>Home › "Needs your attention": how many findings the full check has now (no window opened).</summary>
+    public int HealthIssueCount()
+    {
+        if (Table == null || !IsPartySheet) return 0;
+        try
+        {
+            var rows = Table.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Deleted)
+                .Select(r => (IReadOnlyList<string>)Enumerable.Range(0, Table.Columns.Count).Select(i => r[i] as string ?? "").ToList())
+                .ToList();
+            return (Session.Definition.Key == "suppliers"
+                ? BatchStudio.Core.Analysis.HealthCheck.Suppliers(Headers, rows)
+                : BatchStudio.Core.Analysis.HealthCheck.Clients(Headers, rows)).Count;
+        }
+        catch { return 0; }
+    }
+
     /// <summary>Checks the whole list at once (shared / repeated accounts, paragraphs without account or SWIFT, same names ...).</summary>
     [RelayCommand]
     private void HealthCheck()

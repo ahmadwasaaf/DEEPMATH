@@ -247,6 +247,11 @@ public sealed partial class HistoryViewModel : ObservableObject
             case "pdf": await ExportInvoicePdfAsync(); break;
             case "report": CompanyReport(); break;
             case "exportreport": await ExportFullReportAsync(); break;
+            case "location":
+                // Open File Location: Explorer on the archived invoice, selected
+                if (!row.FileExists) Status = Loc.F("Hist.FileMissing", row.InvoiceNo);
+                else Shell.ShowInFolder(row.ResolvedPath);
+                break;
         }
     }
 

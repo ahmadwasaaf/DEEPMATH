@@ -251,6 +251,7 @@
     <sys:String x:Key="Act.Pdf">Export PDF</sys:String>
     <sys:String x:Key="Act.ViewReport">View Full Report</sys:String>
     <sys:String x:Key="Act.ExportReport">Export Full Report</sys:String>
+    <sys:String x:Key="Act.Location">Open File Location</sys:String>
     <sys:String x:Key="Dash.ExportPdf">Export PDF</sys:String>
     <sys:String x:Key="Dash.PdfSaved">Dashboard PDF saved on the Desktop: {0}</sys:String>
     <sys:String x:Key="Rep.Exporting">Exporting PDF…</sys:String>
@@ -364,6 +365,10 @@
     <sys:String x:Key="Set.AccentColors">Colours</sys:String>
     <sys:String x:Key="Set.AccentCustom">Custom colour</sys:String>
     <sys:String x:Key="Home.InvoicesTile">Invoices</sys:String>
+    <sys:String x:Key="Home.Attention">Needs your attention</sys:String>
+    <sys:String x:Key="Home.AttnTemplates">{0} of {1} templates are not linked</sys:String>
+    <sys:String x:Key="Home.AttnSuppliers">{0} finding(s) in the suppliers full check</sys:String>
+    <sys:String x:Key="Home.AttnFiles">{0} invoice file(s) missing from the archive</sys:String>
     <sys:String x:Key="Common.DragWidth">Drag to widen the list · double-click to reset</sys:String>
     <sys:String x:Key="Common.OK">OK</sys:String>
     <sys:String x:Key="Color.Title">Choose a colour</sys:String>

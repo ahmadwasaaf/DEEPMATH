@@ -132,7 +132,6 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     /// </summary>
     public string ShortRemarks => HasConflict
         ? string.Join(" · ", Result.Conflicts.Select(c => Application.Current?.TryFindResource("Analysis.ConflictShort." + c.Code) as string ?? c.Code).Distinct())
-          + (IsMoved ? " · " + Loc.T("Analysis.MovedShort") : "")
         : Remarks;
 
     /// <summary>The conflicts in full: what contradicts what, and what to do.</summary>
@@ -162,7 +161,6 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     private List<string> RemarkList()
     {
         var list = new List<string>();
-        if (IsMoved) list.Add(Loc.T("Analysis.MovedShort"));
         // the contradictions first: what they are and between what
         foreach (var c in Result.Conflicts)
             if (Application.Current?.TryFindResource("Analysis.Conflict." + c.Code) is string ct)

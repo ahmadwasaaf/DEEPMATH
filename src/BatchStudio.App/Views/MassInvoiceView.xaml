@@ -380,13 +380,18 @@
                             <DataGridTemplateColumn Header="{StaticResource Analysis.ColFile}" HeaderTemplate="{StaticResource CenterHeader}" Width="150">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <!-- click: opens the document -->
-                                        <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" Margin="6,0" TextTrimming="CharacterEllipsis" Cursor="Hand"
-                                                   Foreground="{DynamicResource BrandBrush}" ToolTip="{DynamicResource Analysis.OpenFile}" FlowDirection="LeftToRight">
-                                            <TextBlock.InputBindings>
-                                                <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFileCommand}" />
-                                            </TextBlock.InputBindings>
-                                        </TextBlock>
+                                        <!-- click: opens the document; a packaged one shows a small green "Moved" beside its name -->
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0">
+                                            <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Cursor="Hand" MaxWidth="120"
+                                                       Foreground="{DynamicResource BrandBrush}" ToolTip="{DynamicResource Analysis.OpenFile}" FlowDirection="LeftToRight">
+                                                <TextBlock.InputBindings>
+                                                    <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFileCommand}" />
+                                                </TextBlock.InputBindings>
+                                            </TextBlock>
+                                            <TextBlock Text="{DynamicResource Analysis.Moved}" FontSize="10" FontWeight="SemiBold" Margin="5,1,0,0"
+                                                       VerticalAlignment="Center" Foreground="{StaticResource GoodBrush}" ToolTip="{Binding FilePath}"
+                                                       Visibility="{Binding IsMoved, Converter={StaticResource BoolToVis}}" />
+                                        </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

@@ -120,8 +120,15 @@
         <Border Grid.Row="3" Style="{StaticResource Card}" Padding="8">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="{Binding RankingTitle}" Style="{StaticResource SectionTitle}" Margin="6,2,0,8" />
-                <DataGrid ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                <DataGrid x:Name="RankGrid" PreviewMouseRightButtonDown="OnRowRightClick" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
                           HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="40" SelectionMode="Single">
+                    <!-- right-click on a row: the same two choices as its Actions list -->
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Tag="report" Header="{DynamicResource Act.ViewReport}" Click="OnMenuAction" />
+                            <MenuItem Tag="exportreport" Header="{DynamicResource Act.ExportReport}" Click="OnMenuAction" />
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
                     <DataGrid.Resources>
                         <Style x:Key="Mid" TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center" />

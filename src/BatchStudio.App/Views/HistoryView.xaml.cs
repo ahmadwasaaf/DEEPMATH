@@ -45,6 +45,19 @@ public partial class HistoryView : UserControl
         if (row != null && DataContext is HistoryViewModel vm) vm.RunActionCommand.Execute(new object[] { row, action });
     }
 
+    /// <summary>Right-click: the row under the mouse is selected first (the menu acts on it).</summary>
+    private void OnRowRightClick(object sender, MouseButtonEventArgs e)
+    {
+        if (FindParent<DataGridRow>(e.OriginalSource as DependencyObject) is { } row) { HistoryGrid.SelectedItem = row.Item; row.IsSelected = true; }
+    }
+
+    /// <summary>Right-click menu: the same actions as the row's Actions list.</summary>
+    private void OnMenuAction(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string action } || HistoryGrid.SelectedItem is not HistoryRow row) return;
+        if (DataContext is HistoryViewModel vm) vm.RunActionCommand.Execute(new object[] { row, action });
+    }
+
     private void OnCenterHeaderLoaded(object sender, RoutedEventArgs e)
     {
         var h = FindParent<System.Windows.Controls.Primitives.DataGridColumnHeader>(sender as DependencyObject);

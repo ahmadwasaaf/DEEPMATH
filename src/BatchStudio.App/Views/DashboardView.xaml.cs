@@ -25,4 +25,21 @@ public partial class DashboardView : UserControl
         var cmd = action == "report" ? vm.ViewReportCommand : (System.Windows.Input.ICommand)vm.ExportReportCommand;
         if (cmd.CanExecute(row)) cmd.Execute(row);
     }
+
+    /// <summary>Right-click: the row under the mouse is selected first (the menu acts on it).</summary>
+    private void OnRowRightClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        System.Windows.DependencyObject? d = e.OriginalSource as System.Windows.DependencyObject;
+        while (d != null && d is not DataGridRow)
+            d = d is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(d) : System.Windows.LogicalTreeHelper.GetParent(d);
+        if (d is DataGridRow row) { RankGrid.SelectedItem = row.Item; row.IsSelected = true; }
+    }
+
+    /// <summary>Right-click menu: View Report / Export Report for the selected row.</summary>
+    private void OnMenuAction(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: string action } || RankGrid.SelectedItem is not { } row || DataContext is not DashboardViewModel vm) return;
+        var cmd = action == "report" ? vm.ViewReportCommand : (System.Windows.Input.ICommand)vm.ExportReportCommand;
+        if (cmd.CanExecute(row)) cmd.Execute(row);
+    }
 }

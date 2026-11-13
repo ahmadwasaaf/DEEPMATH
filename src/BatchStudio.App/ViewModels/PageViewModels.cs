@@ -21,6 +21,13 @@ public sealed class StatTile
     public bool HasValue => Value.Length > 0;
 }
 
+/// <summary>One line of the Home "Needs your attention" card: what is wrong, and what a click opens.</summary>
+public sealed class AttentionItem
+{
+    public required string Text { get; init; }
+    public required Action Open { get; init; }
+}
+
 /// <summary>A colour square of the accent palette (Settings → Appearance).</summary>
 public sealed partial class AccentSwatch : ObservableObject
 {
@@ -106,6 +113,30 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         if (main.Nav.FirstOrDefault(n => n.Key == "Nav.Settings") is { } nav) main.SelectedNav = nav;
     }
 
+    /// <summary>"Needs your attention": shown only when something is wrong (templates not linked, supplier findings, missing invoice files).</summary>
+    public ObservableCollection<AttentionItem> Attention { get; } = [];
+    [ObservableProperty] private bool _hasAttention;
+
+    [RelayCommand]
+    private void OpenAttention(AttentionItem? item) => item?.Open();
+
+    private void RefreshAttention(int unlinkedTemplates, int templates)
+    {
+        Attention.Clear();
+        if (unlinkedTemplates > 0)
+            Attention.Add(new AttentionItem { Text = Loc.F("Home.AttnTemplates", unlinkedTemplates, templates), Open = () => main.OpenNav("Nav.Templates") });
+        var suppliers = main.DataPages.FirstOrDefault(x => x.Session.Definition.Key == "suppliers");
+        if (suppliers != null && suppliers.HealthIssueCount() is int n && n > 0)
+            Attention.Add(new AttentionItem
+            {
+                Text = Loc.F("Home.AttnSuppliers", n),
+                Open = () => { main.OpenNav("Nav.Suppliers"); suppliers.HealthCheckCommand.Execute(null); },
+            });
+        if (main.History.MissingCount > 0)
+            Attention.Add(new AttentionItem { Text = Loc.F("Home.AttnFiles", main.History.MissingCount), Open = () => main.OpenNav("Nav.History") });
+        HasAttention = Attention.Count > 0;
+    }
+
     public void Refresh()
     {
         Tiles.Clear();
@@ -131,6 +162,7 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
             NavKey = "Nav.Templates",
         });
         SetMassTile();
+        RefreshAttention(tpl.Count(t => t.Status != TemplateStatus.Linked), tpl.Count);
         RefreshTicker();
         foreach (var d in DataSets.All)
             if (!ws.Sheets.Contains(d.SheetName, StringComparer.OrdinalIgnoreCase)) Missing.Add(Loc.F("Home.MissingSheet", d.SheetName));

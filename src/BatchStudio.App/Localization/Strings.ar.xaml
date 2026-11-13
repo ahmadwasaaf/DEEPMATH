@@ -251,6 +251,7 @@
     <sys:String x:Key="Act.Pdf">تصدير PDF</sys:String>
     <sys:String x:Key="Act.ViewReport">عرض التقرير الكامل</sys:String>
     <sys:String x:Key="Act.ExportReport">تصدير التقرير الكامل</sys:String>
+    <sys:String x:Key="Act.Location">فتح مكان الملف</sys:String>
     <sys:String x:Key="Dash.ExportPdf">تصدير PDF</sys:String>
     <sys:String x:Key="Dash.PdfSaved">تم حفظ PDF لوحة التحكم على سطح المكتب: {0}</sys:String>
     <sys:String x:Key="Rep.Exporting">جارٍ تصدير PDF…</sys:String>
@@ -364,6 +365,10 @@
     <sys:String x:Key="Set.AccentColors">الألوان</sys:String>
     <sys:String x:Key="Set.AccentCustom">لون مخصص</sys:String>
     <sys:String x:Key="Home.InvoicesTile">الفواتير</sys:String>
+    <sys:String x:Key="Home.Attention">محتاج انتباهك</sys:String>
+    <sys:String x:Key="Home.AttnTemplates">{0} من {1} قوالب مش مربوطة</sys:String>
+    <sys:String x:Key="Home.AttnSuppliers">{0} ملاحظة في الفحص الشامل للموردين</sys:String>
+    <sys:String x:Key="Home.AttnFiles">{0} ملف فاتورة ناقص من الأرشيف</sys:String>
     <sys:String x:Key="Common.DragWidth">اسحب لتوسيع القائمة · دبل كليك للرجوع للعرض الأصلي</sys:String>
     <sys:String x:Key="Common.OK">موافق</sys:String>
     <sys:String x:Key="Color.Title">اختيار لون</sys:String>
