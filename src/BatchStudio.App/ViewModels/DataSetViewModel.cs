@@ -384,7 +384,6 @@ public sealed partial class DataSetViewModel : ObservableObject
             if (failed.Count > 0)
                 Dialogs.Error(Loc.F("BankPdf.SomeFailed", failed.Count) + "\n\n" +
                               string.Join("\n", failed.Take(15).Select(f => "•  " + Path.GetFileName(f.Job.PdfPath) + " — " + f.Error)));
-            if (Directory.Exists(folder)) Shell.Open(folder);
         }
         catch (Exception ex)
         {
@@ -431,7 +430,6 @@ public sealed partial class DataSetViewModel : ObservableObject
                 if (error != null) throw error;
             });
             Status = Loc.F("BankPdf.Done", Path.GetFileName(pdf));
-            Shell.ShowInFolder(pdf);
         }
         catch (Exception ex)
         {

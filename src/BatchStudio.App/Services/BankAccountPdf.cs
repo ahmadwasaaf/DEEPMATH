@@ -59,7 +59,8 @@ public static class BankAccountPdf
             dynamic ws = ExcelInvoiceEngine.FindSheet(wb, Sheet)
                          ?? throw new InvalidOperationException(Loc.F("BankPdf.NoSheet", Sheet));
             int design = Convert.ToInt32(ws.Range["B2"].Font.Color);
-            int current = design;           // the colour the sheet has now (each supplier recolours it)
+            int current = design;
+            OnePage(ws);           // the colour the sheet has now (each supplier recolours it)
             for (int n = 0; n < jobs.Count; n++)
             {
                 var job = jobs[n];
@@ -79,7 +80,8 @@ public static class BankAccountPdf
                     }
                     app.Calculate();
                     Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(job.PdfPath))!);
-                    ws.ExportAsFixedFormat(0, job.PdfPath);    // the sheet's own print setup (B1:F9, landscape, fit to page)
+                    // the sheet's print area on one page (Type pdf, standard quality, doc properties, IgnorePrintAreas = false)
+                    ws.ExportAsFixedFormat(0, job.PdfPath, 0, true, false);
                 }
                 catch (Exception ex) when (jobs.Count > 1) { failed.Add((job, ex.Message)); }
             }
@@ -95,6 +97,24 @@ public static class BankAccountPdf
             try { File.Delete(tmpBook); } catch { }
         }
         return failed;
+    }
+
+    /// <summary>
+    /// The sheet's print area (B1:F9 in the design), always on ONE page: the sheet fits the width only, so a long banking
+    /// paragraph (a taller row 7) used to spill onto a second page. Orientation, paper and margins stay the design's.
+    /// </summary>
+    private static void OnePage(dynamic ws)
+    {
+        try
+        {
+            dynamic ps = ws.PageSetup;
+            string area = Convert.ToString(ps.PrintArea) ?? "";
+            if (area.Trim().Length == 0) ps.PrintArea = "$B$1:$F$9";
+            ps.Zoom = false;
+            ps.FitToPagesWide = 1;
+            ps.FitToPagesTall = 1;
+        }
+        catch { /* the design's own setup is used as it is */ }
     }
 
     /// <summary>The design colour → the supplier's theme: cell fills, fonts, borders and shapes (the bar, the lines).</summary>
