@@ -356,31 +356,9 @@
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Width="64" MinWidth="64">
                                 <!-- select all / none (some chosen: half state): a blue outlined box on a white header, so it stands out -->
+                                <!-- the header cell is painted white; the Select all box sits over it (see below the grid) -->
                                 <DataGridTemplateColumn.Header>
-                                    <CheckBox IsChecked="{Binding DataContext.AllChosen, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                              ToolTip="{DynamicResource Analysis.SelectAll}" Cursor="Hand" Focusable="False" Loaded="OnSelectAllLoaded">
-                                        <CheckBox.Template>
-                                            <ControlTemplate TargetType="CheckBox">
-                                                <Border x:Name="Box" Width="18" Height="18" CornerRadius="3" BorderThickness="2" Background="Transparent"
-                                                        BorderBrush="{DynamicResource BrandBrush}">
-                                                    <Path x:Name="Mark" Stretch="Uniform" Margin="2" Fill="{DynamicResource BrandBrush}" Visibility="Collapsed"
-                                                          Data="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <Trigger Property="IsChecked" Value="True">
-                                                        <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
-                                                    </Trigger>
-                                                    <Trigger Property="IsChecked" Value="{x:Null}">
-                                                        <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
-                                                        <Setter TargetName="Mark" Property="Data" Value="M5 11h14v2H5z" />
-                                                    </Trigger>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="Box" Property="BorderThickness" Value="2.5" />
-                                                    </Trigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </CheckBox.Template>
-                                    </CheckBox>
+                                    <Border Width="1" Height="1" Loaded="OnSelectAllLoaded" />
                                 </DataGridTemplateColumn.Header>
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -480,6 +458,31 @@
                             </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
+                    <!-- Select all / none (some chosen: half state): a blue outlined box over the white first header cell -->
+                    <CheckBox Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="23,8,0,0" Panel.ZIndex="5" IsChecked="{Binding DataContext.AllChosen, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              ToolTip="{DynamicResource Analysis.SelectAll}" Cursor="Hand" Focusable="False">
+                                        <CheckBox.Template>
+                                            <ControlTemplate TargetType="CheckBox">
+                                                <Border x:Name="Box" Width="18" Height="18" CornerRadius="3" BorderThickness="2" Background="Transparent"
+                                                        BorderBrush="{DynamicResource BrandBrush}">
+                                                    <Path x:Name="Mark" Stretch="Uniform" Margin="2" Fill="{DynamicResource BrandBrush}" Visibility="Collapsed"
+                                                          Data="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsChecked" Value="{x:Null}">
+                                                        <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
+                                                        <Setter TargetName="Mark" Property="Data" Value="M5 11h14v2H5z" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Box" Property="BorderThickness" Value="2.5" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </CheckBox.Template>
+                                    </CheckBox>
 
                     <DockPanel Grid.Row="2" Margin="0,12,0,0">
                         <Button DockPanel.Dock="Right" Command="{Binding ApproveAllCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="18,7" Margin="8,0,0,0"
