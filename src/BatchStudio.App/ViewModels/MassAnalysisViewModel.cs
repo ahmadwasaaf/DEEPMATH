@@ -225,12 +225,12 @@ public sealed partial class MassInvoiceViewModel
 {
     public ObservableCollection<AnalysisItemViewModel> ReviewItems { get; } = [];
     [ObservableProperty] private bool _isAnalysing;
-    [NotifyPropertyChangedFor(nameof(ShowReview), nameof(IsReviewMinimized))]
+    [NotifyPropertyChangedFor(nameof(IsReviewShown), nameof(IsReviewMinimized))]
     [ObservableProperty] private bool _isReviewing;
     /// <summary>Minimized: the review keeps its documents while the user works on the rows, and comes back with one click.</summary>
-    [NotifyPropertyChangedFor(nameof(ShowReview), nameof(IsReviewMinimized))]
+    [NotifyPropertyChangedFor(nameof(IsReviewShown), nameof(IsReviewMinimized))]
     [ObservableProperty] private bool _reviewHidden;
-    public bool ShowReview => IsReviewing && !ReviewHidden;
+    public bool IsReviewShown => IsReviewing && !ReviewHidden;
     public bool IsReviewMinimized => IsReviewing && ReviewHidden;
     public string RestoreText => Loc.F("Analysis.Restore", ReviewItems.Count);
     /// <summary>The conflict window of a blocked document (null = closed).</summary>

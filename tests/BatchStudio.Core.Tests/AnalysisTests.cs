@@ -64,7 +64,7 @@ public class AnalysisTests
         Assert.Equal(5000m, v.Amount);
         Assert.Contains("123456789012", v.AccountIds);
         Assert.Single(v.AltBanks);
-        Assert.Equal(["test_document", "verified_manually"], v.Notes);
+        Assert.Equal(new[] { "test_document", "verified_manually" }, v.Notes);
     }
 
     [Fact]

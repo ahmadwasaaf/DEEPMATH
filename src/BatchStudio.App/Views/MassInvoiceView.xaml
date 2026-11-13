@@ -324,7 +324,7 @@
 
         <!-- Analysis review: every document with its supplier, account and amount; Approve all puts them on the rows -->
         <Border Grid.RowSpan="4" Panel.ZIndex="22" Background="#99000000" CornerRadius="8"
-                Visibility="{Binding ShowReview, Converter={StaticResource BoolToVis}}">
+                Visibility="{Binding IsReviewShown, Converter={StaticResource BoolToVis}}">
             <Border Style="{StaticResource Card}" Padding="18,14" Margin="24,16" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
                 <Grid>
                     <Grid.RowDefinitions>
