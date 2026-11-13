@@ -497,6 +497,13 @@
     <sys:String x:Key="Analysis.SelectAll">Select all / none</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">Test document</sys:String>
     <sys:String x:Key="Analysis.StBlocked">Cannot decide safely - manual verification required</sys:String>
+    <sys:String x:Key="Analysis.ViewConflict">View conflict details</sys:String>
+    <sys:String x:Key="Analysis.HideConflict">Hide details</sys:String>
+    <sys:String x:Key="Analysis.SummaryBlocked">{0} blocked (manual verification)</sys:String>
+    <sys:String x:Key="Analysis.ConflictShort.conflicting_instructions">Conflicting payment instructions</sys:String>
+    <sys:String x:Key="Analysis.ConflictShort.beneficiary_mismatch">Invoice issuer is not the account holder</sys:String>
+    <sys:String x:Key="Analysis.ConflictShort.ambiguous_swift">SWIFT given in two forms (O / 0)</sys:String>
+    <sys:String x:Key="Analysis.ConflictShort.third_party_payment">Third-party payment without authorisation</sys:String>
     <sys:String x:Key="Analysis.ConflictManual">Not ticked and cannot be approved here: verify it with the supplier through a channel you trust, then enter it yourself</sys:String>
     <sys:String x:Key="Analysis.Conflict.conflicting_instructions">Conflicting payment instructions: the document directs payment to different accounts</sys:String>
     <sys:String x:Key="Analysis.Conflict.beneficiary_mismatch">Beneficiary mismatch: the invoice issuer is not the holder of the bank account</sys:String>

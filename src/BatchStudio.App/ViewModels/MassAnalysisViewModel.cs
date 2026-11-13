@@ -40,7 +40,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     [ObservableProperty] private string _supplierName;
     [ObservableProperty] private bool _include;
 
-    public bool IsNewSupplier => Match.Status == AnalysisStatus.NewSupplier && Match.Owner == null;
+    public bool IsNewSupplier => !HasConflict && Match.Status == AnalysisStatus.NewSupplier && Match.Owner == null;
 
     /// <summary>The document says it is a sample / training / synthetic one: shown, but not ticked by default.</summary>
     public bool IsTestDocument => Result.Notes.Contains("test_document");
@@ -124,27 +124,48 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     }
 
     /// <summary>Remarks shown under the status (why it needs a look, what the engine guessed).</summary>
-    public string Remarks
+    public string Remarks => string.Join(" · ", RemarkList());
+
+    /// <summary>
+    /// A blocked document: only why (the kind of conflict), on two lines at most - the conflicting values and what to do
+    /// open with "View conflict details".
+    /// </summary>
+    public string ShortRemarks => HasConflict
+        ? string.Join(" · ", Result.Conflicts.Select(c => Application.Current?.TryFindResource("Analysis.ConflictShort." + c.Code) as string ?? c.Code).Distinct())
+        : Remarks;
+
+    /// <summary>The conflicts in full: what contradicts what, and what to do.</summary>
+    public string ConflictDetails => string.Join("\n", RemarkList().Select(r => "• " + r));
+
+    [ObservableProperty] private bool _showDetails;
+
+    [RelayCommand]
+    private void ToggleDetails() => ShowDetails = !ShowDetails;
+
+    private List<string> RemarkList()
     {
-        get
+        var list = new List<string>();
+        // the contradictions first: what they are and between what
+        foreach (var c in Result.Conflicts)
+            if (Application.Current?.TryFindResource("Analysis.Conflict." + c.Code) is string ct)
+                list.Add(c.Detail.Length > 0 ? ct + " (" + c.Detail + ")" : ct);
+        if (HasConflict)
         {
-            var list = new List<string>();
-            // the contradictions first: what they are and between what
-            foreach (var c in Result.Conflicts)
-                if (Application.Current?.TryFindResource("Analysis.Conflict." + c.Code) is string ct)
-                    list.Add(c.Detail.Length > 0 ? ct + " (" + c.Detail + ")" : ct);
-            if (HasConflict) list.Add(Loc.T("Analysis.ConflictManual"));
-            if (Match.Note.Length > 0 && !(Match.Note == "Analysis.NoteNoAmount" && Amount != null)) list.Add(Loc.T(Match.Note));
-            if (Match.MatchedBy == "similar" && Match.Supplier != null) list.Add(Loc.F("Analysis.NoteSimilar", Result.CompanyName));
-            if (Match.Candidates.Count > 0 && Picked == null) list.Add(Loc.T("Analysis.PickSupplier"));
-            // nothing read: the engine's own remarks (no account, no SWIFT ...) add nothing
-            if (Match.Note != "Analysis.NoteNothingRead")
-            foreach (var n in Result.Notes.Where(n => Result.Conflicts.All(c => c.Code != n)))
-                if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
-            if (Match.Note != "Analysis.NoteNothingRead" && Result.AltBanks.Count > 0)
-                list.Add(Loc.F("Analysis.AltAccounts", Result.AltBanks.Count));
-            return string.Join(" · ", list.Distinct());
+            // blocked: what else the engine noticed (no SWIFT, new supplier without bank ...) adds nothing to it
+            list.Add(Loc.T("Analysis.ConflictManual"));
+            if (Result.AltBanks.Count > 0) list.Add(Loc.F("Analysis.AltAccounts", Result.AltBanks.Count));
+            return list.Distinct().ToList();
         }
+        if (Match.Note.Length > 0 && !(Match.Note == "Analysis.NoteNoAmount" && Amount != null)) list.Add(Loc.T(Match.Note));
+        if (Match.MatchedBy == "similar" && Match.Supplier != null) list.Add(Loc.F("Analysis.NoteSimilar", Result.CompanyName));
+        if (Match.Candidates.Count > 0 && Picked == null) list.Add(Loc.T("Analysis.PickSupplier"));
+        // nothing read: the engine's own remarks (no account, no SWIFT ...) add nothing
+        if (Match.Note != "Analysis.NoteNothingRead")
+            foreach (var n in Result.Notes)
+                if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
+        if (Match.Note != "Analysis.NoteNothingRead" && Result.AltBanks.Count > 0)
+            list.Add(Loc.F("Analysis.AltAccounts", Result.AltBanks.Count));
+        return list.Distinct().ToList();
     }
 
     public bool HasRemarks => Remarks.Length > 0;
@@ -172,6 +193,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         if (!IsReady && Include) Include = false;
         OnPropertyChanged(nameof(IsReady));
         OnPropertyChanged(nameof(Remarks));
+        OnPropertyChanged(nameof(ShortRemarks));
         OnPropertyChanged(nameof(HasRemarks));
         _owner.RecountReview();
     }
@@ -302,14 +324,16 @@ public sealed partial class MassInvoiceViewModel
     {
         if (_bulk) return;
         OnPropertyChanged(nameof(AllChosen));
-        int matched = ReviewItems.Count(i => i.Match.Status == AnalysisStatus.Matched);
-        int acct = ReviewItems.Count(i => i.Match.Status == AnalysisStatus.NewAccount || i.Match.OtherAccount);
+        int matched = ReviewItems.Count(i => !i.HasConflict && i.Match.Status == AnalysisStatus.Matched);
+        int acct = ReviewItems.Count(i => !i.HasConflict && (i.Match.Status == AnalysisStatus.NewAccount || i.Match.OtherAccount));
         int fresh = ReviewItems.Count(i => i.IsNewSupplier);
-        int attention = ReviewItems.Count(i => !i.IsReady);
+        int blocked = ReviewItems.Count(i => i.HasConflict);
+        int attention = ReviewItems.Count(i => !i.IsReady && !i.HasConflict);
         int chosen = ReviewItems.Count(i => i.Include && i.IsReady);
         decimal total = ReviewItems.Where(i => i.Include && i.IsReady).Sum(i => i.Amount ?? 0);
         ReviewSummary = Loc.F("Analysis.Summary", ReviewItems.Count, matched, acct, fresh, attention, chosen,
-            total.ToString("N2", CultureInfo.InvariantCulture));
+            total.ToString("N2", CultureInfo.InvariantCulture))
+            + (blocked > 0 ? "  ·  " + Loc.F("Analysis.SummaryBlocked", blocked) : "");
     }
 
     /// <summary>Screenshot smoke test: the review with one document of each kind.</summary>

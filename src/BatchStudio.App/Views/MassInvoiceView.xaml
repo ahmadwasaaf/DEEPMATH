@@ -423,8 +423,49 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                            <TextBlock Text="{Binding Remarks}" Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
+                                            <!-- two lines at most; a blocked document opens the full conflict below -->
+                                            <TextBlock Text="{Binding ShortRemarks}" Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"
+                                                       MaxHeight="30" TextTrimming="CharacterEllipsis" ToolTip="{Binding Remarks}"
                                                        Visibility="{Binding HasRemarks, Converter={StaticResource BoolToVis}}" />
+                                            <Button Command="{Binding ToggleDetailsCommand}" Cursor="Hand" HorizontalAlignment="Left" Margin="0,3,0,0" Padding="0"
+                                                    Background="Transparent" BorderThickness="0" Focusable="False"
+                                                    Visibility="{Binding HasConflict, Converter={StaticResource BoolToVis}}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <ContentPresenter />
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Path Width="12" Height="12" Stretch="Uniform" Fill="#EF5350" VerticalAlignment="Center">
+                                                        <Path.Style>
+                                                            <Style TargetType="Path">
+                                                                <Setter Property="Data" Value="M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ShowDetails}" Value="True">
+                                                                        <Setter Property="Data" Value="M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Path.Style>
+                                                    </Path>
+                                                    <TextBlock Margin="4,0,0,0" FontSize="11" Foreground="#EF5350" VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="{DynamicResource Analysis.ViewConflict}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding ShowDetails}" Value="True">
+                                                                        <Setter Property="Text" Value="{DynamicResource Analysis.HideConflict}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Button>
+                                            <Border Margin="0,4,0,2" Padding="8,6" CornerRadius="6" Background="#22EF5350" BorderBrush="#55EF5350" BorderThickness="1"
+                                                    Visibility="{Binding ShowDetails, Converter={StaticResource BoolToVis}}">
+                                                <TextBlock Text="{Binding ConflictDetails}" FontSize="11" TextWrapping="Wrap" />
+                                            </Border>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
