@@ -510,12 +510,13 @@
     <sys:String x:Key="Analysis.SelectAll">تحديد الكل / إلغاء التحديد</sys:String>
     <sys:String x:Key="Analysis.StTestDocument">مستند اختبار</sys:String>
     <sys:String x:Key="Analysis.StBlocked">مينفعش يتقرر بأمان - محتاج تحقق يدوي</sys:String>
+    <sys:String x:Key="Analysis.ConflictSaveTip">زرار الحفظ بيشتغل لما تعدّل البيانات البنكية (تعدّل حساب، أو تضيف حساب، أو تختار حساب تاني افتراضي)</sys:String>
     <sys:String x:Key="Analysis.SupplierName">اسم المورد</sys:String>
     <sys:String x:Key="Analysis.Minimize">تصغير: اشتغل على الصفوف وارجع للمستندات اللي فاضلة هنا</sys:String>
     <sys:String x:Key="Analysis.Restore">مراجعة المستندات ({0})</sys:String>
     <sys:String x:Key="Analysis.RestoreTip">الرجوع للمستندات اللي فاضلة في المراجعة</sys:String>
     <sys:String x:Key="Analysis.Package">Package</sys:String>
-    <sys:String x:Key="Analysis.PackageTip">نقل المستند ده لمجلد على سطح المكتب باسم التعارض (بنفس اسمه)</sys:String>
+    <sys:String x:Key="Analysis.PackageTip">نقل المستند ده لمجلد "Rejected files" على سطح المكتب (بنفس اسمه)</sys:String>
     <sys:String x:Key="Analysis.CopyConflict">نسخ التعارض</sys:String>
     <sys:String x:Key="Analysis.Packaged">اتنقل إلى: {0}</sys:String>
     <sys:String x:Key="Analysis.PackageFailed">معرفتش أنقل المستند: {0}</sys:String>

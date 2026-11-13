@@ -27,6 +27,10 @@ public sealed partial class ConflictEditorViewModel : ObservableObject
     [ObservableProperty] private string _message = "";
     [ObservableProperty] private bool _isPackaged;
 
+    /// <summary>The bank data the window opened with: Save stays off until the user really changes it.</summary>
+    private readonly string _initial;
+    public bool CanSave => Snapshot() != _initial;
+
     public ConflictEditorViewModel(MassInvoiceViewModel owner, AnalysisItemViewModel item)
     {
         _owner = owner;
@@ -42,6 +46,12 @@ public sealed partial class ConflictEditorViewModel : ObservableObject
             _values[SupplierBanks.HeaderFor(n++)] = alt;
         }
         Banks = new BankGroupViewModel(headers, k => _values.TryGetValue(k, out var v) ? v : "", (k, v) => _values[k] = v, expanded: true);
+        _initial = Snapshot();
+        Banks.Changed += () =>
+        {
+            OnPropertyChanged(nameof(CanSave));
+            SaveCommand.NotifyCanExecuteChanged();
+        };
         IsPackaged = item.MovedTo != null;
         if (IsPackaged) Message = Loc.F("Analysis.Packaged", item.MovedTo!);
     }
@@ -74,10 +84,23 @@ public sealed partial class ConflictEditorViewModel : ObservableObject
     [RelayCommand]
     private void OpenFile() => Item.OpenFileCommand.Execute(null);
 
-    /// <summary>Save: on the user's responsibility (they checked the details with the supplier).</summary>
-    [RelayCommand]
+    /// <summary>
+    /// The bank accounts as they stand (text normalised: line ends, spaces, empty lines), and which one is the default:
+    /// typing something and undoing it is not a change; Package or a new name alone is not either.
+    /// </summary>
+    private string Snapshot()
+    {
+        static string Norm(string t) => string.Join("\n", (t ?? "").Replace("\r", "").Split('\n')
+            .Select(l => string.Join(" ", l.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))).Where(l => l.Length > 0));
+        var accounts = Banks.Accounts.Select(a => (a.Number, Text: Norm(a.Value))).Where(a => a.Text.Length > 0).ToList();
+        return string.Join("\u0001", accounts.Select(a => a.Text)) + "\u0002" + (accounts.Count > 1 ? Banks.DefaultNumber : 0);
+    }
+
+    /// <summary>Save: on the user's responsibility (they checked the details with the supplier), and only after a real change.</summary>
+    [RelayCommand(CanExecute = nameof(CanSave))]
     private void Save()
     {
+        if (!CanSave) return;
         var name = SupplierName.Trim();
         if (name.Length == 0) { Message = Loc.T("Analysis.ConflictNoName"); return; }
         // the account printed on invoices (radio button) first: it is the one this invoice is paid to

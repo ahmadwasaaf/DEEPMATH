@@ -265,15 +265,14 @@ public sealed partial class MassInvoiceViewModel
     }
 
     /// <summary>
-    /// Package: the document is moved (not copied) to a Desktop folder named after its conflict, keeping its name
+    /// Package: the document is moved (not copied) to the Desktop folder "Rejected files", keeping its name
     /// ("5000.pdf"; "5000 (2).pdf" when that name is taken there). Returns where it went.
     /// </summary>
     internal string PackageFile(AnalysisItemViewModel item)
     {
         var source = item.FilePath;
         if (!File.Exists(source)) throw new FileNotFoundException(Loc.F("Analysis.PackageMissing", Path.GetFileName(source)));
-        var code = item.Result.Conflicts.FirstOrDefault()?.Code ?? "";
-        var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), ConflictFolder(code));
+        var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), RejectedFolder);
         Directory.CreateDirectory(folder);
         if (string.Equals(Path.GetDirectoryName(Path.GetFullPath(source)), Path.GetFullPath(folder), StringComparison.OrdinalIgnoreCase))
             return source;   // already there
@@ -283,15 +282,8 @@ public sealed partial class MassInvoiceViewModel
         return dest;
     }
 
-    /// <summary>The Desktop folder of a conflict (always in English, so the folders stay the same in both languages).</summary>
-    public static string ConflictFolder(string code) => code switch
-    {
-        "conflicting_instructions" => "Conflicting payment instructions",
-        "beneficiary_mismatch" => "Beneficiary mismatch",
-        "ambiguous_swift" => "Ambiguous SWIFT",
-        "third_party_payment" => "Third-party payment",
-        _ => "Conflicting documents",
-    };
+    /// <summary>The Desktop folder Package moves blocked documents to (one folder for every kind of conflict).</summary>
+    public const string RejectedFolder = "Rejected files";
     [ObservableProperty] private string _analysisText = "";
     [ObservableProperty] private double _analysisProgress;
     [ObservableProperty] private string _reviewSummary = "";
