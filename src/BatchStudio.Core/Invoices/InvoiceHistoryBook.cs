@@ -366,6 +366,36 @@ public static class InvoiceHistoryBook
     /// Copy of the history sheet showing only <paramref name="include"/> rows (others hidden), with the period name in
     /// the filter cell, the visible count / total and the print area set - ready for PDF export with the sheet's own look.
     /// </summary>
+    /// <summary>
+    /// What a period report changes on the INVOICE HISTORY sheet - the rows hidden / shown, the count, period and total
+    /// cells, the print area - so it can be applied to the REAL workbook in Excel (its buttons and search box kept),
+    /// instead of a rebuilt copy that drops them.
+    /// </summary>
+    public sealed record ReportPlan(string Sheet, IReadOnlyList<int> Hide, IReadOnlyList<int> Show, bool SetCount, int Count,
+                                    string? PeriodCell, string PeriodLabel, bool SetTotal, double Total, string PrintArea);
+
+    public static ReportPlan PlanReport(string path, Func<HistoryRecord, bool> include, string periodLabel)
+    {
+        using var wb = PackageRepair.OpenWorkbook(path);
+        var ws = Sheet(wb);
+        var l = Detect(ws);
+        var recs = Read(ws, l);
+        var shown = recs.Where(include).ToList();
+        var shownRows = shown.Select(r => r.Row).ToHashSet();
+        bool setCount = l.IsV28 && (ws.Cell("C3").Value.IsNumber || ws.Cell("C3").IsEmpty());
+        var total = ws.Cell("D7");
+        bool setTotal = l.IsV28 && !total.HasFormula && (total.Value.IsNumber || total.IsEmpty());
+        int last = recs.Count > 0 ? recs.Max(r => r.Row) : l.FirstDataRow;
+        var pa = ws.PageSetup.PrintAreas.FirstOrDefault()?.RangeAddress;
+        int r1 = pa?.FirstAddress.RowNumber ?? 1, c1 = pa?.FirstAddress.ColumnNumber ?? 1;
+        int c2 = pa?.LastAddress.ColumnNumber ?? Math.Max(l.ColStatus, l.ColInvoice);
+        string area = $"${XLHelper.GetColumnLetterFromNumber(c1)}${r1}:${XLHelper.GetColumnLetterFromNumber(c2)}${last}";
+        return new ReportPlan(ws.Name,
+            recs.Where(r => !shownRows.Contains(r.Row)).Select(r => r.Row).ToList(),
+            recs.Where(r => shownRows.Contains(r.Row)).Select(r => r.Row).ToList(),
+            setCount, shown.Count, l.IsV28 ? "E5" : null, periodLabel, setTotal, (double)shown.Sum(x => x.Amount ?? 0), area);
+    }
+
     public static void BuildReport(string path, Func<HistoryRecord, bool> include, string periodLabel, string outputPath)
     {
         using var wb = PackageRepair.OpenWorkbook(path);

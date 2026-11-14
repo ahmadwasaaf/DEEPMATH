@@ -43,7 +43,8 @@ public sealed partial class GoogleAccount : ObservableObject
     private static GoogleAccount? _instance;
     public static GoogleAccount Instance => _instance ??= new();
 
-    public const string Scopes = "openid email profile https://www.googleapis.com/auth/gmail.metadata";
+    /// <summary>drive.file: Auto Save Files - the program sees and changes ONLY the files it uploaded itself, nothing else of the Drive.</summary>
+    public const string Scopes = "openid email profile https://www.googleapis.com/auth/gmail.metadata https://www.googleapis.com/auth/drive.file";
     private const string AuthUrl = "https://accounts.google.com/o/oauth2/v2/auth";
     private const string TokenUrl = "https://oauth2.googleapis.com/token";
     private const string RevokeUrl = "https://oauth2.googleapis.com/revoke";
@@ -60,6 +61,7 @@ public sealed partial class GoogleAccount : ObservableObject
         public string RefreshToken { get; set; } = "";
         /// <summary>The user allowed the Gmail box on Google's consent page (sender / subject of emails).</summary>
         public bool Gmail { get; set; } = true;
+        public bool Drive { get; set; }
     }
 
     private sealed class Stored
@@ -75,6 +77,7 @@ public sealed partial class GoogleAccount : ObservableObject
         public string Name { get; set; } = "";
         public string Picture { get; set; } = "";
         public bool Gmail { get; set; } = true;
+        public bool Drive { get; set; }
     }
 
     private Stored _data = new();
@@ -111,6 +114,11 @@ public sealed partial class GoogleAccount : ObservableObject
     public bool IsConfigured => ClientId.Length > 0;
     /// <summary>Gmail (sender / subject) was allowed at sign-in for the account in use.</summary>
     public bool HasGmail => Current?.Gmail ?? false;
+    /// <summary>Auto Save Files may upload: Google Drive (files made by this program only) was allowed for the account in use.</summary>
+    public bool HasDrive => Current?.Drive ?? false;
+
+    /// <summary>Auto Save Files: sign in again with the account in use to allow Google Drive (the consent page asks once).</summary>
+    public Task<bool> AllowDriveAsync() => SignInAsync(Current?.Email);
 
     /// <summary>Raised after sign-in, switch and sign-out (the Gmail watcher follows the account in use).</summary>
     public event Action? SignedInChanged;
@@ -405,6 +413,7 @@ public sealed partial class GoogleAccount : ObservableObject
             a.RefreshToken = refresh;
             // Google's consent page shows Gmail as a separate box: without it only the name and photo are allowed
             a.Gmail = token.Scope == null || token.Scope.Contains("gmail.metadata", StringComparison.Ordinal);
+            a.Drive = token.Scope != null && token.Scope.Contains("drive.file", StringComparison.Ordinal);
             _data.Active = a.Email;
             _accessToken = access;
             _accessUntil = DateTime.UtcNow.AddSeconds(Math.Max(60, token.ExpiresIn - 60));

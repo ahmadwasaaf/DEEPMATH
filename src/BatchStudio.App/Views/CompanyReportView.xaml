@@ -2,6 +2,10 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <UserControl.Resources>
+        <!-- centred column title: the header itself is centred from code (keeps the Fluent header look) -->
+        <DataTemplate x:Key="CenterHeader">
+            <TextBlock Text="{Binding}" Loaded="OnCenterHeaderLoaded" />
+        </DataTemplate>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </UserControl.Resources>
     <Grid>
@@ -102,7 +106,14 @@
             <StackPanel>
             <DataGrid x:Name="InvoiceGrid" ItemsSource="{Binding Lines}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
                       CanUserAddRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="36" SelectionMode="Single"
-                      VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="OnGridWheel">
+                      VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="OnGridWheel" PreviewMouseRightButtonDown="OnRowRightClick">
+                <!-- right-click on a row: the same choices as its Actions list -->
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Tag="open" Header="{DynamicResource Act.Open}" Click="OnMenuAction" />
+                        <MenuItem Tag="pdf" Header="{DynamicResource Act.Pdf}" Click="OnMenuAction" />
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
                 <DataGrid.Resources>
                         <Style x:Key="Mid" TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center" />
@@ -115,19 +126,28 @@
                     <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Amount}" Binding="{Binding Amount, StringFormat=N2}" Width="*" MinWidth="120" />
                     <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.Date}" Binding="{Binding DateText}" Width="Auto" MinWidth="100" />
                     <DataGridTextColumn ElementStyle="{StaticResource Mid}" Header="{StaticResource Col.InvoiceNo}" Binding="{Binding InvoiceNo}" Width="Auto" MinWidth="120" />
-                    <DataGridTemplateColumn Header="{StaticResource Col.Actions}" Width="Auto">
+                    <!-- the same "Actions" list as Invoice History / Dashboard -->
+                    <DataGridTemplateColumn Header="{StaticResource Col.Actions}" HeaderTemplate="{StaticResource CenterHeader}" Width="190">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="4,0">
-                                    <Button Command="{Binding DataContext.OpenInvoiceCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"
-                                            Padding="8,2" Margin="0,0,6,0" ToolTip="{DynamicResource Hist.Open}">
-                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8E5;" FontSize="12" />
-                                    </Button>
-                                    <Button Command="{Binding DataContext.InvoicePdfCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"
-                                            Padding="8,2" ToolTip="{DynamicResource Rep.InvPdf}">
-                                        <TextBlock Style="{StaticResource Icon}" Text="&#xEA90;" FontSize="12" />
-                                    </Button>
-                                </StackPanel>
+                                <Grid Width="160" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <ComboBox x:Name="Act" SelectionChanged="OnActionChosen" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="28" Padding="10,3">
+                                        <ComboBoxItem Tag="open" Content="{DynamicResource Act.Open}" />
+                                        <ComboBoxItem Tag="pdf" Content="{DynamicResource Act.Pdf}" />
+                                    </ComboBox>
+                                    <TextBlock Text="{DynamicResource Col.Actions}" IsHitTestVisible="False" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,22,0" Opacity="0.75">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedIndex, ElementName=Act}" Value="-1">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>

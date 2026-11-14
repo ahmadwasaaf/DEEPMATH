@@ -671,6 +671,11 @@ public sealed partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(MainViewModel main)
     {
         _main = main;
+        GoogleAccount.Instance.SignedInChanged += () =>
+        {
+            OnPropertyChanged(nameof(NeedsDriveAccess));
+            if (GoogleAccount.Instance.HasDrive) DriveSync.Instance.Resume();
+        };
         LoadBackground();
         LoadAccent();
         _isArabic = main.Settings.Language == AppLanguage.Arabic;
@@ -690,6 +695,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _clientOpen;
     [ObservableProperty] private string _clientNote = "";
     public string ClientKind => Loc.T(Account.IsCustomClient ? "Google.ClientCustom" : "Google.ClientBuiltIn");
+
+    /// <summary>Settings › Google Account › Auto Save Files (entities uploaded to Google Drive).</summary>
+    public DriveSync Drive => DriveSync.Instance;
+    public bool NeedsDriveAccess => Account.IsSignedIn && !Account.HasDrive;
+
+    [RelayCommand]
+    private async Task AllowDriveAsync()
+    {
+        if (await Account.AllowDriveAsync() && Account.HasDrive) Drive.Resume();
+        OnPropertyChanged(nameof(NeedsDriveAccess));
+    }
 
     [RelayCommand]
     private void ToggleClient()

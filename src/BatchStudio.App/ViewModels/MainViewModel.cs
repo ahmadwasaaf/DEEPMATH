@@ -132,6 +132,7 @@ public sealed partial class MainViewModel : ObservableObject
         Mass = new MassInvoiceViewModel(this);
         foreach (var e in settings.Entities) Entities.Add(e);
         SettingsPage.Refresh();
+        DriveSync.Instance.Refresh(settings.Entities);   // Auto Save Files: the entities switched on resume uploading
 
         Nav.Add(new NavItem { Key = "Nav.Home", Glyph = "", Page = () => Home });
         Nav.Add(new NavItem { Key = "Nav.Dashboard", Glyph = "\uE9D2", Page = () => Dashboard });
@@ -557,6 +558,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         try { SettingsStore.Save(Settings); }
         catch (Exception ex) { Dialogs.Error(ex.Message); }
+        DriveSync.Instance.Refresh(Settings.Entities);   // a new entity / data folder is followed by Auto Save Files
     }
 
     /// <summary>Returns false if the user cancels closing.</summary>

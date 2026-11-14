@@ -123,6 +123,72 @@
                             </StackPanel>
                         </Button>
                         <CheckBox Content="{DynamicResource Google.Toasts}" IsChecked="{Binding MailToasts}" Margin="0,14,0,0" />
+
+                        <!-- Auto Save Files: each entity's data folder uploaded to Google Drive and kept up to date -->
+                        <Border Margin="0,16,0,0" Padding="12,10" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                            <StackPanel>
+                                <DockPanel Background="Transparent" Cursor="Hand">
+                                    <DockPanel.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick" Command="{Binding Drive.ToggleExpandedCommand}" />
+                                    </DockPanel.InputBindings>
+                                    <TextBlock DockPanel.Dock="Right" FontSize="12" VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+                                                <Setter Property="Text" Value="&#xE70D;" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Drive.IsExpanded}" Value="True">
+                                                        <Setter Property="Text" Value="&#xE70E;" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE753;" FontSize="15" Margin="0,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource BrandBrush}" />
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource Drive.Title}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{DynamicResource Drive.Intro}" Style="{StaticResource Muted}" FontSize="11.5" TextWrapping="Wrap" Margin="0,2,10,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                                <StackPanel Margin="0,12,0,0" Visibility="{Binding Drive.IsExpanded, Converter={StaticResource BoolToVis}}">
+                                    <!-- Google Drive not allowed yet for this account: one more sign-in -->
+                                    <Border Padding="10,8" CornerRadius="6" Background="#22F0B429" Margin="0,0,0,10"
+                                            Visibility="{Binding NeedsDriveAccess, Converter={StaticResource BoolToVis}}">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Command="{Binding AllowDriveCommand}" Style="{DynamicResource AccentButtonStyle}"
+                                                    Content="{DynamicResource Drive.Allow}" Padding="12,5" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                            <TextBlock Text="{DynamicResource Drive.AllowHelp}" TextWrapping="Wrap" FontSize="12" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </Border>
+                                    <ItemsControl ItemsSource="{Binding Drive.Entities}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Padding="2,8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                                                    <StackPanel>
+                                                        <DockPanel>
+                                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding State}" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                                                <ToggleButton Style="{StaticResource SwitchToggle}" IsChecked="{Binding IsOn}" />
+                                                            </StackPanel>
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                                <TextBlock Text="{Binding Folder}" Style="{StaticResource Muted}" FontSize="11" TextTrimming="CharacterEllipsis" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
+                                                            </StackPanel>
+                                                        </DockPanel>
+                                                        <StackPanel Margin="0,6,0,0" Visibility="{Binding IsUploading, Converter={StaticResource BoolToVis}}">
+                                                            <ProgressBar Value="{Binding Progress}" Maximum="100" Height="5" />
+                                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="11" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{Binding Drive.Note}" Foreground="{StaticResource WarnBrush}" FontSize="11.5" TextWrapping="Wrap" Margin="0,8,0,0"
+                                               Visibility="{Binding Drive.Note, Converter={StaticResource NonEmptyToVis}}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
 
                     <!-- no account yet: what it does, then Sign in -->

@@ -328,10 +328,25 @@ public sealed partial class HistoryViewModel : ObservableObject
             var tmp = Path.Combine(Path.GetTempPath(), $"BS_report_{Guid.NewGuid():N}.xlsx");
             try
             {
+                var path = HistoryPath;
                 await Task.Run(() =>
                 {
-                    InvoiceHistoryBook.BuildReport(HistoryPath, q.Matches, Period, tmp);
-                    ExcelPdf.Export(tmp, dest);
+                    // the real sheet through Excel (buttons and search box kept, like Excel's own PDF);
+                    // the rebuilt copy only when that cannot be done
+                    Exception? error = null;
+                    var t = new Thread(() =>
+                    {
+                        try { HistoryReportPdf.Export(path, InvoiceHistoryBook.PlanReport(path, q.Matches, Period), dest); }
+                        catch (Exception ex) { error = ex; }
+                    });
+                    t.SetApartmentState(ApartmentState.STA);
+                    t.Start();
+                    t.Join();
+                    if (error != null)
+                    {
+                        InvoiceHistoryBook.BuildReport(path, q.Matches, Period, tmp);
+                        ExcelPdf.Export(tmp, dest);
+                    }
                 });
                 Status = Loc.F("Hist.PdfSaved", dest);
                 Shell.Open(dest);
