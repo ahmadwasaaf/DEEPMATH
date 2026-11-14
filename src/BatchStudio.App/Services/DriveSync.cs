@@ -34,6 +34,11 @@ public sealed partial class DriveEntityViewModel : ObservableObject
     }
 
     partial void OnIsOnChanged(bool value) => _sync.Toggle(this, value);
+
+    /// <summary>Upload: one upload now, by hand (with the toggle off nothing goes up on its own - a mistake in the files never
+    /// replaces the good copy on Drive until the user decides).</summary>
+    [RelayCommand]
+    private Task Upload() => _sync.UploadNowAsync(this);
 }
 
 /// <summary>
@@ -252,14 +257,17 @@ public sealed partial class DriveSync : ObservableObject
     }
 
     // ------------------------------------------------------------------ one pass over an entity's folder
-    private async Task SyncAsync(DriveEntityViewModel vm)
+    /// <summary>The Upload button: one pass now, whether the toggle is on or off.</summary>
+    internal Task UploadNowAsync(DriveEntityViewModel vm) => SyncAsync(vm, manual: true);
+
+    private async Task SyncAsync(DriveEntityViewModel vm, bool manual = false)
     {
         await _run.WaitAsync();
         var ui = System.Windows.Application.Current!.Dispatcher;
         void Ui(Action a) => ui.InvokeAsync(a);
         try
         {
-            if (!vm.IsOn) return;
+            if (!vm.IsOn && !manual) return;
             var root = vm.Folder;
             if (!Directory.Exists(root)) { Ui(() => vm.State = Loc.T("Drive.NoFolder")); return; }
             var account = GoogleAccount.Instance;
@@ -267,7 +275,7 @@ public sealed partial class DriveSync : ObservableObject
             var token = await account.AccessTokenAsync();
             if (token == null) { Ui(() => vm.State = Loc.T("Drive.SignedOut")); return; }
 
-            if (!_store.Entities.TryGetValue(vm.Name, out var st)) _store.Entities[vm.Name] = st = new EntityState { On = true };
+            if (!_store.Entities.TryGetValue(vm.Name, out var st)) _store.Entities[vm.Name] = st = new EntityState { On = vm.IsOn };
             // a new data folder (or another Google account): a new Drive folder, uploaded from the start
             if (!string.Equals(st.Folder, root, StringComparison.OrdinalIgnoreCase) || !string.Equals(st.Account, account.Email, StringComparison.OrdinalIgnoreCase))
             {
@@ -299,7 +307,7 @@ public sealed partial class DriveSync : ObservableObject
             int failed = 0;
             foreach (var (rel, fi) in todo)
             {
-                if (!vm.IsOn) break;
+                if (!vm.IsOn && !manual) break;
                 var name = fi.Name;
                 long before = done;
                 void Report(long sent)

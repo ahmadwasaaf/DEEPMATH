@@ -426,6 +426,9 @@
     <sys:String x:Key="Google.FileBad">This file is not a Google OAuth client file.</sys:String>
     <sys:String x:Key="Google.Toasts">Show a Windows notification for each new email</sys:String>
     <sys:String x:Key="Drive.Title">Auto Save Files</sys:String>
+    <sys:String x:Key="Drive.Upload">Upload</sys:String>
+    <sys:String x:Key="Drive.UploadTip">Upload now, by hand: new and changed files go up once (use it daily / weekly when the files are known to be right)</sys:String>
+    <sys:String x:Key="Drive.ToggleTip">On: new and changed files go up automatically</sys:String>
     <sys:String x:Key="Drive.Intro">Each entity switched on has its data folder uploaded to your Google Drive (same names and folders) and kept up to date. Files deleted on this PC stay on Drive.</sys:String>
     <sys:String x:Key="Drive.Allow">Allow Google Drive</sys:String>
     <sys:String x:Key="Drive.AllowHelp">Sign in once more to allow Google Drive. The program can only see the files it uploads itself - nothing else in your Drive.</sys:String>

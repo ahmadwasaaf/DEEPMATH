@@ -168,7 +168,16 @@
                                                         <DockPanel>
                                                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                                                                 <TextBlock Text="{Binding State}" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                                                <ToggleButton Style="{StaticResource SwitchToggle}" IsChecked="{Binding IsOn}" />
+                                                                <!-- Upload: by hand, now (daily / weekly, when the files are known to be right) -->
+                                                                <Button Command="{Binding UploadCommand}" Padding="10,4" Margin="0,0,12,0" VerticalAlignment="Center"
+                                                                        ToolTip="{DynamicResource Drive.UploadTip}"
+                                                                        IsEnabled="{Binding IsUploading, Converter={StaticResource InverseBool}}">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE898;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                                        <TextBlock Text="{DynamicResource Drive.Upload}" VerticalAlignment="Center" />
+                                                                    </StackPanel>
+                                                                </Button>
+                                                                <ToggleButton Style="{StaticResource SwitchToggle}" IsChecked="{Binding IsOn}" ToolTip="{DynamicResource Drive.ToggleTip}" />
                                                             </StackPanel>
                                                             <StackPanel VerticalAlignment="Center">
                                                                 <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
