@@ -13,6 +13,14 @@ public partial class BankAccountsView : UserControl
     {
         InitializeComponent();
         GridLook.NoCellFrame(MovesGrid);
+        // the four figures: one row when there is room, 2 × 2 when the window is narrow
+        Figures.SizeChanged += (_, e) => Figures.Columns = e.NewSize.Width < 560 ? 2 : 4;
+    }
+
+    /// <summary>No menu on the "balance brought forward" row.</summary>
+    private void OnMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (MovesGrid.SelectedItem is not StatementRow { IsMovement: true }) e.Handled = true;
     }
 
     private BankAccountsViewModel? Vm => DataContext as BankAccountsViewModel;

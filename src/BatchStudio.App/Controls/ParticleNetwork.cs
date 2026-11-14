@@ -657,8 +657,10 @@ public sealed class ParticleNetwork : FrameworkElement
             hue = max == r ? (g - b) / d + (g < b ? 6 : 0) : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
             hue /= 6;
         }
+        if (sat < 0.15) { hue = 0.47; l = 0.55; sat = 0.6; }     // white / grey theme colour: northern-lights teal and violet instead
         hue = (hue + turn + 1) % 1;
         sat = Math.Max(sat, 0.45);
+        l = Math.Clamp(l, 0.35, 0.7);
         double q = l < 0.5 ? l * (1 + sat) : l + sat - l * sat, p = 2 * l - q;
         double H(double t) { t = (t + 1) % 1; return t < 1 / 6.0 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3.0 ? p + (q - p) * (2 / 3.0 - t) * 6 : p; }
         return Color.FromRgb((byte)(255 * H(hue + 1 / 3.0)), (byte)(255 * H(hue)), (byte)(255 * H(hue - 1 / 3.0)));
