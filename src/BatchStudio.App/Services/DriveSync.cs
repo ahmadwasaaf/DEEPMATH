@@ -23,6 +23,11 @@ public sealed partial class DriveEntityViewModel : ObservableObject
     [ObservableProperty] private double _progress;          // 0..100
     [ObservableProperty] private bool _isUploading;
     [ObservableProperty] private string _detail = "";       // "120 MB of 260 MB · 140 MB left · Templates.xlsx"
+    /// <summary>"Auto upload every N days" (empty / 0 = off): one upload when the last one is N days old.</summary>
+    [ObservableProperty] private string _everyDays = "";
+    [ObservableProperty] private string _lastUploadText = "";
+
+    partial void OnEveryDaysChanged(string value) => _sync.SetEvery(this, value);
 
     public DriveEntityViewModel(DriveSync sync, string name, string folder, bool on)
     {
@@ -77,6 +82,9 @@ public sealed partial class DriveSync : ObservableObject
         public string Folder { get; set; } = "";
         public Dictionary<string, string> Dirs { get; set; } = new(StringComparer.OrdinalIgnoreCase);   // "" = the root
         public Dictionary<string, FileEntry> Files { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>Auto upload every N days (0 = off) and when the last complete upload ended.</summary>
+        public int EveryDays { get; set; }
+        public DateTime LastUploadUtc { get; set; }
     }
     private sealed class Store
     {
@@ -154,6 +162,10 @@ public sealed partial class DriveSync : ObservableObject
             {
                 _store.Entities.TryGetValue(e.Name, out var st);
                 Entities.Add(vm = new DriveEntityViewModel(this, e.Name, folder, st?.On ?? false));
+                _loading = true;
+                vm.EveryDays = st?.EveryDays > 0 ? st.EveryDays.ToString() : "";
+                _loading = false;
+                vm.LastUploadText = LastText(st);
                 if (vm.IsOn) { Watch(vm); changed.Add(vm.Name); }
             }
             else if (!string.Equals(vm.Folder, folder, StringComparison.OrdinalIgnoreCase))
@@ -172,6 +184,27 @@ public sealed partial class DriveSync : ObservableObject
         Note = "";
         Kick(Entities.Where(x => x.IsOn).Select(x => x.Name));
     }
+
+    private bool _loading;
+
+    internal void SetEvery(DriveEntityViewModel vm, string text)
+    {
+        if (_loading) return;
+        int days = int.TryParse((text ?? "").Trim(), out var d) && d > 0 ? Math.Min(d, 365) : 0;
+        if (!_store.Entities.TryGetValue(vm.Name, out var st)) _store.Entities[vm.Name] = st = new EntityState();
+        st.EveryDays = days;
+        Save();
+        if (days > 0) Kick([]);   // due already? the check runs now
+    }
+
+    private static string LastText(EntityState? st) =>
+        st == null || st.LastUploadUtc == default ? "" : Loc.F("Drive.Last", st.LastUploadUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm"));
+
+    /// <summary>Entities whose "every N days" upload is due (toggle off; the last complete upload is N days old or never).</summary>
+    private List<string> Due() =>
+        Entities.Where(v => !v.IsOn && _store.Entities.TryGetValue(v.Name, out var st) && st.EveryDays > 0
+                            && DateTime.UtcNow - st.LastUploadUtc >= TimeSpan.FromDays(st.EveryDays))
+                .Select(v => v.Name).ToList();
 
     internal void Toggle(DriveEntityViewModel vm, bool on)
     {
@@ -244,6 +277,9 @@ public sealed partial class DriveSync : ObservableObject
         if (names.Count == 0) names = targets.Select(t => t.Name).ToList();
         foreach (var vm in targets.Where(t => names.Contains(t.Name, StringComparer.OrdinalIgnoreCase)))
             await SyncAsync(vm);
+        // "Auto upload every N days": the ones due get one upload (like pressing Upload)
+        var due = await ui.InvokeAsync(() => Due().Select(n => Entities.First(v => v.Name == n)).ToList());
+        foreach (var vm in due) await SyncAsync(vm, manual: true);
     }
 
     private static bool Skipped(string path, string root)
@@ -298,7 +334,10 @@ public sealed partial class DriveSync : ObservableObject
             }
             if (todo.Count == 0)
             {
-                Ui(() => { vm.State = Loc.T("Drive.UpToDate"); vm.IsUploading = false; vm.Detail = ""; vm.Progress = 100; });
+                st.LastUploadUtc = DateTime.UtcNow;
+                Save();
+                var last0 = LastText(st);
+                Ui(() => { vm.State = Loc.T("Drive.UpToDate"); vm.IsUploading = false; vm.Detail = ""; vm.Progress = 100; vm.LastUploadText = last0; });
                 return;
             }
 
@@ -341,11 +380,14 @@ public sealed partial class DriveSync : ObservableObject
                 done += fi.Length;
                 Report(0);
             }
+            if (failed == 0) { st.LastUploadUtc = DateTime.UtcNow; Save(); }
+            var last = LastText(st);
             Ui(() =>
             {
                 vm.IsUploading = false;
                 vm.Progress = 100;
                 vm.Detail = "";
+                vm.LastUploadText = last;
                 vm.State = failed == 0 ? Loc.T("Drive.UpToDate") : Loc.F("Drive.SomeFailed", failed);
             });
         }

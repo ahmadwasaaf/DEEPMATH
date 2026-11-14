@@ -426,6 +426,10 @@
     <sys:String x:Key="Google.FileBad">هذا الملف ليس ملف عميل OAuth من جوجل.</sys:String>
     <sys:String x:Key="Google.Toasts">إظهار إشعار ويندوز لكل رسالة جديدة</sys:String>
     <sys:String x:Key="Drive.Title">Auto Save Files</sys:String>
+    <sys:String x:Key="Drive.Every">رفع تلقائي كل</sys:String>
+    <sys:String x:Key="Drive.Days">يوم</sys:String>
+    <sys:String x:Key="Drive.EveryTip">رفع مرة كل كام يوم (فاضي = مقفول). بيشتغل والـ Toggle مقفول.</sys:String>
+    <sys:String x:Key="Drive.Last">آخر رفع: {0}</sys:String>
     <sys:String x:Key="Drive.Upload">Upload</sys:String>
     <sys:String x:Key="Drive.UploadTip">ارفع دلوقتي يدوي: الملفات الجديدة واللي اتعدلت تترفع مرة واحدة (استخدمه يومي أو أسبوعي لما تكون متأكد إن الملفات سليمة)</sys:String>
     <sys:String x:Key="Drive.ToggleTip">شغّال: الملفات الجديدة واللي اتعدلت بتترفع لوحدها</sys:String>

@@ -184,6 +184,14 @@
                                                                 <TextBlock Text="{Binding Folder}" Style="{StaticResource Muted}" FontSize="11" TextTrimming="CharacterEllipsis" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
                                                             </StackPanel>
                                                         </DockPanel>
+                                                        <!-- Auto upload every [N] days (empty = off): for when the toggle is off -->
+                                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                                            <TextBlock Text="{DynamicResource Drive.Every}" VerticalAlignment="Center" FontSize="12" />
+                                                            <TextBox Text="{Binding EveryDays, UpdateSourceTrigger=PropertyChanged, Delay=600}" Width="56" Margin="8,0" MinHeight="28" Padding="6,3"
+                                                                     HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MaxLength="3" ToolTip="{DynamicResource Drive.EveryTip}" />
+                                                            <TextBlock Text="{DynamicResource Drive.Days}" VerticalAlignment="Center" FontSize="12" />
+                                                            <TextBlock Text="{Binding LastUploadText}" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="14,0,0,0" />
+                                                        </StackPanel>
                                                         <StackPanel Margin="0,6,0,0" Visibility="{Binding IsUploading, Converter={StaticResource BoolToVis}}">
                                                             <ProgressBar Value="{Binding Progress}" Maximum="100" Height="5" />
                                                             <TextBlock Text="{Binding Detail}" Style="{StaticResource Muted}" FontSize="11" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />

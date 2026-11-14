@@ -426,6 +426,10 @@
     <sys:String x:Key="Google.FileBad">This file is not a Google OAuth client file.</sys:String>
     <sys:String x:Key="Google.Toasts">Show a Windows notification for each new email</sys:String>
     <sys:String x:Key="Drive.Title">Auto Save Files</sys:String>
+    <sys:String x:Key="Drive.Every">Auto upload every</sys:String>
+    <sys:String x:Key="Drive.Days">day(s)</sys:String>
+    <sys:String x:Key="Drive.EveryTip">Upload once every N days (empty = off). Used while the toggle is off.</sys:String>
+    <sys:String x:Key="Drive.Last">Last upload: {0}</sys:String>
     <sys:String x:Key="Drive.Upload">Upload</sys:String>
     <sys:String x:Key="Drive.UploadTip">Upload now, by hand: new and changed files go up once (use it daily / weekly when the files are known to be right)</sys:String>
     <sys:String x:Key="Drive.ToggleTip">On: new and changed files go up automatically</sys:String>
