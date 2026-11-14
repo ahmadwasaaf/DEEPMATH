@@ -1,0 +1,547 @@
+<UserControl x:Class="BatchStudio.App.Views.BankAccountsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:BatchStudio.App.ViewModels">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <SolidColorBrush x:Key="InBrush" Color="#22A35A" />
+        <SolidColorBrush x:Key="OutBrush" Color="#E5534B" />
+
+        <!-- small caps label over a figure -->
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <!-- flat icon button (edit / delete / copy) -->
+        <Style x:Key="IconBtn" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Width="32" Height="32">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- deposit / withdrawal segmented choice -->
+        <Style x:Key="KindBtn" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bd" CornerRadius="6" Padding="12,6" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- header -->
+        <DockPanel Grid.Row="0" Margin="0,0,0,16">
+            <Button DockPanel.Dock="Right" Command="{Binding AddAccountCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="14,7" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="13" Margin="0,0,8,0" />
+                    <TextBlock Text="{DynamicResource Bank.AddAccount}" />
+                </StackPanel>
+            </Button>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE825;" FontSize="22" Margin="0,0,12,0" VerticalAlignment="Center" />
+                <TextBlock Text="{DynamicResource Nav.Bank}" Style="{StaticResource PageTitle}" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- totals per currency -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding Totals}" Margin="0,0,0,16" Visibility="{Binding HasAccounts, Converter={StaticResource BoolToVis}}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vm:CurrencyTotal}">
+                    <Border Style="{StaticResource Card}" Padding="18,14" Margin="0,0,12,12" MinWidth="230">
+                        <Grid>
+                            <Border Width="4" HorizontalAlignment="Left" CornerRadius="2" Background="{DynamicResource BrandBrush}" Margin="-18,-2,0,-2" />
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Caption}">
+                                    <Run Text="{DynamicResource Bank.TotalBalance}" /><Run Text=" · " /><Run Text="{Binding Accounts, Mode=OneWay}" />
+                                </TextBlock>
+                                <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight" HorizontalAlignment="Left">
+                                    <TextBlock Text="{Binding Amount}" FontSize="28" FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Negative}" Value="True">
+                                                        <Setter Property="Foreground" Value="{StaticResource OutBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding Currency}" FontSize="14" FontWeight="SemiBold" Margin="8,0,0,5" VerticalAlignment="Bottom"
+                                               Foreground="{DynamicResource BrandBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- empty state -->
+        <Border Grid.Row="2" Style="{StaticResource Card}" Padding="40" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="480"
+                Visibility="{Binding NoAccounts, Converter={StaticResource BoolToVis}}">
+            <StackPanel HorizontalAlignment="Center">
+                <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource BrandSoftBrush}" HorizontalAlignment="Center">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE825;" FontSize="32" Foreground="{DynamicResource BrandBrush}" HorizontalAlignment="Center" />
+                </Border>
+                <TextBlock Text="{DynamicResource Bank.EmptyTitle}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,16,0,6" />
+                <TextBlock Text="{DynamicResource Bank.EmptyText}" Style="{StaticResource Muted}" TextAlignment="Center" HorizontalAlignment="Center" />
+                <Button Command="{Binding AddAccountCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="16,8" Margin="0,18,0,0" HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="13" Margin="0,0,8,0" />
+                        <TextBlock Text="{DynamicResource Bank.AddFirst}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <!-- cards + statement -->
+        <Grid Grid.Row="2" Visibility="{Binding HasAccounts, Converter={StaticResource BoolToVis}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" MinWidth="250" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" MinWidth="420" />
+            </Grid.ColumnDefinitions>
+
+            <!-- account cards -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+                <ItemsControl ItemsSource="{Binding Cards}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:BankCardViewModel}">
+                            <Button Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                    Margin="0,0,0,12" Cursor="Hand" Focusable="False">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+                                            <Grid.RenderTransform><ScaleTransform x:Name="Scale" /></Grid.RenderTransform>
+                                            <!-- selection ring -->
+                                            <Border x:Name="Ring" CornerRadius="16" Margin="-3" BorderThickness="2" BorderBrush="Transparent" />
+                                            <Border CornerRadius="14" Background="{Binding Gradient}" Padding="18,16" Height="170" ClipToBounds="True">
+                                                <Border.Effect>
+                                                    <DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.25" />
+                                                </Border.Effect>
+                                                <Grid FlowDirection="LeftToRight">
+                                                    <!-- decorative circles -->
+                                                    <Ellipse Width="160" Height="160" Fill="White" Opacity="0.07" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-70,-60,0" />
+                                                    <Ellipse Width="110" Height="110" Fill="White" Opacity="0.06" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,30,-60" />
+                                                    <Grid>
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="*" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+                                                        <DockPanel>
+                                                            <Border DockPanel.Dock="Right" Background="#33FFFFFF" CornerRadius="6" Padding="8,2" VerticalAlignment="Top">
+                                                                <TextBlock Text="{Binding Currency}" Foreground="White" FontWeight="SemiBold" FontSize="12" />
+                                                            </Border>
+                                                            <Border Width="34" Height="34" CornerRadius="17" Background="#33FFFFFF" Margin="0,0,10,0">
+                                                                <TextBlock Text="{Binding Initials}" Foreground="White" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            </Border>
+                                                            <StackPanel VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Bank}" Foreground="White" FontWeight="SemiBold" FontSize="14.5" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Text="{Binding ShortNumber}" Foreground="#CCFFFFFF" FontSize="11.5" FontFamily="Cascadia Mono, Consolas" />
+                                                            </StackPanel>
+                                                        </DockPanel>
+                                                        <Polyline Grid.Row="1" Points="{Binding Spark}" Stroke="#B3FFFFFF" StrokeThickness="1.6" Stretch="Fill" Height="34"
+                                                                  VerticalAlignment="Center" Margin="0,6" StrokeLineJoin="Round" />
+                                                        <DockPanel Grid.Row="2">
+                                                            <StackPanel DockPanel.Dock="Right" VerticalAlignment="Bottom" HorizontalAlignment="Right">
+                                                                <TextBlock Text="{Binding MonthIn}" Foreground="#E6FFFFFF" FontSize="11" HorizontalAlignment="Right" />
+                                                                <TextBlock Text="{Binding MonthOut}" Foreground="#B3FFFFFF" FontSize="11" HorizontalAlignment="Right" />
+                                                            </StackPanel>
+                                                            <StackPanel>
+                                                                <TextBlock Text="{DynamicResource Bank.Balance}" Foreground="#B3FFFFFF" FontSize="10.5" />
+                                                                <TextBlock Text="{Binding Balance}" Foreground="White" FontSize="24" FontWeight="SemiBold" />
+                                                            </StackPanel>
+                                                        </DockPanel>
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource BrandBrush}" />
+                                            </DataTrigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Trigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="Scale" Storyboard.TargetProperty="ScaleX" To="1.02" Duration="0:0:0.15" />
+                                                            <DoubleAnimation Storyboard.TargetName="Scale" Storyboard.TargetProperty="ScaleY" To="1.02" Duration="0:0:0.15" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.EnterActions>
+                                                <Trigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="Scale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15" />
+                                                            <DoubleAnimation Storyboard.TargetName="Scale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </Trigger.ExitActions>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- the selected account -->
+            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,16" Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- title row -->
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Command="{Binding ExportStatementCommand}" Padding="12,6" Margin="0,0,8,0" ToolTip="{DynamicResource Bank.ExportTip}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xEA90;" FontSize="13" Margin="0,0,8,0" />
+                                    <TextBlock Text="{DynamicResource Bank.ExportPdf}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource IconBtn}" Command="{Binding EditAccountCommand}" ToolTip="{DynamicResource Bank.EditAccount}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE70F;" FontSize="14" />
+                            </Button>
+                            <Button Style="{StaticResource IconBtn}" Command="{Binding DeleteAccountCommand}" ToolTip="{DynamicResource Bank.DeleteAccount}">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="14" Foreground="{StaticResource OutBrush}" />
+                            </Button>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Selected.Bank}" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <TextBlock Text="{Binding Selected.Number}" Style="{StaticResource Muted}" FontFamily="Cascadia Mono, Consolas" FontSize="12" VerticalAlignment="Center" FlowDirection="LeftToRight" />
+                                <Button Style="{StaticResource IconBtn}" Command="{Binding CopyNumberCommand}" ToolTip="{DynamicResource Bank.CopyNumber}" Margin="4,0,0,0">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="12" />
+                                </Button>
+                                <TextBlock Text="{Binding Selected.Note}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0" FontStyle="Italic" />
+                            </StackPanel>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- period + figures -->
+                    <DockPanel Grid.Row="1" Margin="0,14,0,0">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE787;" FontSize="14" Margin="0,0,8,0" Opacity="0.8" />
+                            <ComboBox ItemsSource="{Binding Periods}" SelectedIndex="{Binding PeriodIndex}" MinWidth="150" VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" Margin="10,0,0,0" Visibility="{Binding IsCustom, Converter={StaticResource BoolToVis}}">
+                                <DatePicker SelectedDate="{Binding From}" Width="135" VerticalAlignment="Center" />
+                                <TextBlock Text="–" Margin="6,0" VerticalAlignment="Center" />
+                                <DatePicker SelectedDate="{Binding To}" Width="135" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Text="{Binding PeriodText}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                    </DockPanel>
+
+                    <UniformGrid Grid.Row="2" Columns="4" Margin="-6,14,-6,0">
+                        <Border Margin="6,0" Padding="14,10" CornerRadius="10" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource Bank.Opening}" Style="{StaticResource Caption}" />
+                                <TextBlock Text="{Binding OpeningText}" FontSize="15" FontWeight="SemiBold" FlowDirection="LeftToRight" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="6,0" Padding="14,10" CornerRadius="10" Background="#1A22A35A">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74A;" FontSize="11" Foreground="{StaticResource InBrush}" Margin="0,0,5,4" />
+                                    <TextBlock Text="{DynamicResource Bank.MoneyIn}" Style="{StaticResource Caption}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding InText}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource InBrush}" FlowDirection="LeftToRight" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="6,0" Padding="14,10" CornerRadius="10" Background="#1AE5534B">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE74B;" FontSize="11" Foreground="{StaticResource OutBrush}" Margin="0,0,5,4" />
+                                    <TextBlock Text="{DynamicResource Bank.MoneyOut}" Style="{StaticResource Caption}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding OutText}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource OutBrush}" FlowDirection="LeftToRight" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Border Margin="6,0" Padding="14,10" CornerRadius="10" Background="{DynamicResource BrandSoftBrush}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource Bank.Closing}" Style="{StaticResource Caption}" />
+                                <TextBlock Text="{Binding ClosingText}" FontSize="15" FontWeight="Bold" FlowDirection="LeftToRight" HorizontalAlignment="Left" TextTrimming="CharacterEllipsis">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{DynamicResource BrandBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ClosingNegative}" Value="True">
+                                                    <Setter Property="Foreground" Value="{StaticResource OutBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- quick entry: deposit / withdrawal -->
+                    <Border Grid.Row="3" Margin="0,14,0,10" Padding="10" CornerRadius="10" BorderThickness="1"
+                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="130" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border CornerRadius="8" Padding="3" Background="{DynamicResource SubtleFillColorSecondaryBrush}" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Style="{StaticResource KindBtn}" Tag="{StaticResource InBrush}" GroupName="Kind" IsChecked="{Binding EntryIsDeposit}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74A;" FontSize="11" Margin="0,0,6,0" />
+                                                <TextBlock Text="{DynamicResource Bank.Deposit}" />
+                                            </StackPanel>
+                                        </RadioButton>
+                                        <RadioButton Style="{StaticResource KindBtn}" Tag="{StaticResource OutBrush}" GroupName="Kind"
+                                                     IsChecked="{Binding EntryIsDeposit, Converter={StaticResource InverseBool}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74B;" FontSize="11" Margin="0,0,6,0" />
+                                                <TextBlock Text="{DynamicResource Bank.Withdrawal}" />
+                                            </StackPanel>
+                                        </RadioButton>
+                                    </StackPanel>
+                                </Border>
+                                <DatePicker Grid.Column="1" SelectedDate="{Binding EntryDate}" Width="130" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                <Grid Grid.Column="2" Margin="8,0,0,0">
+                                    <TextBox x:Name="Amount" Text="{Binding EntryAmount, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Padding="8,5"
+                                             HorizontalContentAlignment="Right" FlowDirection="LeftToRight" KeyDown="OnEntryKeyDown" />
+                                    <TextBlock Text="{DynamicResource Bank.Amount}" Opacity="0.5" Margin="10,0" VerticalAlignment="Center" IsHitTestVisible="False" FlowDirection="LeftToRight">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text, ElementName=Amount}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                                <Grid Grid.Column="3" Margin="8,0,0,0">
+                                    <TextBox x:Name="Desc" Text="{Binding EntryDescription, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Padding="8,5" KeyDown="OnEntryKeyDown" />
+                                    <TextBlock Text="{DynamicResource Bank.DescriptionHint}" Opacity="0.5" Margin="10,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Text, ElementName=Desc}" Value="">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="8,0,0,0">
+                                    <Button Command="{Binding SubmitEntryCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="14,6">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="12" Margin="0,0,6,0" />
+                                            <TextBlock Text="{Binding EntryButton}" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding CancelEntryCommand}" Padding="10,6" Margin="6,0,0,0" Content="{DynamicResource Common.Cancel}"
+                                            Visibility="{Binding IsEditingTx, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="{Binding EntryError}" Foreground="{StaticResource OutBrush}" FontSize="11.5" Margin="4,6,0,0"
+                                       Visibility="{Binding EntryError, Converter={StaticResource NonEmptyToVis}}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- the statement -->
+                    <DataGrid x:Name="MovesGrid" Grid.Row="4" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                              GridLinesVisibility="None" SelectionMode="Single" CanUserResizeRows="False" RowHeight="38" Background="Transparent"
+                              BorderThickness="0" PreviewMouseRightButtonDown="OnRowRightDown" MouseDoubleClick="OnRowDoubleClick">
+                        <DataGrid.Resources>
+                            <ContextMenu x:Key="RowMenu" x:Shared="False">
+                                <MenuItem Header="{DynamicResource Bank.EditMovement}" Click="OnEditClick">
+                                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE70F;" FontSize="13" /></MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="{DynamicResource Bank.DeleteMovement}" Click="OnDeleteClick">
+                                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="13" Foreground="#E5534B" /></MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </DataGrid.Resources>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsMovement}" Value="True">
+                                        <Setter Property="ContextMenu" Value="{StaticResource RowMenu}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsForward}" Value="True">
+                                        <Setter Property="FontStyle" Value="Italic" />
+                                        <Setter Property="Opacity" Value="0.75" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{DynamicResource Bank.Date}" Binding="{Binding Date}" Width="110">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="Margin" Value="6,0" /></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="{DynamicResource Bank.Description}" Binding="{Binding Description}" Width="*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="Margin" Value="6,0" /><Setter Property="TextTrimming" Value="CharacterEllipsis" /><Setter Property="ToolTip" Value="{Binding Description}" /></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="{DynamicResource Bank.Deposit}" Binding="{Binding In}" Width="120">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="HorizontalAlignment" Value="Right" /><Setter Property="Margin" Value="6,0" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#22A35A" /><Setter Property="FlowDirection" Value="LeftToRight" /></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="{DynamicResource Bank.Withdrawal}" Binding="{Binding Out}" Width="120">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="VerticalAlignment" Value="Center" /><Setter Property="HorizontalAlignment" Value="Right" /><Setter Property="Margin" Value="6,0" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="Foreground" Value="#E5534B" /><Setter Property="FlowDirection" Value="LeftToRight" /></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="{DynamicResource Bank.Balance}" Binding="{Binding Balance}" Width="130">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center" /><Setter Property="HorizontalAlignment" Value="Right" /><Setter Property="Margin" Value="6,0" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="FlowDirection" Value="LeftToRight" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding NegativeBalance}" Value="True"><Setter Property="Foreground" Value="#E5534B" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- status -->
+        <DockPanel Grid.Row="3" Margin="0,10,0,0">
+            <Button DockPanel.Dock="Right" Command="{Binding ShowExportCommand}" Padding="10,4" Visibility="{Binding HasLastExport, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE838;" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="{DynamicResource Bank.ShowPdf}" />
+                </StackPanel>
+            </Button>
+            <ProgressBar DockPanel.Dock="Left" IsIndeterminate="True" Width="80" Height="4" Margin="0,0,10,0" VerticalAlignment="Center"
+                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+            <TextBlock Text="{Binding Status}" Style="{StaticResource Muted}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        </DockPanel>
+
+        <!-- add / edit account window -->
+        <Grid Grid.RowSpan="4" Background="#80000000" Visibility="{Binding HasForm, Converter={StaticResource BoolToVis}}">
+            <Border DataContext="{Binding Form}" Width="460" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="12" Padding="24,20"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                <Border.Effect><DropShadowEffect BlurRadius="30" ShadowDepth="6" Opacity="0.35" /></Border.Effect>
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource BrandSoftBrush}" Margin="0,0,12,0">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE825;" FontSize="16" Foreground="{DynamicResource BrandBrush}" HorizontalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Text="{DynamicResource Bank.Bank}" Style="{StaticResource Caption}" />
+                    <TextBox x:Name="BankBox" Text="{Binding Bank, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,12" />
+
+                    <TextBlock Text="{DynamicResource Bank.AccountNumber}" Style="{StaticResource Caption}" />
+                    <TextBox Text="{Binding Number, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,12" FontFamily="Cascadia Mono, Consolas" FlowDirection="LeftToRight" />
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="140" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource Bank.Currency}" Style="{StaticResource Caption}" />
+                            <ComboBox IsEditable="True" ItemsSource="{Binding Currencies}" Text="{Binding Currency, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{DynamicResource Bank.OpeningBalance}" Style="{StaticResource Caption}" />
+                            <TextBox Text="{Binding Opening, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" HorizontalContentAlignment="Right" FlowDirection="LeftToRight" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="{DynamicResource Bank.OpeningDate}" Style="{StaticResource Caption}" />
+                            <DatePicker SelectedDate="{Binding OpeningDate}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{DynamicResource Bank.Note}" Style="{StaticResource Caption}" />
+                    <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,8" />
+
+                    <TextBlock Text="{Binding Error}" Foreground="{StaticResource OutBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                               Visibility="{Binding Error, Converter={StaticResource NonEmptyToVis}}" />
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                        <Button Content="{DynamicResource Common.Cancel}" Padding="16,7" Margin="0,0,8,0" IsCancel="True"
+                                Command="{Binding DataContext.CloseFormCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                        <Button Style="{DynamicResource AccentButtonStyle}" Padding="18,7" IsDefault="True"
+                                Command="{Binding DataContext.SaveFormCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE74E;" FontSize="12" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Common.Save}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

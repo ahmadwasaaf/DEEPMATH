@@ -29,6 +29,20 @@ public sealed partial class DriveEntityViewModel : ObservableObject
 
     partial void OnEveryDaysChanged(string value) => _sync.SetEvery(this, value);
 
+    /// <summary>"Up to date" shows in green.</summary>
+    public bool IsUpToDate => State == Loc.T("Drive.UpToDate");
+    partial void OnStateChanged(string value) { OnPropertyChanged(nameof(IsUpToDate)); OnPropertyChanged(nameof(HasDriveFolder)); }
+
+    /// <summary>The entity's folder on Google Drive (known once a first upload made it).</summary>
+    public bool HasDriveFolder => _sync.FolderUrl(Name) != null;
+
+    /// <summary>The Drive icon: opens the entity's data folder on Google Drive in the browser.</summary>
+    [RelayCommand]
+    private void OpenDrive()
+    {
+        if (_sync.FolderUrl(Name) is { } url) Shell.OpenUrl(url);
+    }
+
     public DriveEntityViewModel(DriveSync sync, string name, string folder, bool on)
     {
         _sync = sync;
@@ -196,6 +210,11 @@ public sealed partial class DriveSync : ObservableObject
         Save();
         if (days > 0) Kick([]);   // due already? the check runs now
     }
+
+    /// <summary>https://drive.google.com/drive/folders/&lt;root id&gt; for the entity, or null before its first upload.</summary>
+    public string? FolderUrl(string entity) =>
+        _store.Entities.TryGetValue(entity, out var st) && st.Dirs.TryGetValue("", out var id) && !string.IsNullOrEmpty(id)
+            ? "https://drive.google.com/drive/folders/" + id : null;
 
     private static string LastText(EntityState? st) =>
         st == null || st.LastUploadUtc == default ? "" : Loc.F("Drive.Last", st.LastUploadUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm"));

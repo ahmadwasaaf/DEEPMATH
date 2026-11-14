@@ -167,13 +167,100 @@
                                                     <StackPanel>
                                                         <DockPanel>
                                                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                                                <TextBlock Text="{Binding State}" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                                                <!-- The Drive icon (opens the entity's folder on Google Drive) above the state ("Up to date" in green) -->
+                                                                <StackPanel VerticalAlignment="Center" Margin="0,4,12,0" MinWidth="70">
+                                                                    <Button Command="{Binding OpenDriveCommand}" ToolTip="{DynamicResource Drive.OpenFolderTip}" Cursor="Hand"
+                                                                            HorizontalAlignment="Center" Margin="0,0,0,3"
+                                                                            Visibility="{Binding HasDriveFolder, Converter={StaticResource BoolToVis}}">
+                                                                        <Button.Template>
+                                                                            <ControlTemplate TargetType="Button">
+                                                                                <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="3">
+                                                                                    <Viewbox Width="20" Height="18">
+                                                                                        <Canvas Width="87.3" Height="78">
+                                                                                            <Path Data="M6.6,66.85 L10.45,73.5 C11.25,74.9 12.4,76 13.75,76.8 L27.5,53 H0 C0,54.55 0.4,56.1 1.2,57.5 Z" Fill="#0066DA" />
+                                                                                            <Path Data="M43.65,25 L29.9,1.2 C28.55,2 27.4,3.1 26.6,4.5 L1.2,48.5 C0.4,49.9 0,51.45 0,53 H27.5 Z" Fill="#00AC47" />
+                                                                                            <Path Data="M73.55,76.8 C74.9,76 76.05,74.9 76.85,73.5 L78.45,70.75 86.1,57.5 C86.9,56.1 87.3,54.55 87.3,53 H59.8 L65.65,64.5 Z" Fill="#EA4335" />
+                                                                                            <Path Data="M43.65,25 L57.4,1.2 C56.05,0.4 54.5,0 52.9,0 H34.4 C32.8,0 31.25,0.45 29.9,1.2 Z" Fill="#00832D" />
+                                                                                            <Path Data="M59.8,53 H27.5 L13.75,76.8 C15.1,77.6 16.65,78 18.25,78 H69.05 C70.65,78 72.2,77.55 73.55,76.8 Z" Fill="#2684FC" />
+                                                                                            <Path Data="M73.4,26.5 L60.7,4.5 C59.9,3.1 58.75,2 57.4,1.2 L43.65,25 59.8,53 H87.25 C87.25,51.45 86.85,49.9 86.05,48.5 Z" Fill="#FFBA00" />
+                                                                                        </Canvas>
+                                                                                    </Viewbox>
+                                                                                </Border>
+                                                                                <ControlTemplate.Triggers>
+                                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                                                                    </Trigger>
+                                                                                </ControlTemplate.Triggers>
+                                                                            </ControlTemplate>
+                                                                        </Button.Template>
+                                                                    </Button>
+                                                                    <TextBlock Text="{Binding State}" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock" BasedOn="{StaticResource Muted}">
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsUpToDate}" Value="True">
+                                                                                        <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                </StackPanel>
                                                                 <!-- Upload: by hand, now (daily / weekly, when the files are known to be right) -->
-                                                                <Button Command="{Binding UploadCommand}" Padding="10,4" Margin="0,0,12,0" VerticalAlignment="Center"
-                                                                        ToolTip="{DynamicResource Drive.UploadTip}"
-                                                                        IsEnabled="{Binding IsUploading, Converter={StaticResource InverseBool}}">
+                                                                <Button Command="{Binding UploadCommand}" Padding="12,5" Margin="0,0,12,0" VerticalAlignment="Center"
+                                                                        ToolTip="{DynamicResource Drive.UploadTip}" Cursor="Hand">
+                                                                    <!-- Alive: white with a green label on hover; the arrow keeps rising while the upload runs -->
+                                                                    <Button.Template>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border x:Name="Bd" CornerRadius="5" BorderThickness="1" Padding="{TemplateBinding Padding}"
+                                                                                    Background="{DynamicResource ControlFillColorDefaultBrush}" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}">
+                                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                                            </Border>
+                                                                            <ControlTemplate.Triggers>
+                                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                                    <Setter TargetName="Bd" Property="Background" Value="White" />
+                                                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoodBrush}" />
+                                                                                    <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                                                </Trigger>
+                                                                                <DataTrigger Binding="{Binding IsUploading}" Value="True">
+                                                                                    <Setter TargetName="Bd" Property="Background" Value="White" />
+                                                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoodBrush}" />
+                                                                                    <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                                                </DataTrigger>
+                                                                                <Trigger Property="IsPressed" Value="True">
+                                                                                    <Setter TargetName="Bd" Property="Opacity" Value="0.85" />
+                                                                                </Trigger>
+                                                                            </ControlTemplate.Triggers>
+                                                                        </ControlTemplate>
+                                                                    </Button.Template>
                                                                     <StackPanel Orientation="Horizontal">
-                                                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE898;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                                                        <Grid Width="14" Height="16" Margin="0,0,6,0" ClipToBounds="True" VerticalAlignment="Center">
+                                                                            <TextBlock Text="&#xE74A;" FontFamily="Segoe MDL2 Assets" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                                <TextBlock.RenderTransform>
+                                                                                    <TranslateTransform />
+                                                                                </TextBlock.RenderTransform>
+                                                                                <TextBlock.Style>
+                                                                                    <Style TargetType="TextBlock">
+                                                                                        <Style.Triggers>
+                                                                                            <DataTrigger Binding="{Binding IsUploading}" Value="True">
+                                                                                                <DataTrigger.EnterActions>
+                                                                                                    <BeginStoryboard x:Name="Rise">
+                                                                                                        <Storyboard RepeatBehavior="Forever">
+                                                                                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                                                                             From="14" To="-14" Duration="0:0:0.9" />
+                                                                                                        </Storyboard>
+                                                                                                    </BeginStoryboard>
+                                                                                                </DataTrigger.EnterActions>
+                                                                                                <DataTrigger.ExitActions>
+                                                                                                    <StopStoryboard BeginStoryboardName="Rise" />
+                                                                                                </DataTrigger.ExitActions>
+                                                                                            </DataTrigger>
+                                                                                        </Style.Triggers>
+                                                                                    </Style>
+                                                                                </TextBlock.Style>
+                                                                            </TextBlock>
+                                                                        </Grid>
                                                                         <TextBlock Text="{DynamicResource Drive.Upload}" VerticalAlignment="Center" />
                                                                     </StackPanel>
                                                                 </Button>

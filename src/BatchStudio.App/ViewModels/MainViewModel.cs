@@ -94,6 +94,7 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     public MassInvoiceViewModel Mass { get; }
+    public BankAccountsViewModel Banks { get; }
 
     [ObservableProperty] private EntityProfile? _activeEntity;
     [ObservableProperty] private object? _currentPage;
@@ -130,6 +131,7 @@ public sealed partial class MainViewModel : ObservableObject
         Dashboard = new DashboardViewModel(this);
         Reports = new ReportsViewModel(this);
         Mass = new MassInvoiceViewModel(this);
+        Banks = new BankAccountsViewModel(this);
         foreach (var e in settings.Entities) Entities.Add(e);
         SettingsPage.Refresh();
         DriveSync.Instance.Refresh(settings.Entities);   // Auto Save Files: the entities switched on resume uploading
@@ -140,6 +142,7 @@ public sealed partial class MainViewModel : ObservableObject
         Nav.Add(new NavItem { Key = "Nav.Mass", Glyph = "\uE8FD", Page = () => Mass });
         Nav.Add(new NavItem { Key = "Nav.History", Glyph = "\uE81C", Page = () => History });
         Nav.Add(new NavItem { Key = "Nav.Reports", Glyph = "\uE9F9", Page = () => Reports });
+        Nav.Add(new NavItem { Key = "Nav.Bank", Glyph = "\uE825", Page = () => Banks });
         Nav.Add(new NavItem { Key = "Nav.Suppliers", Glyph = "", Page = () => Page("suppliers") });
         Nav.Add(new NavItem { Key = "Nav.Clients", Glyph = "", Page = () => Page("clients") });
         Nav.Add(new NavItem { Key = "Nav.Items", Glyph = "", Page = () => Page("items") });
@@ -211,6 +214,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (CurrentPage is DashboardViewModel dv) dv.Refresh();
         if (CurrentPage is ReportsViewModel rv) rv.Refresh();
         if (CurrentPage is MassInvoiceViewModel mv) mv.Refresh();
+        if (CurrentPage is BankAccountsViewModel bv) bv.Refresh();
     }
 
     partial void OnActiveEntityChanged(EntityProfile? oldValue, EntityProfile? newValue)

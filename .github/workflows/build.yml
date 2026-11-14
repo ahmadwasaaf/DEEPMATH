@@ -111,6 +111,15 @@ jobs:
           Run 'English' 'Dark' $true 'reports-party' '43-reports-party'
           Run 'English' 'Dark' $true 'templates-preview' '44-templates-preview'
           Run 'English' 'Dark' $true 'settings' '45-settings-order'
+          Run 'English' 'Dark' $true 'bank' '46-bank'
+          Run 'Arabic' 'Light' $true 'bank' '47-bank-ar'
+          Run 'English' 'Light' $true 'bank' '48-bank-light'
+          Run 'English' 'Dark' $true 'bank-form' '49-bank-form'
+          Run 'English' 'Dark' $true 'home-math' '50-bg-math'
+          Run 'English' 'Dark' $true 'home-livechart' '51-bg-livechart'
+          Run 'English' 'Dark' $true 'home-aurora' '52-bg-aurora'
+          Run 'English' 'Dark' $true 'home-geometry' '53-bg-geometry'
+          Run 'English' 'Dark' $true 'home-ledger' '54-bg-ledger'
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''

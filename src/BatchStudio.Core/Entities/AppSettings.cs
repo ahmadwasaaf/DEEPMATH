@@ -31,7 +31,7 @@ public sealed class BackgroundSettings
     public double Density { get; set; } = 1.0;
     public bool Mouse { get; set; } = true;
 
-    public static readonly string[] Styles = ["Network", "Constellation", "Floating", "DataStream", "Waves", "Sphere"];
+    public static readonly string[] Styles = ["Network", "Constellation", "Floating", "DataStream", "Waves", "Sphere", "Math", "LiveChart", "Aurora", "Geometry", "Ledger"];
 }
 public enum AppTheme { Dark, Light }
 

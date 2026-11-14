@@ -21,6 +21,7 @@
         <DataTemplate DataType="{x:Type vm:CompanyReportViewModel}"><views:CompanyReportView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:ReportsViewModel}"><views:ReportsView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:MassInvoiceViewModel}"><views:MassInvoiceView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:BankAccountsViewModel}"><views:BankAccountsView /></DataTemplate>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </Window.Resources>
 

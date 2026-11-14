@@ -187,18 +187,19 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         SetMassTile();
     }
 
-    /// <summary>The "Mass Invoice" card: its name and icon only (no number), always the last card; opens Mass Invoice.</summary>
+    /// <summary>The "New Invoice" and "Mass Invoice" cards: name and icon only (no number), always last; each opens its page.</summary>
     private void SetMassTile()
     {
-        var title = Loc.T("Nav.Mass");
-        for (int k = Tiles.Count - 1; k >= 0; k--) if (Tiles[k].NavKey == "Nav.Mass") Tiles.RemoveAt(k);
-        Tiles.Add(new StatTile
-        {
-            Title = title,
-            Value = "",
-            Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.Mass")?.Glyph ?? "\uE8FD",
-            NavKey = "Nav.Mass",
-        });
+        // "New Invoice" then "Mass Invoice": name and icon only, always the last two cards (4 + 4)
+        for (int k = Tiles.Count - 1; k >= 0; k--) if (Tiles[k].NavKey is "Nav.Mass" or "Nav.NewInvoice") Tiles.RemoveAt(k);
+        foreach (var (key, glyph) in new[] { ("Nav.NewInvoice", "\uE710"), ("Nav.Mass", "\uE8FD") })
+            Tiles.Add(new StatTile
+            {
+                Title = Loc.T(key),
+                Value = "",
+                Glyph = main.Nav.FirstOrDefault(n => n.Key == key)?.Glyph ?? glyph,
+                NavKey = key,
+            });
     }
 
     /// <summary>$5.19M / $812.5K / $950 style amount for the pulse strip.</summary>

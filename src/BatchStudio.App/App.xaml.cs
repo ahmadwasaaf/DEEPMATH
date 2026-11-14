@@ -153,10 +153,13 @@ public partial class App : Application
             bool massConflict = arg == "mass-conflict";
             bool massReview = arg == "mass-analysis" || massConflict;
             if (massParty || massDetails || massReview) arg = "mass";
+            bool bankForm = arg == "bank-form";
+            if (arg is "bank" or "bank-form") { vm.Banks.FillSample(); arg = "bank"; }
             var key = arg is "newinvoice" or "newparty" or "newinvoice-details" or "newinvoice-banks" ? "Nav.NewInvoice" : arg == "reportview" ? "Nav.Reports" : arg == "mass" ? "Nav.Mass" : "Nav." + char.ToUpperInvariant(arg[0]) + arg[1..];
             var nav = vm.Nav.FirstOrDefault(n => n.Key == key);
             if (nav != null) vm.SelectedNav = nav;
             if (arg == "newparty") vm.NewInvoice.AddPartyCommand.Execute(null);
+            if (bankForm) vm.Banks.AddAccountCommand.Execute(null);
             if (arg == "reportview") vm.Reports.ViewReportCommand.Execute(null);
             if (arg == "mass") vm.Mass.FillSample();
             if (massParty) vm.Mass.AddPartyFor(vm.Mass.Rows[3]);
