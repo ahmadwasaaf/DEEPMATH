@@ -233,7 +233,8 @@
 
             <!-- the selected account -->
             <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,16" Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
-                <Grid>
+                <ScrollViewer x:Name="DetailScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <Grid x:Name="DetailGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
@@ -332,16 +333,7 @@
                     <Border Grid.Row="3" Margin="0,6,0,10" Padding="10" CornerRadius="10" BorderThickness="1"
                             BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
                         <StackPanel>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
+                            <StackPanel Orientation="Horizontal">
                                 <Border CornerRadius="8" Padding="3" Background="{DynamicResource SubtleFillColorSecondaryBrush}" VerticalAlignment="Center">
                                     <StackPanel Orientation="Horizontal">
                                         <RadioButton Style="{StaticResource KindBtn}" Tag="{StaticResource InBrush}" GroupName="Kind" IsChecked="{Binding EntryIsDeposit}">
@@ -359,8 +351,10 @@
                                         </RadioButton>
                                     </StackPanel>
                                 </Border>
-                                <DatePicker Grid.Column="1" SelectedDate="{Binding EntryDate}" Width="130" Margin="10,0,0,0" VerticalAlignment="Center" />
-                                <Grid Grid.Column="2" Margin="8,0,0,0" MinWidth="120">
+                                <DatePicker SelectedDate="{Binding EntryDate}" Width="130" Margin="10,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <DockPanel Margin="0,8,0,0" LastChildFill="True">
+                                <Grid DockPanel.Dock="Left" Width="150">
                                     <TextBox x:Name="Amount" Text="{Binding EntryAmount, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Padding="8,5"
                                              HorizontalContentAlignment="Right" FlowDirection="LeftToRight" KeyDown="OnEntryKeyDown" />
                                     <TextBlock Text="{DynamicResource Bank.Amount}" Opacity="0.5" Margin="10,0" VerticalAlignment="Center" IsHitTestVisible="False" FlowDirection="LeftToRight">
@@ -376,7 +370,17 @@
                                         </TextBlock.Style>
                                     </TextBlock>
                                 </Grid>
-                                <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="8,0,0,0">
+                                    <Button Command="{Binding SubmitEntryCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="14,6">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="12" Margin="0,0,6,0" />
+                                            <TextBlock Text="{Binding EntryButton}" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding CancelEntryCommand}" Padding="10,6" Margin="6,0,0,0" Content="{DynamicResource Common.Cancel}"
+                                            Visibility="{Binding IsEditingTx, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                                <Grid Margin="8,0,0,0">
                                     <TextBox x:Name="Desc" Text="{Binding EntryDescription, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center" Padding="8,5" KeyDown="OnEntryKeyDown" />
                                     <TextBlock Text="{DynamicResource Bank.DescriptionHint}" Opacity="0.5" Margin="10,0" VerticalAlignment="Center" IsHitTestVisible="False">
                                         <TextBlock.Style>
@@ -391,17 +395,7 @@
                                         </TextBlock.Style>
                                     </TextBlock>
                                 </Grid>
-                                <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Margin="8,8,0,0" HorizontalAlignment="Right">
-                                    <Button Command="{Binding SubmitEntryCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="14,6">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE73E;" FontSize="12" Margin="0,0,6,0" />
-                                            <TextBlock Text="{Binding EntryButton}" />
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Command="{Binding CancelEntryCommand}" Padding="10,6" Margin="6,0,0,0" Content="{DynamicResource Common.Cancel}"
-                                            Visibility="{Binding IsEditingTx, Converter={StaticResource BoolToVis}}" />
-                                </StackPanel>
-                            </Grid>
+                            </DockPanel>
                             <TextBlock Text="{Binding EntryError}" Foreground="{StaticResource OutBrush}" FontSize="11.5" Margin="4,6,0,0"
                                        Visibility="{Binding EntryError, Converter={StaticResource NonEmptyToVis}}" />
                         </StackPanel>
@@ -455,6 +449,7 @@
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
+                </ScrollViewer>
             </Border>
         </Grid>
 

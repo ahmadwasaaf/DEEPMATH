@@ -15,6 +15,8 @@ public partial class BankAccountsView : UserControl
         GridLook.NoCellFrame(MovesGrid);
         // the four figures: one row when there is room, 2 × 2 when the window is narrow
         Figures.SizeChanged += (_, e) => Figures.Columns = e.NewSize.Width < 560 ? 2 : 4;
+        // the statement fills the card on a tall window; on a short one the card scrolls and the list keeps a useful height
+        DetailScroll.SizeChanged += (_, e) => DetailGrid.Height = Math.Max(e.NewSize.Height, 700);
     }
 
     /// <summary>No menu on the "balance brought forward" row.</summary>
