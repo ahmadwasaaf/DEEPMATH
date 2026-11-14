@@ -44,8 +44,8 @@ public sealed partial class BankCardViewModel : ObservableObject
         Balance = BankBook.Money(a.Balance);
         Negative = a.Balance < 0;
         var m0 = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-        MonthIn = "+" + BankBook.Money(a.Transactions.Where(t => t.Date >= m0 && t.Kind == BankTxKind.Deposit).Sum(t => t.Amount));
-        MonthOut = "−" + BankBook.Money(a.Transactions.Where(t => t.Date >= m0 && t.Kind == BankTxKind.Withdrawal).Sum(t => t.Amount));
+        MonthIn = "+" + BankBook.Money(a.Transactions.Where(t => t.Date >= m0 && t.IsIn).Sum(t => t.Amount));
+        MonthOut = "−" + BankBook.Money(a.Transactions.Where(t => t.Date >= m0 && !t.IsIn).Sum(t => t.Amount));
         Initials = string.Concat(a.Bank.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
         if (Initials.Length == 0) Initials = "?";
         Gradient = CardGradient(a.Bank + a.Number);
@@ -89,9 +89,15 @@ public sealed partial class BankCardViewModel : ObservableObject
 }
 
 /// <summary>A row of the statement list.</summary>
-public sealed record StatementRow(BankTransaction? Tx, string Date, string Description, string In, string Out, string Balance, bool NegativeBalance, bool IsForward)
+public sealed record StatementRow(BankTransaction? Tx, string Date, string Type, string TypeKey, string Description, string In, string Out, string Balance, bool NegativeBalance, bool IsForward)
 {
     public bool IsMovement => Tx != null;
+}
+
+/// <summary>Where a transfer goes: one of the entity's other accounts (same currency) or outside.</summary>
+public sealed record TransferTarget(BankAccount? Account, string Name)
+{
+    public override string ToString() => Name;
 }
 
 /// <summary>The add / edit account window.</summary>
@@ -103,7 +109,7 @@ public sealed partial class BankAccountFormViewModel : ObservableObject
         Editing = a;
         if (a == null) return;
         _bank = a.Bank; _number = a.Number; _currency = a.Currency; _note = a.Note;
-        _opening = a.OpeningBalance.ToString("0.##", CultureInfo.InvariantCulture);
+        _opening = BankBook.Money(a.OpeningBalance);
         _openingDate = a.OpeningDate;
     }
 
@@ -113,7 +119,7 @@ public sealed partial class BankAccountFormViewModel : ObservableObject
     [ObservableProperty] private string _bank = "";
     [ObservableProperty] private string _number = "";
     [ObservableProperty] private string _currency = "USD";
-    [ObservableProperty] private string _opening = "0";
+    [ObservableProperty] private string _opening = "0.00";
     [ObservableProperty] private DateTime? _openingDate = DateTime.Today;
     [ObservableProperty] private string _note = "";
     [ObservableProperty] private string _error = "";
@@ -173,6 +179,12 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     partial void OnFromChanged(DateTime? value) { if (IsCustom && !_settingPeriod) BuildStatement(); }
     partial void OnToChanged(DateTime? value) { if (IsCustom && !_settingPeriod) BuildStatement(); }
 
+    // ---------------------------------------------------------------- type filter (all / deposits / withdrawals / transfers)
+    public IReadOnlyList<string> Types => [Loc.T("Bank.Type.All"), Loc.T("Bank.Deposit"), Loc.T("Bank.Withdrawal"), Loc.T("Bank.Transfer")];
+    [ObservableProperty] private int _typeIndex;
+    partial void OnTypeIndexChanged(int value) => BuildStatement();
+    private BankTxKind? OnlyKind => TypeIndex switch { 1 => BankTxKind.Deposit, 2 => BankTxKind.Withdrawal, 3 => BankTxKind.Transfer, _ => null };
+
     // ---------------------------------------------------------------- statement figures
     [ObservableProperty] private string _openingText = "";
     [ObservableProperty] private string _inText = "";
@@ -183,21 +195,95 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     [ObservableProperty] private string _periodText = "";
 
     // ---------------------------------------------------------------- quick entry (add or edit a movement)
-    [ObservableProperty] private bool _entryIsDeposit = true;
+    /// <summary>0 deposit, 1 withdrawal, 2 transfer.</summary>
+    [ObservableProperty] private int _entryKind;
+    public bool IsDepositKind { get => EntryKind == 0; set { if (value) EntryKind = 0; } }
+    public bool IsWithdrawalKind { get => EntryKind == 1; set { if (value) EntryKind = 1; } }
+    public bool IsTransferKind { get => EntryKind == 2; set { if (value) EntryKind = 2; } }
+    partial void OnEntryKindChanged(int value)
+    {
+        OnPropertyChanged(nameof(IsDepositKind)); OnPropertyChanged(nameof(IsWithdrawalKind)); OnPropertyChanged(nameof(IsTransferKind));
+        if (value == 2 && SelectedTarget == null) SelectedTarget = Targets.FirstOrDefault();
+    }
+    public ObservableCollection<TransferTarget> Targets { get; } = [];
+    [ObservableProperty] private TransferTarget? _selectedTarget;
     [ObservableProperty] private DateTime? _entryDate = DateTime.Today;
     [ObservableProperty] private string _entryAmount = "";
     [ObservableProperty] private string _entryDescription = "";
     [ObservableProperty] private string _entryError = "";
     [ObservableProperty] private BankTransaction? _editingTx;
     public bool IsEditingTx => EditingTx != null;
+    /// <summary>Editing the receiving side of a transfer between own accounts: only date, amount and description change.</summary>
+    public bool KindLocked => EditingTx is { Incoming: true, IsInternal: true };
+    public bool KindFree => !KindLocked;
     public string EntryButton => Loc.T(EditingTx == null ? "Bank.AddMovement" : "Bank.SaveMovement");
-    partial void OnEditingTxChanged(BankTransaction? value) { OnPropertyChanged(nameof(IsEditingTx)); OnPropertyChanged(nameof(EntryButton)); }
+    partial void OnEditingTxChanged(BankTransaction? value)
+    {
+        OnPropertyChanged(nameof(IsEditingTx)); OnPropertyChanged(nameof(EntryButton));
+        OnPropertyChanged(nameof(KindLocked)); OnPropertyChanged(nameof(KindFree));
+    }
+
+    // ---------------------------------------------------------------- saved descriptions (the arrow and + inside the box)
+    public ObservableCollection<string> SavedDescriptions { get; } = [];
+    public bool HasSavedDescriptions => SavedDescriptions.Count > 0;
+    [ObservableProperty] private bool _isDescriptionListOpen;
+    [ObservableProperty] private bool _isNewDescriptionOpen;
+    [ObservableProperty] private string _newDescription = "";
+
+    [RelayCommand]
+    private void ToggleDescriptionList() { IsNewDescriptionOpen = false; IsDescriptionListOpen = !IsDescriptionListOpen; }
+
+    [RelayCommand]
+    private void UseDescription(string? text)
+    {
+        if (text == null) return;
+        EntryDescription = text;
+        IsDescriptionListOpen = false;
+    }
+
+    [RelayCommand]
+    private void OpenNewDescription()
+    {
+        IsDescriptionListOpen = false;
+        NewDescription = EntryDescription.Trim();
+        IsNewDescriptionOpen = true;
+    }
+
+    [RelayCommand]
+    private void SaveDescription()
+    {
+        var t = NewDescription.Trim();
+        if (t.Length == 0) return;
+        if (_book.AddDescription(t))
+        {
+            if (!Save()) { _book.Descriptions.Remove(t); return; }
+            SavedDescriptions.Add(t);
+            OnPropertyChanged(nameof(HasSavedDescriptions));
+            Status = Loc.F("Bank.DescriptionSaved", t);
+        }
+        EntryDescription = t;
+        IsNewDescriptionOpen = false;
+    }
+
+    [RelayCommand]
+    private void CancelNewDescription() => IsNewDescriptionOpen = false;
+
+    [RelayCommand]
+    private void RemoveDescription(string? text)
+    {
+        if (text == null || !_book.Descriptions.Remove(text)) return;
+        if (!Save()) { _book.Descriptions.Add(text); return; }
+        SavedDescriptions.Remove(text);
+        OnPropertyChanged(nameof(HasSavedDescriptions));
+    }
 
     public void Refresh()
     {
         var entity = main.ActiveEntity;
         if (entity == null) return;
-        var path = BankBook.PathIn(DriveSync.DataFolder(entity));
+        var folder = DriveSync.DataFolder(entity);
+        try { BankBook.Migrate(folder); } catch { }
+        var path = BankBook.PathIn(folder);
         var keep = Selected?.Account.Id;
         try { _book = BankBook.Load(path); _path = path; Status = ""; }
         catch (Exception ex)
@@ -206,6 +292,9 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
             _book = new BankBook(); _path = "";
             Status = Loc.F("Bank.LoadFailed", ex.Message);
         }
+        SavedDescriptions.Clear();
+        foreach (var d in _book.Descriptions) SavedDescriptions.Add(d);
+        OnPropertyChanged(nameof(HasSavedDescriptions));
         Cards.Clear();
         foreach (var a in _book.Accounts) Cards.Add(new BankCardViewModel(a));
         Selected = Cards.FirstOrDefault(c => c.Account.Id == keep) ?? Cards.FirstOrDefault();
@@ -219,11 +308,24 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         if (newValue != null) newValue.IsSelected = true;
         OnPropertyChanged(nameof(HasSelection));
         CancelEntry();
+        BuildTargets();
         BuildStatement();
     }
 
     [RelayCommand]
     private void Select(BankCardViewModel? card) { if (card != null) Selected = card; }
+
+    /// <summary>Transfer destinations for the selected account: outside, then the other accounts of the same currency.</summary>
+    private void BuildTargets()
+    {
+        var keep = SelectedTarget?.Account?.Id;
+        Targets.Clear();
+        Targets.Add(new TransferTarget(null, Loc.T("Bank.ToExternal")));
+        if (Selected != null)
+            foreach (var a in _book.Accounts.Where(a => a != Selected.Account && string.Equals(a.Currency, Selected.Account.Currency, StringComparison.OrdinalIgnoreCase)))
+                Targets.Add(new TransferTarget(a, $"{a.Bank} {a.ShortNumber}".Trim()));
+        SelectedTarget = Targets.FirstOrDefault(t => t.Account?.Id == keep && keep != null) ?? Targets[0];
+    }
 
     private void UpdateTotals()
     {
@@ -236,12 +338,27 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
 
     private BankStatement? _statement;
 
+    private static string D(DateTime d) => d.ToString("dd MMM yyyy", CultureInfo.InvariantCulture);
+
+    private static string TypeKeyOf(BankTransaction t) => t.Kind switch { BankTxKind.Deposit => "in", BankTxKind.Withdrawal => "out", _ => "transfer" };
+    private static string TypeOf(BankTransaction t) => Loc.T(t.Kind switch { BankTxKind.Deposit => "Bank.Deposit", BankTxKind.Withdrawal => "Bank.Withdrawal", _ => "Bank.Transfer" });
+
+    /// <summary>The description, with the other account of a transfer between own accounts ("→ CIB •••• 1234").</summary>
+    private string DescriptionOf(BankTransaction t)
+    {
+        if (t.Kind != BankTxKind.Transfer) return t.Description;
+        string where = t.IsInternal && _book.Find(t.Counterparty) is { } other
+            ? Loc.F(t.Incoming ? "Bank.FromAccount" : "Bank.ToAccount", $"{other.Bank} {other.ShortNumber}".Trim())
+            : Loc.T("Bank.ToExternal");
+        return t.Description.Length == 0 ? where : $"{t.Description} · {where}";
+    }
+
     private void BuildStatement()
     {
         Rows.Clear();
         _statement = null;
         if (Selected == null) return;
-        var s = _statement = BankBook.Statement(Selected.Account, From, To);
+        var s = _statement = BankBook.Statement(Selected.Account, From, To, OnlyKind);
         string cur = " " + s.Account.Currency;
         OpeningText = BankBook.Money(s.Opening) + cur;
         InText = "+" + BankBook.Money(s.TotalIn) + cur;
@@ -250,20 +367,17 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         ClosingNegative = s.Closing < 0;
         MovementsText = Loc.F("Bank.MovementsCount", s.Count);
         PeriodText = PeriodLabel(s);
-        // newest first on screen (the PDF reads oldest first, like a bank statement)
-        foreach (var l in s.Lines.Reverse())
-            Rows.Add(new StatementRow(l.Tx, l.Tx.Date.ToString("dd MMM yyyy", CultureInfo.InvariantCulture), l.Tx.Description,
-                                      l.Tx.Kind == BankTxKind.Deposit ? BankBook.Money(l.Tx.Amount) : "",
-                                      l.Tx.Kind == BankTxKind.Withdrawal ? BankBook.Money(l.Tx.Amount) : "",
+        // like a bank statement: the opening balance first, then the movements from the oldest down to the newest
+        Rows.Add(new StatementRow(null, D(s.From ?? s.Account.OpeningDate), "", "", Loc.T(s.From == null ? "Bank.OpeningBalance" : "Bank.BroughtForward"),
+                                  "", "", BankBook.Money(s.Opening), s.Opening < 0, true));
+        foreach (var l in s.Lines)
+            Rows.Add(new StatementRow(l.Tx, D(l.Tx.Date), TypeOf(l.Tx), TypeKeyOf(l.Tx), DescriptionOf(l.Tx),
+                                      l.Tx.IsIn ? BankBook.Money(l.Tx.Amount) : "", l.Tx.IsIn ? "" : BankBook.Money(l.Tx.Amount),
                                       BankBook.Money(l.Balance), l.Balance < 0, false));
-        var fwdDate = s.From ?? s.Account.OpeningDate;
-        Rows.Add(new StatementRow(null, fwdDate.ToString("dd MMM yyyy", CultureInfo.InvariantCulture),
-                                  Loc.T(s.From == null ? "Bank.OpeningBalance" : "Bank.BroughtForward"), "", "", BankBook.Money(s.Opening), s.Opening < 0, true));
     }
 
     private string PeriodLabel(BankStatement s)
     {
-        string D(DateTime d) => d.ToString("dd MMM yyyy", CultureInfo.InvariantCulture);
         if (s.From == null && s.To == null) return Loc.T("Bank.Period.All");
         return $"{(s.From is { } f ? D(f) : "…")} – {(s.To is { } t ? D(t) : "…")}";
     }
@@ -277,7 +391,7 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
 
     private void AfterChange()
     {
-        Selected?.Update();
+        foreach (var c in Cards) c.Update();      // a transfer changes two cards
         UpdateTotals();
         BuildStatement();
     }
@@ -307,8 +421,11 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         if (number.Length > 0 && _book.Accounts.Any(a => a != f.Editing && string.Equals(Compact(a.Number), Compact(number), StringComparison.OrdinalIgnoreCase)))
         { f.Error = Loc.T("Bank.Duplicate"); return; }
         var acc = f.Editing ?? new BankAccount();
-        if (f.Editing != null && !string.Equals(acc.Currency, cur, StringComparison.OrdinalIgnoreCase) && acc.Transactions.Count > 0
-            && !Dialogs.Confirm(Loc.F("Bank.CurrencyChange", acc.Currency, cur))) return;
+        if (f.Editing != null && !string.Equals(acc.Currency, cur, StringComparison.OrdinalIgnoreCase))
+        {
+            if (acc.Transactions.Any(t => t.IsInternal)) { f.Error = Loc.T("Bank.CurrencyLinked"); return; }
+            if (acc.Transactions.Count > 0 && !Dialogs.Confirm(Loc.F("Bank.CurrencyChange", acc.Currency, cur))) return;
+        }
         acc.Bank = bank;
         acc.Number = number;
         acc.Currency = cur;
@@ -325,7 +442,7 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
             Selected = card;
             UpdateTotals();
         }
-        else AfterChange();
+        else { AfterChange(); BuildTargets(); }
         Status = Loc.T("Bank.Saved");
     }
 
@@ -334,14 +451,21 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     {
         var c = Selected;
         if (c == null) return;
-        if (!Dialogs.Confirm(Loc.F("Bank.DeleteAccountAsk", c.Account.Bank, c.Account.Number, c.Account.Transactions.Count))) return;
+        int linked = c.Account.Transactions.Count(t => t.IsInternal);
+        var ask = Loc.F("Bank.DeleteAccountAsk", c.Account.Bank, c.Account.Number, c.Account.Transactions.Count);
+        if (linked > 0) ask += "\n\n" + Loc.F("Bank.DeleteAccountLinked", linked);
+        if (!Dialogs.Confirm(ask)) return;
+        // the other side of its transfers goes too (the money never arrived from / left to a deleted account)
+        var removed = new List<(BankAccount, BankTransaction, int)>();
+        foreach (var t in c.Account.Transactions.Where(t => t.IsInternal).ToList())
+            if (_book.Partner(t) is { } p) { removed.Add((p.Account, p.Tx, p.Account.Transactions.IndexOf(p.Tx))); p.Account.Transactions.Remove(p.Tx); }
         int i = _book.Accounts.IndexOf(c.Account);
         _book.Accounts.Remove(c.Account);
-        if (!Save()) { _book.Accounts.Insert(Math.Max(0, i), c.Account); return; }
+        if (!Save()) { _book.Accounts.Insert(Math.Max(0, i), c.Account); BankBook.Restore(removed); return; }
         int ci = Cards.IndexOf(c);
         Cards.Remove(c);
         Selected = Cards.Count == 0 ? null : Cards[Math.Min(ci, Cards.Count - 1)];
-        UpdateTotals();
+        AfterChange();
     }
 
     [RelayCommand]
@@ -353,29 +477,53 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
 
     // ---------------------------------------------------------------- movements
     [RelayCommand]
-    private void SetKind(string kind) => EntryIsDeposit = kind == "in";
-
-    [RelayCommand]
     private void SubmitEntry()
     {
         EntryError = "";
         if (Selected == null) return;
         if (!TryAmount(EntryAmount, allowNegative: false, allowZero: false, out var amount)) { EntryError = Loc.T("Bank.BadAmount"); return; }
+        amount = Math.Round(amount, 2, MidpointRounding.AwayFromZero);
         var date = (EntryDate ?? DateTime.Today).Date;
-        var kind = EntryIsDeposit ? BankTxKind.Deposit : BankTxKind.Withdrawal;
+        var desc = EntryDescription.Trim();
         var acc = Selected.Account;
-        if (EditingTx is { } tx)
+        var kind = EntryKind switch { 0 => BankTxKind.Deposit, 1 => BankTxKind.Withdrawal, _ => BankTxKind.Transfer };
+        var target = kind == BankTxKind.Transfer ? SelectedTarget?.Account : null;
+
+        if (EditingTx is { } tx && KindLocked)
         {
-            var old = (tx.Kind, tx.Date, tx.Amount, tx.Description);
-            tx.Kind = kind; tx.Date = date; tx.Amount = Math.Round(amount, 2, MidpointRounding.AwayFromZero); tx.Description = EntryDescription.Trim();
-            if (!Save()) { (tx.Kind, tx.Date, tx.Amount, tx.Description) = old; return; }
+            // receiving side of an own transfer: both sides take the new date / amount / description
+            var partner = _book.Partner(tx);
+            var old = (tx.Date, tx.Amount, tx.Description);
+            void Apply(BankTransaction t, (DateTime, decimal, string) v) => (t.Date, t.Amount, t.Description) = v;
+            Apply(tx, (date, amount, desc));
+            if (partner is { } p0) Apply(p0.Tx, (date, amount, desc));
+            if (!Save()) { Apply(tx, old); if (partner is { } p1) Apply(p1.Tx, old); return; }
+            Status = Loc.T("Bank.MovementSaved");
+        }
+        else if (EditingTx is { } etx)
+        {
+            // replace the movement (and the other side of a transfer) by the new one, keeping its place in the day
+            var removed = _book.Remove(acc, etx);
+            var added = Create(acc, kind, target, date, amount, desc);
+            added.Seq = etx.Seq;
+            if (!Save())
+            {
+                _book.Remove(acc, added);
+                BankBook.Restore(removed);
+                return;
+            }
             Status = Loc.T("Bank.MovementSaved");
         }
         else
         {
-            var added = _book.Add(acc, kind, date, amount, EntryDescription);
-            if (!Save()) { acc.Transactions.Remove(added); return; }
-            Status = Loc.F(kind == BankTxKind.Deposit ? "Bank.DepositAdded" : "Bank.WithdrawalAdded", BankBook.Money(added.Amount), acc.Currency);
+            var added = Create(acc, kind, target, date, amount, desc);
+            if (!Save()) { _book.Remove(acc, added); return; }
+            Status = kind switch
+            {
+                BankTxKind.Deposit => Loc.F("Bank.DepositAdded", BankBook.Money(amount), acc.Currency),
+                BankTxKind.Withdrawal => Loc.F("Bank.WithdrawalAdded", BankBook.Money(amount), acc.Currency),
+                _ => Loc.F("Bank.TransferAdded", BankBook.Money(amount), acc.Currency, SelectedTarget?.Name ?? ""),
+            };
         }
         // keep date and kind for the next entry (several movements of the same day are typed in a row)
         EntryAmount = "";
@@ -383,6 +531,9 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         EditingTx = null;
         AfterChange();
     }
+
+    private BankTransaction Create(BankAccount acc, BankTxKind kind, BankAccount? target, DateTime date, decimal amount, string desc) =>
+        kind == BankTxKind.Transfer ? _book.Transfer(acc, target, date, amount, desc) : _book.Add(acc, kind, date, amount, desc);
 
     [RelayCommand]
     private void CancelEntry()
@@ -398,9 +549,11 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     {
         if (row?.Tx is not { } tx) return;
         EditingTx = tx;
-        EntryIsDeposit = tx.Kind == BankTxKind.Deposit;
+        EntryKind = tx.Kind switch { BankTxKind.Deposit => 0, BankTxKind.Withdrawal => 1, _ => 2 };
+        if (tx.Kind == BankTxKind.Transfer && !tx.Incoming)
+            SelectedTarget = Targets.FirstOrDefault(t => tx.IsInternal ? t.Account?.Id == tx.Counterparty : t.Account == null) ?? Targets.FirstOrDefault();
         EntryDate = tx.Date;
-        EntryAmount = tx.Amount.ToString("0.00", CultureInfo.InvariantCulture);
+        EntryAmount = BankBook.Money(tx.Amount);
         EntryDescription = tx.Description;
         EntryError = "";
     }
@@ -409,12 +562,11 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     private void DeleteMovement(StatementRow? row)
     {
         if (row?.Tx is not { } tx || Selected == null) return;
-        var kind = Loc.T(tx.Kind == BankTxKind.Deposit ? "Bank.Deposit" : "Bank.Withdrawal");
-        if (!Dialogs.Confirm(Loc.F("Bank.DeleteMovementAsk", kind, BankBook.Money(tx.Amount), Selected.Account.Currency, tx.Date.ToString("dd MMM yyyy", CultureInfo.InvariantCulture)))) return;
-        var acc = Selected.Account;
-        int i = acc.Transactions.IndexOf(tx);
-        acc.Transactions.Remove(tx);
-        if (!Save()) { acc.Transactions.Insert(Math.Max(0, i), tx); return; }
+        var ask = Loc.F("Bank.DeleteMovementAsk", TypeOf(tx), BankBook.Money(tx.Amount), Selected.Account.Currency, D(tx.Date));
+        if (tx.IsInternal) ask += "\n\n" + Loc.T("Bank.DeleteTransferBoth");
+        if (!Dialogs.Confirm(ask)) return;
+        var removed = _book.Remove(Selected.Account, tx);
+        if (!Save()) { BankBook.Restore(removed); return; }
         if (EditingTx == tx) CancelEntry();
         AfterChange();
         Status = Loc.T("Bank.MovementDeleted");
@@ -429,12 +581,23 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         Status = Loc.T("Bank.Exporting");
         var s = _statement;
         var entity = main.ActiveEntity?.Name ?? "";
+        var accent = (Application.Current.TryFindResource("BrandBrush") as SolidColorBrush)?.Color.ToString() is { } hex && hex.Length == 9 ? "#" + hex[3..] : "#2F80ED";
+        var pdf = new StatementPdfData(
+            LanguageService.CurrentFlow == FlowDirection.RightToLeft, entity, Loc.T("Bank.StatementTitle"),
+            $"{Loc.T("Bank.Printed")} {DateTime.Now.ToString("dd MMM yyyy  HH:mm", CultureInfo.InvariantCulture)}",
+            s.Account.Bank, s.Account.Number, s.Account.Currency,
+            Loc.T("Bank.Period"), PeriodText, Loc.T("Bank.TypeFilter"), Types[Math.Clamp(TypeIndex, 0, 3)], MovementsText,
+            Loc.T("Bank.Opening"), OpeningText, Loc.T("Bank.MoneyIn"), InText, Loc.T("Bank.MoneyOut"), OutText, Loc.T("Bank.Closing"), ClosingText, ClosingNegative,
+            Loc.T("Bank.Date"), Loc.T("Bank.Type"), Loc.T("Bank.Description"), Loc.T("Bank.MoneyIn"), Loc.T("Bank.MoneyOut"), Loc.T("Bank.Balance"),
+            Rows[0].Date, Rows[0].Description, Rows[0].Balance,
+            Rows.Where(r => r.IsMovement).Select(r => new StatementPdfLine(r.Date, r.Type, r.TypeKey switch { "in" => "dep", "out" => "wd", _ => "tr" },
+                                                                         r.Description, r.In, r.Out, r.Balance, r.NegativeBalance)).ToList(),
+            accent, $"DEEPMATH · {entity}");
         var words = new StatementWords(Loc.T("Bank.StatementTitle"), Loc.T("Bank.Entity"), Loc.T("Bank.Bank"), Loc.T("Bank.AccountNumber"),
             Loc.T("Bank.Currency"), Loc.T("Bank.Period"), Loc.T("Bank.Printed"), Loc.T("Bank.Date"), Loc.T("Bank.Description"),
-            Loc.T("Bank.Deposit"), Loc.T("Bank.Withdrawal"), Loc.T("Bank.Balance"), Loc.T("Bank.Opening"), Loc.T("Bank.MoneyIn"),
+            Loc.T("Bank.MoneyIn"), Loc.T("Bank.MoneyOut"), Loc.T("Bank.Balance"), Loc.T("Bank.Opening"), Loc.T("Bank.MoneyIn"),
             Loc.T("Bank.MoneyOut"), Loc.T("Bank.Closing"), Loc.T(s.From == null ? "Bank.OpeningBalance" : "Bank.BroughtForward"), Loc.T("Bank.Movements"));
         var period = PeriodText;
-        var accent = (Application.Current.TryFindResource("BrandBrush") as SolidColorBrush)?.Color.ToString() is { } hex && hex.Length == 9 ? "#" + hex[3..] : "#0F766E";
         var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "Bank Statements");
         var name = Safe($"{s.Account.Bank} {s.Account.ShortNumber.Replace("•", "").Trim()} Statement {DateTime.Today:yyyy-MM-dd}") + ".pdf";
         var dest = BankAccountPdf.FreePath(folder, name);
@@ -444,6 +607,8 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
             await Task.Run(() =>
             {
                 Directory.CreateDirectory(folder);
+                if (BankStatementPdf.TryExport(pdf, dest)) return;
+                // no Edge on this PC: the Excel layout
                 BankStatementBook.Build(tmp, s, entity, period, words, accent);
                 ExcelPdf.Export(tmp, dest);
             });
@@ -492,6 +657,12 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
                 book.Add(a, dep ? BankTxKind.Deposit : BankTxKind.Withdrawal, today.AddDays(-d), amt, dep ? ins[rng.Next(ins.Length)] : outs[rng.Next(outs.Length)]);
             }
         }
+        var usd2 = new BankAccount { Bank = "Demo Savings Bank", Number = "US64 SVBK US6S 3300 9581 22", Currency = "USD", OpeningBalance = 5_000m, OpeningDate = today.AddMonths(-4) };
+        book.Accounts.Add(usd2);
+        book.Transfer(book.Accounts[0], usd2, today.AddDays(-10), 2_500m, "Monthly saving");
+        book.Transfer(book.Accounts[0], null, today.AddDays(-4), 1_200m, "Demo Logistics");
+        book.AddDescription("Bank charges");
+        book.AddDescription("Office rent");
         try { book.Save(path); } catch { }
     }
 
@@ -503,6 +674,10 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         foreach (var c in Path.GetInvalidFileNameChars()) name = name.Replace(c, ' ');
         return string.Join(' ', name.Split(' ', StringSplitOptions.RemoveEmptyEntries));
     }
+
+    /// <summary>An amount box when it loses focus: "20800" → "20,800.00" (left as typed when it is not a number).</summary>
+    internal static string FormatAmount(string? text, bool allowNegative) =>
+        TryAmount(text, allowNegative, allowZero: true, out var v) ? BankBook.Money(v) : text ?? "";
 
     /// <summary>"1,250.50" / "1250.5" / "١٢٥٠٫٥" → 1250.50 (two decimals at most).</summary>
     internal static bool TryAmount(string? text, bool allowNegative, bool allowZero, out decimal value)

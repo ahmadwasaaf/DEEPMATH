@@ -36,6 +36,28 @@ public partial class BankAccountsView : UserControl
         if (string.IsNullOrEmpty(Vm.EntryError)) { Amount.Focus(); Amount.SelectAll(); }
     }
 
+    /// <summary>Amounts read as money once typed: 20800 → 20,800.00.</summary>
+    private void OnAmountLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (Vm != null) Vm.EntryAmount = BankAccountsViewModel.FormatAmount(Vm.EntryAmount, allowNegative: false);
+    }
+
+    private void OnOpeningLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (Vm?.Form is { } f) f.Opening = BankAccountsViewModel.FormatAmount(f.Opening, allowNegative: true);
+    }
+
+    private void OnNewDescriptionOpened(object? sender, EventArgs e) =>
+        Dispatcher.BeginInvoke(() => { NewDesc.Focus(); NewDesc.SelectAll(); }, System.Windows.Threading.DispatcherPriority.Input);
+
+    /// <summary>Enter saves the new description, Esc closes the box.</summary>
+    private void OnNewDescKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Vm == null) return;
+        if (e.Key == Key.Enter) { e.Handled = true; Vm.SaveDescriptionCommand.Execute(null); Desc.Focus(); }
+        else if (e.Key == Key.Escape) { e.Handled = true; Vm.CancelNewDescriptionCommand.Execute(null); Desc.Focus(); }
+    }
+
     /// <summary>Right-click selects the row under the mouse first, so its menu acts on it.</summary>
     private void OnRowRightDown(object sender, MouseButtonEventArgs e)
     {

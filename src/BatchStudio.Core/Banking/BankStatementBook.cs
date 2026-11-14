@@ -10,7 +10,8 @@ public sealed record StatementWords(
 
 /// <summary>
 /// A bank statement as a tidy one-sheet workbook (title band, account box, four totals, the movements with a running
-/// balance and a closing row), set up to print on A4 one page wide; the app turns it into a PDF with Excel.
+/// balance and a closing row), set up to print on A4 one page wide. The fallback of the PDF statement when Edge is missing
+/// (the app turns it into a PDF with Excel).
 /// </summary>
 public static class BankStatementBook
 {
@@ -30,8 +31,8 @@ public static class BankStatementBook
         ws.Style.Font.FontSize = 10;
         ws.Style.Font.FontColor = Ink;
         ws.ShowGridLines = false;
-        ws.Column(1).Width = 13;   // date
-        ws.Column(2).Width = 44;   // description
+        ws.Column(1).Width = 19;   // date (and the opening balance above it)
+        ws.Column(2).Width = 40;   // description
         ws.Column(3).Width = 15;   // deposit
         ws.Column(4).Width = 15;   // withdrawal
         ws.Column(5).Width = 17;   // balance
@@ -123,7 +124,7 @@ public static class BankStatementBook
             ws.Cell(r, 1).Style.DateFormat.Format = "dd/MM/yyyy";
             ws.Cell(r, 2).Value = line.Tx.Description;
             ws.Cell(r, 2).Style.Alignment.WrapText = true;
-            if (line.Tx.Kind == BankTxKind.Deposit) { ws.Cell(r, 3).Value = line.Tx.Amount; ws.Cell(r, 3).Style.Font.FontColor = In; }
+            if (line.Tx.IsIn) { ws.Cell(r, 3).Value = line.Tx.Amount; ws.Cell(r, 3).Style.Font.FontColor = In; }
             else { ws.Cell(r, 4).Value = line.Tx.Amount; ws.Cell(r, 4).Style.Font.FontColor = Out; }
             ws.Cell(r, 5).Value = line.Balance;
             if (zebra) ws.Range(r, 1, r, 5).Style.Fill.BackgroundColor = Zebra;

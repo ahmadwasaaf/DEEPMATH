@@ -120,6 +120,11 @@ jobs:
           Run 'English' 'Dark' $true 'home-aurora' '52-bg-aurora'
           Run 'English' 'Dark' $true 'home-geometry' '53-bg-geometry'
           Run 'English' 'Dark' $true 'home-ledger' '54-bg-ledger'
+          Run 'English' 'Dark' $true 'bank-desc' '55-bank-descriptions'
+          Run 'English' 'Dark' $true 'bank-pdf' '56-bank-after-pdf'
+          Run 'Arabic' 'Light' $true 'bank-pdf' '57-bank-after-pdf-ar'
+          $st = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Bank Statements'
+          if (Test-Path $st) { $i = 0; Get-ChildItem $st -Filter *.pdf | ForEach-Object { $i++; Copy-Item $_.FullName "shots\statement-$i.pdf" } }
 
       - name: Upload screenshots
         if: always() && hashFiles('shots/*.png') != ''
@@ -136,6 +141,7 @@ jobs:
           New-Item -ItemType Directory -Force $tmp | Out-Null
           Copy-Item shots\*.png $tmp -ErrorAction SilentlyContinue
           Copy-Item shots\*.xlsx $tmp -ErrorAction SilentlyContinue
+          Copy-Item shots\*.pdf $tmp -ErrorAction SilentlyContinue
           $url = git config --get remote.origin.url
           $auth = git config --get http.https://github.com/.extraheader
           Push-Location $tmp

@@ -97,4 +97,69 @@ public class BankBookTests
         }
         finally { try { File.Delete(path); } catch { } }
     }
+
+    [Fact]
+    public void Transfer_between_own_accounts_moves_the_money_and_stays_linked()
+    {
+        var (book, usd) = Sample();
+        var usd2 = new BankAccount { Bank = "Citi", Currency = "USD", OpeningBalance = 0m };
+        book.Accounts.Add(usd2);
+        decimal before = usd.Balance;
+        var tx = book.Transfer(usd, usd2, new DateTime(2026, 3, 2), 300m, "To Citi");
+        Assert.Equal(before - 300m, usd.Balance);
+        Assert.Equal(300m, usd2.Balance);
+        Assert.Equal(before, usd.Balance + usd2.Balance);              // nothing created or lost
+        var p = book.Partner(tx);
+        Assert.NotNull(p);
+        Assert.Same(usd2, p!.Value.Account);
+        Assert.True(p.Value.Tx.Incoming);
+        var removed = book.Remove(usd, tx);
+        Assert.Equal(2, removed.Count);
+        Assert.Equal(before, usd.Balance);
+        Assert.Equal(0m, usd2.Balance);
+        BankBook.Restore(removed);
+        Assert.Equal(300m, usd2.Balance);
+    }
+
+    [Fact]
+    public void External_transfer_is_money_out_and_filter_keeps_real_balances()
+    {
+        var (book, acc) = Sample();
+        book.Transfer(acc, null, new DateTime(2026, 3, 5), 100m, "To supplier");
+        Assert.Equal(1199.55m - 100m, acc.Balance);
+        var all = BankBook.Statement(acc, null, null);
+        var only = BankBook.Statement(acc, null, null, BankTxKind.Transfer);
+        Assert.Single(only.Lines);
+        Assert.Equal(all.Lines[^1].Balance, only.Lines[0].Balance);
+        Assert.Equal(100m, only.TotalOut);
+        Assert.Equal(all.Closing, only.Closing);
+        Assert.Throws<ArgumentException>(() => book.Transfer(acc, new BankAccount { Currency = "EUR" }, DateTime.Today, 1m, ""));
+    }
+
+    [Fact]
+    public void Old_file_moves_into_the_bank_accounts_folder()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "bankmig-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, BankBook.FileName), "{}");
+            File.WriteAllText(Path.Combine(dir, BankBook.FileName + ".bak"), "{}");
+            BankBook.Migrate(dir);
+            Assert.True(File.Exists(BankBook.PathIn(dir)));
+            Assert.True(File.Exists(BankBook.PathIn(dir) + ".bak"));
+            Assert.False(File.Exists(Path.Combine(dir, BankBook.FileName)));
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    [Fact]
+    public void Saved_descriptions_are_unique()
+    {
+        var b = new BankBook();
+        Assert.True(b.AddDescription("Bank charges"));
+        Assert.False(b.AddDescription(" bank CHARGES "));
+        Assert.False(b.AddDescription(""));
+        Assert.Single(b.Descriptions);
+    }
 }
