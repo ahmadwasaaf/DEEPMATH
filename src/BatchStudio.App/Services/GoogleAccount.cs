@@ -421,7 +421,9 @@ public sealed partial class GoogleAccount : ObservableObject
             Status = a.Gmail ? "" : Loc.T("Google.NoGmail");
             Show();
             SignedInChanged?.Invoke();
-            if (oldRefresh.Length > 0 && oldRefresh != refresh) await RevokeAsync(oldRefresh);
+            // the old sign-in of the same account is NOT revoked: Google revokes the whole grant of the account for this app,
+            // the new sign-in included (allowing Google Drive signed the account out at once). It simply stops being used.
+            _ = oldRefresh;
             return true;
         }
         catch (OperationCanceledException) { Status = Loc.T("Google.TimedOut"); return false; }
