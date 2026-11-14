@@ -31,6 +31,15 @@ public sealed partial class BankCardViewModel : ObservableObject
     [ObservableProperty] private Brush _gradient = Brushes.SteelBlue;
     [ObservableProperty] private PointCollection _spark = [];
     [ObservableProperty] private bool _isSelected;
+    /// <summary>A well-known bank (Egypt / Saudi Arabia) recognised from the name: its colours and its other-language name.</summary>
+    [ObservableProperty] private BankBrand? _brand;
+    [ObservableProperty] private string _brandName = "";
+    [ObservableProperty] private Brush _accent = new SolidColorBrush(Color.FromArgb(0x33, 255, 255, 255));
+    [ObservableProperty] private Brush _accentText = Brushes.White;
+    public bool HasBrand => Brand != null;
+    partial void OnBrandChanged(BankBrand? value) => OnPropertyChanged(nameof(HasBrand));
+    /// <summary>The brand colour as "#RRGGBB" (the PDF statement takes it), or null.</summary>
+    public string? BrandHex => Brand?.To;
 
     /// <summary>Re-reads the account (after an edit or a new movement).</summary>
     public void Update()
@@ -48,8 +57,39 @@ public sealed partial class BankCardViewModel : ObservableObject
         MonthOut = "−" + BankBook.Money(a.Transactions.Where(t => t.Date >= m0 && !t.IsIn).Sum(t => t.Amount));
         Initials = string.Concat(a.Bank.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => char.ToUpperInvariant(w[0])));
         if (Initials.Length == 0) Initials = "?";
-        Gradient = CardGradient(a.Bank + a.Number);
+        Brand = BankBrands.Match(a.Bank);
+        if (Brand is { } b)
+        {
+            Gradient = Two(b.From, b.To);
+            Initials = b.Monogram;
+            Accent = Solid(b.Accent);
+            AccentText = Solid(b.AccentText);
+            // the name in the other language (typed in Arabic → the English name under it, and the other way round)
+            bool typedArabic = a.Bank.Any(ch => ch is >= '\u0600' and <= '\u06FF');
+            BrandName = typedArabic ? b.NameEn : b.NameAr;
+        }
+        else
+        {
+            Gradient = CardGradient(a.Bank + a.Number);
+            Accent = new SolidColorBrush(Color.FromArgb(0x33, 255, 255, 255));
+            AccentText = Brushes.White;
+            BrandName = "";
+        }
         Spark = Sparkline(a);
+    }
+
+    private static Brush Solid(string hex)
+    {
+        var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+        b.Freeze();
+        return b;
+    }
+
+    private static Brush Two(string a, string b)
+    {
+        var g = new LinearGradientBrush((Color)ColorConverter.ConvertFromString(a), (Color)ColorConverter.ConvertFromString(b), new Point(0, 0), new Point(1, 1));
+        g.Freeze();
+        return g;
     }
 
     /// <summary>A calm two-colour gradient picked from the bank name (the same bank always gets the same card colour).</summary>
@@ -581,7 +621,8 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         Status = Loc.T("Bank.Exporting");
         var s = _statement;
         var entity = main.ActiveEntity?.Name ?? "";
-        var accent = (Application.Current.TryFindResource("BrandBrush") as SolidColorBrush)?.Color.ToString() is { } hex && hex.Length == 9 ? "#" + hex[3..] : "#2F80ED";
+        var accent = Selected.BrandHex
+                     ?? ((Application.Current.TryFindResource("BrandBrush") as SolidColorBrush)?.Color.ToString() is { } hex && hex.Length == 9 ? "#" + hex[3..] : "#2F80ED");
         var pdf = new StatementPdfData(
             LanguageService.CurrentFlow == FlowDirection.RightToLeft, entity, Loc.T("Bank.StatementTitle"),
             $"{Loc.T("Bank.Printed")} {DateTime.Now.ToString("dd MMM yyyy  HH:mm", CultureInfo.InvariantCulture)}",
@@ -643,7 +684,8 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         {
             ("Demo National Bank", "EG38 0019 0005 0000 0000 2631 4821", "USD", 48_250m),
             ("Second Demo Bank", "DE89 3704 0044 0532 0130 00", "EUR", 12_400m),
-            ("Cairo Demo Bank", "1002 3344 5566 7788", "EGP", 350_000m),
+            ("البنك الأهلي المصري", "1002 3344 5566 7788", "EGP", 350_000m),
+            ("Al Rajhi Bank", "SA03 8000 0000 6080 1016 7519", "SAR", 95_000m),
         })
         {
             var a = new BankAccount { Bank = bank, Number = number, Currency = cur, OpeningBalance = open, OpeningDate = today.AddMonths(-4) };

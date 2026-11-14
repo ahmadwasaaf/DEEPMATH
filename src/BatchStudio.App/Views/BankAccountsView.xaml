@@ -184,6 +184,9 @@
                                                     <DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.25" />
                                                 </Border.Effect>
                                                 <Grid FlowDirection="LeftToRight">
+                                                    <!-- the bank's accent: a thin band along the bottom edge -->
+                                                    <Border Height="5" VerticalAlignment="Bottom" Margin="-18,0,-18,-16" CornerRadius="0,0,14,14" Background="{Binding Accent}"
+                                                            Visibility="{Binding HasBrand, Converter={StaticResource BoolToVis}}" />
                                                     <!-- decorative circles -->
                                                     <Ellipse Width="160" Height="160" Fill="White" Opacity="0.07" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-70,-60,0" />
                                                     <Ellipse Width="110" Height="110" Fill="White" Opacity="0.06" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,30,-60" />
@@ -197,11 +200,16 @@
                                                             <Border DockPanel.Dock="Right" Background="#33FFFFFF" CornerRadius="6" Padding="8,2" VerticalAlignment="Top">
                                                                 <TextBlock Text="{Binding Currency}" Foreground="White" FontWeight="SemiBold" FontSize="12" />
                                                             </Border>
-                                                            <Border Width="34" Height="34" CornerRadius="17" Background="#33FFFFFF" Margin="0,0,10,0">
-                                                                <TextBlock Text="{Binding Initials}" Foreground="White" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            <!-- emblem: the bank's monogram in its accent colour (no logos) -->
+                                                            <Border Width="36" Height="36" CornerRadius="18" Background="{Binding Accent}" Margin="0,0,10,0">
+                                                                <Viewbox Margin="5" StretchDirection="DownOnly">
+                                                                    <TextBlock Text="{Binding Initials}" Foreground="{Binding AccentText}" FontWeight="Bold" FontSize="13" />
+                                                                </Viewbox>
                                                             </Border>
                                                             <StackPanel VerticalAlignment="Center">
                                                                 <TextBlock Text="{Binding Bank}" Foreground="White" FontWeight="SemiBold" FontSize="14.5" TextTrimming="CharacterEllipsis" />
+                                                                <TextBlock Text="{Binding BrandName}" Foreground="#D9FFFFFF" FontSize="10.5" TextTrimming="CharacterEllipsis"
+                                                                           Visibility="{Binding HasBrand, Converter={StaticResource BoolToVis}}" />
                                                                 <TextBlock Text="{Binding ShortNumber}" Foreground="#CCFFFFFF" FontSize="11.5" FontFamily="Cascadia Mono, Consolas" />
                                                             </StackPanel>
                                                         </DockPanel>
