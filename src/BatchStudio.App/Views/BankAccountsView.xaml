@@ -466,7 +466,7 @@
                                     </StackPanel>
                                     <!-- saved descriptions -->
                                     <Popup IsOpen="{Binding IsDescriptionListOpen}" PlacementTarget="{Binding ElementName=Desc}" Placement="Bottom" StaysOpen="False"
-                                           AllowsTransparency="True" Width="{Binding ActualWidth, ElementName=Desc}" PopupAnimation="Fade">
+                                           AllowsTransparency="True" MinWidth="260" Width="{Binding ActualWidth, ElementName=Desc}" PopupAnimation="Fade">
                                         <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                                                 BorderThickness="1" CornerRadius="8" Padding="4" Margin="0,4,0,8">
                                             <Border.Effect><DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.3" /></Border.Effect>
@@ -508,7 +508,7 @@
                                     </Popup>
                                     <!-- save a new description -->
                                     <Popup IsOpen="{Binding IsNewDescriptionOpen}" PlacementTarget="{Binding ElementName=Desc}" Placement="Bottom" StaysOpen="False"
-                                           AllowsTransparency="True" Width="{Binding ActualWidth, ElementName=Desc}" PopupAnimation="Fade" Opened="OnNewDescriptionOpened">
+                                           AllowsTransparency="True" MinWidth="300" Width="{Binding ActualWidth, ElementName=Desc}" PopupAnimation="Fade" Opened="OnNewDescriptionOpened">
                                         <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                                                 BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,4,0,8">
                                             <Border.Effect><DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.3" /></Border.Effect>

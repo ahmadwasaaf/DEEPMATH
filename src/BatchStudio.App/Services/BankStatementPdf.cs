@@ -123,11 +123,12 @@ public static class BankStatementPdf
   .f0 { background: #f3f4f6; } .f1 { background: #e8f6ee; } .f1 .v { color: #15803d; }
   .f2 { background: #fdecec; } .f2 .v { color: #c62828; } .f3 { background: {{d.Accent}}1a; } .f3 .v { color: {{d.Accent}}; }
   .f3 .v.neg { color: #c62828; }
-  table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; table-layout: fixed; }
   thead { display: table-header-group; }
   th { background: #f3f4f6; color: #374151; font-size: 8.5pt; font-weight: 700; text-align: {{start}}; padding: 8px 9px; border-bottom: 1px solid #e5e7eb; }
   th.r, td.r { text-align: {{end}}; }
-  td { padding: 7px 9px; border-bottom: 1px solid #eef0f3; vertical-align: top; }
+  td { padding: 6px 8px; border-bottom: 1px solid #eef0f3; vertical-align: top; font-size: 9.5pt; overflow-wrap: anywhere; }
+  th { padding: 8px; }
   tr { page-break-inside: avoid; }
   td.d { white-space: nowrap; color: #374151; }
   td.in { color: #15803d; font-weight: 600; } td.out { color: #c62828; font-weight: 600; }
@@ -165,8 +166,8 @@ public static class BankStatementPdf
     </div>
     <table>
       <thead><tr>
-        <th style="width:13%">{{E(d.DateHead)}}</th><th style="width:12%">{{E(d.TypeHead)}}</th><th>{{E(d.DescriptionHead)}}</th>
-        <th class="r" style="width:14%">{{E(d.InHead)}}</th><th class="r" style="width:14%">{{E(d.OutHead)}}</th><th class="r" style="width:16%">{{E(d.BalanceHead)}}</th>
+        <th style="width:12%">{{E(d.DateHead)}}</th><th style="width:11%">{{E(d.TypeHead)}}</th><th>{{E(d.DescriptionHead)}}</th>
+        <th class="r" style="width:12%">{{E(d.InHead)}}</th><th class="r" style="width:12%">{{E(d.OutHead)}}</th><th class="r" style="width:14%">{{E(d.BalanceHead)}}</th>
       </tr></thead>
       <tbody>
         <tr class="fwd"><td class="d num">{{E(d.ForwardDate)}}</td><td></td><td>{{E(d.ForwardText)}}</td><td></td><td></td><td class="r bal num">{{E(d.ForwardBalance)}}</td></tr>
