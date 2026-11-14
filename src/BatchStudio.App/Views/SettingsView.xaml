@@ -30,6 +30,45 @@
                 <TextBlock Text="{DynamicResource Nav.Settings}" Style="{StaticResource PageTitle}" />
             </StackPanel>
 
+            <!-- ========== Secure mode: lock the whole program behind a password ========== -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14" DataContext="{Binding Main}">
+                <DockPanel>
+                    <Border DockPanel.Dock="Left" Width="44" Height="44" CornerRadius="22" Background="{DynamicResource BrandSoftBrush}" Margin="0,0,14,0" VerticalAlignment="Top">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="19" Foreground="{DynamicResource BrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Button Command="{Binding ChangeSecurePasswordCommand}" Padding="14,7" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE8D7;" FontSize="13" Margin="0,0,8,0" />
+                                <TextBlock>
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="{DynamicResource Secure.Create}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasSecurePassword}" Value="True">
+                                                    <Setter Property="Text" Value="{DynamicResource Secure.Change}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding EnterSecureModeCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="14,7"
+                                Visibility="{Binding HasSecurePassword, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="13" Margin="0,0,8,0" />
+                                <TextBlock Text="{DynamicResource Secure.LockNow}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Secure.Mode}" Style="{StaticResource SectionTitle}" Margin="0,0,0,4" />
+                        <TextBlock Text="{DynamicResource Secure.Text}" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
             <!-- ========== Google account: new emails on Home + Windows notifications ========== -->
             <Border x:Name="GoogleCard" Style="{StaticResource Card}" Margin="0,0,0,14">
                 <StackPanel>

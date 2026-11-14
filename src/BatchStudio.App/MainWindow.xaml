@@ -4,6 +4,7 @@
         xmlns:vm="clr-namespace:BatchStudio.App.ViewModels"
         xmlns:views="clr-namespace:BatchStudio.App.Views"
         xmlns:svc="clr-namespace:BatchStudio.App.Services"
+        xmlns:ctl="clr-namespace:BatchStudio.App.Controls"
         Title="{DynamicResource App.Title}"
         Icon="pack://application:,,,/BatchStudio;component/Assets/deepmath.ico"
         Width="1280" Height="800" MinWidth="960" MinHeight="600"
@@ -32,13 +33,40 @@
         </Grid.ColumnDefinitions>
 
         <!-- sidebar -->
-        <Border Grid.Column="0" Background="{DynamicResource LayerFillColorAltBrush}"
+        <Border Grid.Column="0" Background="{DynamicResource LayerFillColorAltBrush}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}"
                 BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
             <DockPanel Margin="12,16,12,12" LastChildFill="True">
                 <StackPanel DockPanel.Dock="Top" Margin="4,0,4,16">
                     <!-- DEEPMATH brand: gradient D mark + name + tagline -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,20" FlowDirection="LeftToRight">
-                        <Image Source="pack://application:,,,/BatchStudio;component/Assets/deepmath.png" Width="38" Height="38" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <!-- the logo opens a small menu: Secure mode (lock the program) -->
+                        <Button x:Name="LogoButton" Click="OnLogoClick" Cursor="Hand" ToolTip="{DynamicResource Secure.MenuTip}" Focusable="False">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" CornerRadius="10" Padding="0" Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                                        <Border.RenderTransform><ScaleTransform x:Name="Sc" /></Border.RenderTransform>
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Opacity" Value="0.85" />
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="Sc" Property="ScaleX" Value="0.94" />
+                                            <Setter TargetName="Sc" Property="ScaleY" Value="0.94" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                            <Button.ContextMenu>
+                                <ContextMenu Placement="Bottom">
+                                    <MenuItem Header="{DynamicResource Secure.Mode}" Command="{Binding EnterSecureModeCommand}">
+                                        <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="14" /></MenuItem.Icon>
+                                    </MenuItem>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                            <Image Source="pack://application:,,,/BatchStudio;component/Assets/deepmath.png" Width="38" Height="38" RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Button>
                         <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="DEEPMATH" FontWeight="Bold" FontSize="17" />
                             <TextBlock Text="INTELLIGENT ACCOUNTING SYSTEM" FontSize="8.5" Opacity="0.6" Margin="0,1,0,0" />
@@ -82,7 +110,8 @@
         </Border>
 
         <!-- page -->
-        <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" Margin="28,22,28,20" Focusable="False" />
+        <ContentControl Grid.Column="1" Content="{Binding CurrentPage}" Margin="28,22,28,20" Focusable="False"
+                        IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" />
 
         <!-- supplier / client details opened from History, Dashboard, Reports (same form as Mass Invoice); Esc / Cancel closes -->
         <Border Grid.Column="1" Panel.ZIndex="30" Background="#99000000"
@@ -92,5 +121,95 @@
                 <views:PartyFormView DataContext="{Binding PartyDetails}" />
             </Border>
         </Border>
+
+        <!-- ================= Secure mode: lock screen over the whole program ================= -->
+        <Grid x:Name="LockScreen" Grid.ColumnSpan="2" Panel.ZIndex="100" Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}"
+              KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="Cycle"
+              IsVisibleChanged="OnLockVisibleChanged" FlowDirection="LeftToRight">
+            <Grid.Background>
+                <RadialGradientBrush Center="0.5,0.35" GradientOrigin="0.5,0.3" RadiusX="0.9" RadiusY="0.9">
+                    <GradientStop Color="#1B2A4A" Offset="0" />
+                    <GradientStop Color="#0D1424" Offset="0.55" />
+                    <GradientStop Color="#05080F" Offset="1" />
+                </RadialGradientBrush>
+            </Grid.Background>
+            <ctl:ParticleNetwork x:Name="LockParticles" Tint="White" Opacity="0.9" />
+            <!-- soft glow behind the clock in the accent colour -->
+            <Ellipse x:Name="LockGlow" Width="620" Height="620" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-180,0,0" Opacity="0.25" IsHitTestVisible="False" />
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1.1*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <!-- clock -->
+                <StackPanel Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,8">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock x:Name="ClockText" Text="00:00" FontSize="124" FontWeight="Light" Foreground="White"
+                                   FontFamily="Segoe UI Variable Display Light, Segoe UI Light, Segoe UI">
+                            <TextBlock.Effect><DropShadowEffect BlurRadius="30" ShadowDepth="0" Opacity="0.45" Color="Black" /></TextBlock.Effect>
+                        </TextBlock>
+                        <TextBlock x:Name="SecondsText" Text="00" FontSize="30" FontWeight="Light" Foreground="#99FFFFFF" VerticalAlignment="Bottom" Margin="10,0,0,26"
+                                   FontFamily="Segoe UI Variable Display Light, Segoe UI Light, Segoe UI" />
+                    </StackPanel>
+                    <TextBlock x:Name="DateText" FontSize="21" Foreground="#E6FFFFFF" HorizontalAlignment="Center" Margin="0,-6,0,0"
+                               FontFamily="Segoe UI Variable Display, Segoe UI" />
+                </StackPanel>
+
+                <!-- the glass card: logo, entity, password -->
+                <Border Grid.Row="1" Width="380" HorizontalAlignment="Center" Margin="0,34,0,0" CornerRadius="22" Padding="28,24"
+                        Background="#1FFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                    <Border.Effect><DropShadowEffect BlurRadius="40" ShadowDepth="8" Opacity="0.35" Color="Black" /></Border.Effect>
+                    <StackPanel>
+                        <Grid Width="72" Height="72" HorizontalAlignment="Center">
+                            <Ellipse Fill="#26FFFFFF" />
+                            <Image Source="pack://application:,,,/BatchStudio;component/Assets/deepmath.png" Width="44" Height="44" RenderOptions.BitmapScalingMode="HighQuality" />
+                            <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource BrandBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="11" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
+                        <TextBlock Text="{DynamicResource Secure.Locked}" Foreground="White" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,14,0,2" />
+                        <TextBlock Text="{Binding ActiveEntity.Name}" Foreground="#B3FFFFFF" FontSize="12.5" HorizontalAlignment="Center" />
+                        <Grid Margin="0,20,0,0">
+                            <Border CornerRadius="12" Background="#26000000" BorderBrush="#40FFFFFF" BorderThickness="1" />
+                            <DockPanel Margin="4">
+                                <Button DockPanel.Dock="Right" Width="38" Height="34" Click="OnLockUnlock" Cursor="Hand" ToolTip="{DynamicResource Pwd.Unlock}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Bd" CornerRadius="9" Background="{DynamicResource BrandBrush}">
+                                                <TextBlock Style="{StaticResource Icon}" Text="&#xE72A;" FontSize="14" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.85" /></Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <Grid>
+                                    <PasswordBox x:Name="LockPassword" Background="Transparent" BorderThickness="0" Foreground="White" CaretBrush="White"
+                                                 FontSize="15" Padding="10,6" VerticalContentAlignment="Center" KeyDown="OnLockKeyDown" PasswordChanged="OnLockPasswordChanged">
+                                        <PasswordBox.Template>
+                                            <ControlTemplate TargetType="PasswordBox">
+                                                <ScrollViewer x:Name="PART_ContentHost" Padding="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                                            </ControlTemplate>
+                                        </PasswordBox.Template>
+                                    </PasswordBox>
+                                    <TextBlock x:Name="LockHint" Text="{DynamicResource Pwd.Password}" Foreground="#80FFFFFF" FontSize="14" Margin="12,0" VerticalAlignment="Center" IsHitTestVisible="False" />
+                                </Grid>
+                            </DockPanel>
+                        </Grid>
+                        <TextBlock Text="{Binding LockError}" Foreground="#FF8A80" FontSize="12" HorizontalAlignment="Center" Margin="0,10,0,0" TextWrapping="Wrap" TextAlignment="Center"
+                                   Visibility="{Binding LockError, Converter={StaticResource NonEmptyToVis}}" />
+                        <TextBlock HorizontalAlignment="Center" Margin="0,14,0,0" Cursor="Hand" Foreground="#CCFFFFFF" FontSize="12" MouseLeftButtonUp="OnLockForgot">
+                            <Underline><Run Text="{DynamicResource Pwd.Forgot}" /></Underline>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Grid.Row="3" Text="DEEPMATH · Secure mode" Foreground="#66FFFFFF" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,18" />
+            </Grid>
+        </Grid>
     </Grid>
 </Window>

@@ -10,6 +10,7 @@
 
         <!-- small square button that sits inside a text box -->
         <Style x:Key="InBoxBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
             <Setter Property="Template">
@@ -38,6 +39,7 @@
 
         <!-- flat icon button (edit / delete / copy) -->
         <Style x:Key="IconBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -60,6 +62,7 @@
 
         <!-- deposit / withdrawal segmented choice -->
         <Style x:Key="KindBtn" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -262,7 +265,25 @@
 
             <!-- the selected account -->
             <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,16" Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
-                <ScrollViewer x:Name="DetailScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,-14,0">
+                <Grid>
+                <!-- locked: the account opens with its password (once per run of the program) -->
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360"
+                            Visibility="{Binding IsSelectedLocked, Converter={StaticResource BoolToVis}}">
+                    <Border Width="84" Height="84" CornerRadius="42" Background="{DynamicResource BrandSoftBrush}" HorizontalAlignment="Center">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="34" Foreground="{DynamicResource BrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="{Binding Selected.Bank}" FontSize="19" FontWeight="SemiBold" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,16,0,2" />
+                    <TextBlock Text="{Binding Selected.ShortNumber}" Style="{StaticResource Muted}" FontFamily="Cascadia Mono, Consolas" HorizontalAlignment="Center" />
+                    <TextBlock Text="{DynamicResource Pwd.LockedText}" Style="{StaticResource Muted}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,12,0,0" />
+                    <Button Command="{Binding UnlockCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="20,8" Margin="0,18,0,0" HorizontalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE785;" FontSize="13" Margin="0,0,8,0" />
+                            <TextBlock Text="{DynamicResource Pwd.Unlock}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <ScrollViewer x:Name="DetailScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,-14,0"
+                              Visibility="{Binding IsSelectedUnlocked, Converter={StaticResource BoolToVis}}">
                 <Grid x:Name="DetailGrid" Margin="0,0,18,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -295,8 +316,9 @@
                                 <Button Style="{StaticResource IconBtn}" Command="{Binding CopyNumberCommand}" ToolTip="{DynamicResource Bank.CopyNumber}" Margin="4,0,0,0">
                                     <TextBlock Style="{StaticResource Icon}" Text="&#xE8C8;" FontSize="12" />
                                 </Button>
-                                <TextBlock Text="{Binding Selected.Note}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0" FontStyle="Italic" />
                             </StackPanel>
+                            <TextBlock Text="{Binding Selected.Note}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" MaxHeight="90" Margin="0,2,0,0"
+                                       Visibility="{Binding Selected.Note, Converter={StaticResource NonEmptyToVis}}" />
                         </StackPanel>
                     </DockPanel>
 
@@ -612,6 +634,7 @@
                     </DataGrid>
                 </Grid>
                 </ScrollViewer>
+                </Grid>
             </Border>
         </Grid>
 
@@ -647,6 +670,14 @@
                     <TextBlock Text="{DynamicResource Bank.AccountNumber}" Style="{StaticResource Caption}" />
                     <TextBox Text="{Binding Number, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,12" FontFamily="Cascadia Mono, Consolas" FlowDirection="LeftToRight" />
 
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="{DynamicResource Bank.InfoHint}" FontSize="10.5" Opacity="0.55" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+                        <TextBlock Text="{DynamicResource Bank.Info}" Style="{StaticResource Caption}" />
+                    </DockPanel>
+                    <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,12" TextWrapping="Wrap"
+                             AcceptsReturn="False" MinHeight="58" MaxHeight="150" VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                             PreviewKeyDown="OnInfoKeyDown" />
+
                     <Grid Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="120" />
@@ -669,8 +700,6 @@
                         </StackPanel>
                     </Grid>
 
-                    <TextBlock Text="{DynamicResource Bank.Note}" Style="{StaticResource Caption}" />
-                    <TextBox Text="{Binding Note, UpdateSourceTrigger=PropertyChanged}" Padding="8,6" Margin="0,0,0,8" />
 
                     <TextBlock Text="{Binding Error}" Foreground="{StaticResource OutBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
                                Visibility="{Binding Error, Converter={StaticResource NonEmptyToVis}}" />

@@ -42,6 +42,18 @@ public partial class BankAccountsView : UserControl
         if (Vm != null) Vm.EntryAmount = BankAccountsViewModel.FormatAmount(Vm.EntryAmount, allowNegative: false);
     }
 
+    /// <summary>Account info: Alt+Enter starts a new line (Enter alone still saves the form).</summary>
+    private void OnInfoKeyDown(object sender, KeyEventArgs e)
+    {
+        bool altEnter = e.Key == Key.System && e.SystemKey == Key.Enter || e.Key == Key.Enter && Keyboard.Modifiers.HasFlag(ModifierKeys.Alt);
+        if (!altEnter || sender is not TextBox tb) return;
+        e.Handled = true;
+        int at = tb.CaretIndex;
+        tb.SelectedText = Environment.NewLine;
+        tb.CaretIndex = at + Environment.NewLine.Length;
+        tb.SelectionLength = 0;
+    }
+
     private void OnOpeningLostFocus(object sender, RoutedEventArgs e)
     {
         if (Vm?.Form is { } f) f.Opening = BankAccountsViewModel.FormatAmount(f.Opening, allowNegative: true);

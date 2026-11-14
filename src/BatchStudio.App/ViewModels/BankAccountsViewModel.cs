@@ -187,6 +187,65 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     public bool HasAccounts => Cards.Count > 0;
     public bool NoAccounts => Cards.Count == 0;
     public bool HasSelection => Selected != null;
+
+    // ---------------------------------------------------------------- passwords: each account opens once per run of the program
+    private static readonly HashSet<string> Unlocked = [];
+    private static bool _screenshotUnlock;
+    /// <summary>The selected account was opened with its password in this run (its statement and entry are shown).</summary>
+    public bool IsSelectedUnlocked => Selected != null && Unlocked.Contains(Selected.Account.Id);
+    public bool IsSelectedLocked => Selected != null && !Unlocked.Contains(Selected.Account.Id);
+
+    /// <summary>Asks the account's password (or, for an account without one yet, to create it). True when open.</summary>
+    private bool TryUnlock(BankAccount acc)
+    {
+        if (Unlocked.Contains(acc.Id)) return true;
+        string name = $"{acc.Bank} {acc.ShortNumber}".Trim();
+        if (acc.PasswordHash.Length == 0)
+        {
+            var pw = Views.PasswordDialog.Create(Loc.T("Pwd.CreateBankTitle"), Loc.F("Pwd.CreateBankText", name));
+            if (pw == null) return false;
+            acc.PasswordHash = Core.Security.PasswordHash.Create(pw);
+            acc.RecoveryEmail = PasswordRecovery.CurrentEmail;
+            if (!Save()) { acc.PasswordHash = ""; return false; }
+        }
+        else
+        {
+            if (!Views.PasswordDialog.Ask(Loc.T("Pwd.OpenBankTitle"), Loc.F("Pwd.OpenBankText", name),
+                                          p => Core.Security.PasswordHash.Verify(p, acc.PasswordHash), PasswordRecovery.For(acc.RecoveryEmail), out var reset))
+                return false;
+            if (reset != null)
+            {
+                var old = acc.PasswordHash;
+                acc.PasswordHash = Core.Security.PasswordHash.Create(reset);
+                if (!Save()) { acc.PasswordHash = old; return false; }
+                Status = Loc.T("Pwd.Changed");
+            }
+        }
+        Unlocked.Add(acc.Id);
+        return true;
+    }
+
+    /// <summary>Delete account: the password every time (the account stays when it is wrong or cancelled).</summary>
+    private bool ConfirmPassword(BankAccount acc)
+    {
+        if (acc.PasswordHash.Length == 0) return true;
+        return Views.PasswordDialog.Ask(Loc.T("Pwd.DeleteBankTitle"), Loc.F("Pwd.DeleteBankText", $"{acc.Bank} {acc.ShortNumber}".Trim()),
+                                        p => Core.Security.PasswordHash.Verify(p, acc.PasswordHash), null, out _);
+    }
+
+    [RelayCommand]
+    private void Unlock()
+    {
+        if (Selected == null || !TryUnlock(Selected.Account)) return;
+        LockChanged();
+    }
+
+    private void LockChanged()
+    {
+        OnPropertyChanged(nameof(IsSelectedUnlocked));
+        OnPropertyChanged(nameof(IsSelectedLocked));
+        BuildStatement();
+    }
     public bool HasForm => Form != null;
     partial void OnFormChanged(BankAccountFormViewModel? value) => OnPropertyChanged(nameof(HasForm));
 
@@ -335,6 +394,7 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         SavedDescriptions.Clear();
         foreach (var d in _book.Descriptions) SavedDescriptions.Add(d);
         OnPropertyChanged(nameof(HasSavedDescriptions));
+        if (_screenshotUnlock) foreach (var a in _book.Accounts) Unlocked.Add(a.Id);
         Cards.Clear();
         foreach (var a in _book.Accounts) Cards.Add(new BankCardViewModel(a));
         Selected = Cards.FirstOrDefault(c => c.Account.Id == keep) ?? Cards.FirstOrDefault();
@@ -347,13 +407,21 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         if (oldValue != null) oldValue.IsSelected = false;
         if (newValue != null) newValue.IsSelected = true;
         OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(IsSelectedUnlocked));
+        OnPropertyChanged(nameof(IsSelectedLocked));
         CancelEntry();
         BuildTargets();
         BuildStatement();
     }
 
     [RelayCommand]
-    private void Select(BankCardViewModel? card) { if (card != null) Selected = card; }
+    private void Select(BankCardViewModel? card)
+    {
+        if (card == null) return;
+        Selected = card;
+        // first click on the card in this run: its password
+        if (!Unlocked.Contains(card.Account.Id) && TryUnlock(card.Account)) LockChanged();
+    }
 
     /// <summary>Transfer destinations for the selected account: outside, then the other accounts of the same currency.</summary>
     private void BuildTargets()
@@ -472,7 +540,16 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         acc.OpeningBalance = opening;
         acc.OpeningDate = (f.OpeningDate ?? DateTime.Today).Date;
         acc.Note = f.Note.Trim();
-        if (f.Editing == null) _book.Accounts.Add(acc);
+        if (f.Editing == null)
+        {
+            // a new account gets its password before it is saved
+            var pw = Views.PasswordDialog.Create(Loc.T("Pwd.CreateBankTitle"), Loc.F("Pwd.CreateBankText", $"{bank} {acc.ShortNumber}".Trim()));
+            if (pw == null) return;
+            acc.PasswordHash = Core.Security.PasswordHash.Create(pw);
+            acc.RecoveryEmail = PasswordRecovery.CurrentEmail;
+            _book.Accounts.Add(acc);
+            Unlocked.Add(acc.Id);
+        }
         if (!Save()) { if (f.Editing == null) _book.Accounts.Remove(acc); return; }
         Form = null;
         if (f.Editing == null)
@@ -494,6 +571,7 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
         int linked = c.Account.Transactions.Count(t => t.IsInternal);
         var ask = Loc.F("Bank.DeleteAccountAsk", c.Account.Bank, c.Account.Number, c.Account.Transactions.Count);
         if (linked > 0) ask += "\n\n" + Loc.F("Bank.DeleteAccountLinked", linked);
+        if (!ConfirmPassword(c.Account)) return;
         if (!Dialogs.Confirm(ask)) return;
         // the other side of its transfers goes too (the money never arrived from / left to a deleted account)
         var removed = new List<(BankAccount, BankTransaction, int)>();
@@ -520,7 +598,7 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     private void SubmitEntry()
     {
         EntryError = "";
-        if (Selected == null) return;
+        if (Selected == null || !IsSelectedUnlocked) return;
         if (!TryAmount(EntryAmount, allowNegative: false, allowZero: false, out var amount)) { EntryError = Loc.T("Bank.BadAmount"); return; }
         amount = Math.Round(amount, 2, MidpointRounding.AwayFromZero);
         var date = (EntryDate ?? DateTime.Today).Date;
@@ -616,7 +694,7 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     [RelayCommand]
     private async Task ExportStatement()
     {
-        if (_statement == null || Selected == null || IsBusy) return;
+        if (_statement == null || Selected == null || IsBusy || !IsSelectedUnlocked) return;
         IsBusy = true;
         Status = Loc.T("Bank.Exporting");
         var s = _statement;
@@ -674,6 +752,7 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     /// <summary>Screenshot checks only (--page bank): three demo accounts with a few months of movements.</summary>
     internal void FillSample()
     {
+        _screenshotUnlock = true;
         if (main.ActiveEntity == null) return;
         var path = BankBook.PathIn(DriveSync.DataFolder(main.ActiveEntity));
         if (File.Exists(path)) return;

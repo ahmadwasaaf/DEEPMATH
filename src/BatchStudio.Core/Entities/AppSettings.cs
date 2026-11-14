@@ -53,6 +53,11 @@ public sealed class AppSettings
 
     public BackgroundSettings Background { get; set; } = new();
 
+    /// <summary>Secure mode (the whole program locked): the password hash, empty until created in Settings.</summary>
+    public string SecurePasswordHash { get; set; } = "";
+    /// <summary>The Google account that may reset the Secure mode password.</summary>
+    public string SecureRecoveryEmail { get; set; } = "";
+
     /// <summary>Accent colour: "auto" (Windows accent) or #RRGGBB.</summary>
     public string Accent { get; set; } = "auto";
     /// <summary>Last picked accent colours (newest first, up to 6).</summary>

@@ -555,6 +555,76 @@ public sealed partial class MainViewModel : ObservableObject
         CurrentPage = Setup;
     }
 
+    // ---------------------------------------------------------------- Secure mode: the whole program locked behind a password
+    [ObservableProperty] private bool _isLocked;
+    [ObservableProperty] private string _lockError = "";
+    public bool HasSecurePassword => Settings.SecurePasswordHash.Length > 0;
+
+    /// <summary>Logo menu › Secure mode: locks now (creates the password first when there is none yet).</summary>
+    [RelayCommand]
+    private void EnterSecureMode()
+    {
+        if (!HasSecurePassword && !CreateSecurePassword()) return;
+        LockError = "";
+        IsLocked = true;
+    }
+
+    /// <summary>Settings: create the Secure mode password, or change it (the current one first).</summary>
+    [RelayCommand]
+    private void ChangeSecurePassword()
+    {
+        if (HasSecurePassword)
+        {
+            if (!Views.PasswordDialog.Ask(Loc.T("Pwd.SecureCurrentTitle"), Loc.T("Pwd.SecureCurrentText"),
+                                          p => Core.Security.PasswordHash.Verify(p, Settings.SecurePasswordHash), PasswordRecovery.For(Settings.SecureRecoveryEmail), out var reset))
+                return;
+            if (reset != null) { SetSecurePassword(reset); return; }   // "Forgot password?" already asked for the new one
+        }
+        CreateSecurePassword();
+    }
+
+    private bool CreateSecurePassword()
+    {
+        var pw = Views.PasswordDialog.Create(Loc.T("Pwd.SecureCreateTitle"), Loc.T("Pwd.SecureCreateText"));
+        if (pw == null) return false;
+        SetSecurePassword(pw);
+        return true;
+    }
+
+    private void SetSecurePassword(string pw)
+    {
+        Settings.SecurePasswordHash = Core.Security.PasswordHash.Create(pw);
+        Settings.SecureRecoveryEmail = PasswordRecovery.CurrentEmail;
+        SaveSettings();
+        OnPropertyChanged(nameof(HasSecurePassword));
+        Settings_SecureChanged?.Invoke();
+    }
+
+    /// <summary>Raised when the Secure mode password is created / changed (Settings refreshes its button).</summary>
+    public event Action? Settings_SecureChanged;
+
+    /// <summary>Screenshot checks only (--page locked): the lock screen without a password.</summary>
+    internal void LockForScreenshot() => IsLocked = true;
+
+    /// <summary>Lock screen: the password typed.</summary>
+    public bool TryUnlockScreen(string password)
+    {
+        if (Core.Security.PasswordHash.Verify(password, Settings.SecurePasswordHash)) { IsLocked = false; LockError = ""; return true; }
+        LockError = Loc.T("Pwd.Wrong");
+        return false;
+    }
+
+    /// <summary>Lock screen › Forgot password: Google sign-in with the linked account, then a new password, then open.</summary>
+    public async Task ForgotScreenPasswordAsync()
+    {
+        LockError = "";
+        if (!await PasswordRecovery.For(Settings.SecureRecoveryEmail)()) { LockError = Loc.T("Pwd.ForgotFailed"); return; }
+        var pw = Views.PasswordDialog.Create(Loc.T("Pwd.ResetTitle"), Loc.T("Pwd.ResetText"));
+        if (pw == null) return;
+        SetSecurePassword(pw);
+        IsLocked = false;
+    }
+
     /// <summary>The running program's view model (views use it for small UI preferences such as list widths).</summary>
     public static MainViewModel? Current { get; private set; }
 

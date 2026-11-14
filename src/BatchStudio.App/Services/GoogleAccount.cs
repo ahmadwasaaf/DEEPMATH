@@ -120,6 +120,9 @@ public sealed partial class GoogleAccount : ObservableObject
     /// <summary>Auto Save Files: sign in again with the account in use to allow Google Drive (the consent page asks once).</summary>
     public Task<bool> AllowDriveAsync() => SignInAsync(Current?.Email);
 
+    /// <summary>The e-mail of the account in use, or "" (password recovery links to it).</summary>
+    public string ActiveEmail => Current?.Email ?? "";
+
     /// <summary>Raised after sign-in, switch and sign-out (the Gmail watcher follows the account in use).</summary>
     public event Action? SignedInChanged;
 

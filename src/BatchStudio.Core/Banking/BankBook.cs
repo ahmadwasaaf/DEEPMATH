@@ -41,7 +41,12 @@ public sealed class BankAccount
     /// <summary>The balance on <see cref="OpeningDate"/>, before any movement entered here.</summary>
     public decimal OpeningBalance { get; set; }
     public DateTime OpeningDate { get; set; } = DateTime.Today;
+    /// <summary>Account info: free text, several lines (IBAN, SWIFT, branch, address ...). Kept as "Note" in the file.</summary>
     public string Note { get; set; } = "";
+    /// <summary>The account's password, hashed (Security.PasswordHash); empty until the user creates one.</summary>
+    public string PasswordHash { get; set; } = "";
+    /// <summary>The Google account that may reset the password (signed in when it was created).</summary>
+    public string RecoveryEmail { get; set; } = "";
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
     public List<BankTransaction> Transactions { get; set; } = [];
 
@@ -122,6 +127,7 @@ public sealed class BankBook
         foreach (var a in book.Accounts)
         {
             a.Transactions ??= [];
+            a.PasswordHash ??= ""; a.RecoveryEmail ??= ""; a.Note ??= "";
             foreach (var t in a.Transactions) { t.LinkId ??= ""; t.Counterparty ??= ""; t.Description ??= ""; }
         }
         long max = book.Accounts.SelectMany(a => a.Transactions).Select(t => t.Seq).DefaultIfEmpty(0).Max();

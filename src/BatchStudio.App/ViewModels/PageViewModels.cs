@@ -146,9 +146,18 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
         EntityName = main.ActiveEntity?.Name ?? "";
         var ws = main.Workspace!;
         DatabasePath = ws.WorkbookPath;
-        // same order and icons as the sidebar
+        // same icons as the sidebar; the third card is Bank Accounts (instead of Items)
         foreach (var (key, nav) in new[] { ("suppliers", "Nav.Suppliers"), ("clients", "Nav.Clients"), ("items", "Nav.Items"), ("categories", "Nav.Categories") })
         {
+            if (key == "items")
+            {
+                // Bank Accounts in place of Items: the number of bank accounts of the entity
+                int banks = 0;
+                try { if (main.ActiveEntity != null) banks = BatchStudio.Core.Banking.BankBook.Load(BatchStudio.Core.Banking.BankBook.PathIn(DriveSync.DataFolder(main.ActiveEntity))).Accounts.Count; }
+                catch { }
+                Tiles.Add(new StatTile { Title = Loc.T("Nav.Bank"), Value = banks.ToString("N0"), Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.Bank")?.Glyph ?? "\uE825", NavKey = "Nav.Bank" });
+                continue;
+            }
             var p = main.DataPages.FirstOrDefault(x => x.Session.Definition.Key == key);
             if (p == null) continue;
             Tiles.Add(new StatTile { Title = p.Title, Value = p.RowCount.ToString("N0"), Glyph = main.Nav.FirstOrDefault(n => n.Key == nav)?.Glyph ?? "", NavKey = nav });
@@ -699,6 +708,9 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>Settings › Google Account › Auto Save Files (entities uploaded to Google Drive).</summary>
     public DriveSync Drive => DriveSync.Instance;
+
+    /// <summary>Secure mode card: the main view model (password, lock now).</summary>
+    public MainViewModel Main => _main;
     public bool NeedsDriveAccess => Account.IsSignedIn && !Account.HasDrive;
 
     [RelayCommand]
