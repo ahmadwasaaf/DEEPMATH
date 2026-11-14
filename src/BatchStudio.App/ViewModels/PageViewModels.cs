@@ -49,6 +49,9 @@ public sealed class TickerItem
 
 public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
 {
+    /// <summary>The small lock next to the clock: Secure mode.</summary>
+    public IRelayCommand SecureCommand => main.EnterSecureModeCommand;
+
     public ObservableCollection<StatTile> Tiles { get; } = [];
     public ObservableCollection<TickerItem> Ticker { get; } = [];
     // Business pulse (all time)
@@ -155,7 +158,8 @@ public sealed partial class HomeViewModel(MainViewModel main) : ObservableObject
                 int banks = 0;
                 try { if (main.ActiveEntity != null) banks = BatchStudio.Core.Banking.BankBook.Load(BatchStudio.Core.Banking.BankBook.PathIn(DriveSync.DataFolder(main.ActiveEntity))).Accounts.Count; }
                 catch { }
-                Tiles.Add(new StatTile { Title = Loc.T("Nav.Bank"), Value = banks.ToString("N0"), Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.Bank")?.Glyph ?? "\uE825", NavKey = "Nav.Bank" });
+                // like New Invoice / Mass Invoice: the big icon, the count after the name ("Bank Accounts 2")
+                Tiles.Add(new StatTile { Title = $"{Loc.T("Nav.Bank")} {banks:N0}", Value = "", Glyph = main.Nav.FirstOrDefault(n => n.Key == "Nav.Bank")?.Glyph ?? "\uE825", NavKey = "Nav.Bank" });
                 continue;
             }
             var p = main.DataPages.FirstOrDefault(x => x.Session.Definition.Key == key);

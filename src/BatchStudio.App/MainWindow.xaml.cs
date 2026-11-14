@@ -42,15 +42,8 @@ public partial class MainWindow : Window
     }
 
     // ---------------------------------------------------------------- logo menu and Secure mode lock screen
-    private void OnLogoClick(object sender, RoutedEventArgs e)
-    {
-        if (LogoButton.ContextMenu is { } m)
-        {
-            m.PlacementTarget = LogoButton;
-            m.DataContext = DataContext;
-            m.IsOpen = true;
-        }
-    }
+    private void OnLockMouseMove(object sender, MouseEventArgs e) => LockParticles.SetPointer(e.GetPosition(LockParticles));
+    private void OnLockMouseLeave(object sender, MouseEventArgs e) => LockParticles.SetPointer(null);
 
     private readonly DispatcherTimer _clock = new() { Interval = TimeSpan.FromSeconds(1) };
 
@@ -58,8 +51,6 @@ public partial class MainWindow : Window
     {
         if (LockScreen.IsVisible)
         {
-            var brand = (TryFindResource("BrandBrush") as SolidColorBrush)?.Color ?? Color.FromRgb(0x2F, 0x80, 0xED);
-            LockGlow.Fill = new RadialGradientBrush(brand, Colors.Transparent);
             LockPassword.Clear();
             Tick(null, EventArgs.Empty);
             _clock.Tick -= Tick;

@@ -39,34 +39,7 @@
                 <StackPanel DockPanel.Dock="Top" Margin="4,0,4,16">
                     <!-- DEEPMATH brand: gradient D mark + name + tagline -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,20" FlowDirection="LeftToRight">
-                        <!-- the logo opens a small menu: Secure mode (lock the program) -->
-                        <Button x:Name="LogoButton" Click="OnLogoClick" Cursor="Hand" ToolTip="{DynamicResource Secure.MenuTip}" Focusable="False">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bd" CornerRadius="10" Padding="0" Background="Transparent" RenderTransformOrigin="0.5,0.5">
-                                        <ContentPresenter />
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Opacity" Value="0.85" />
-                                        </Trigger>
-                                        <Trigger Property="IsPressed" Value="True">
-                                            <Setter TargetName="Bd" Property="RenderTransform">
-                                                <Setter.Value><ScaleTransform ScaleX="0.94" ScaleY="0.94" /></Setter.Value>
-                                            </Setter>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                            <Button.ContextMenu>
-                                <ContextMenu Placement="Bottom">
-                                    <MenuItem Header="{DynamicResource Secure.Mode}" Command="{Binding EnterSecureModeCommand}">
-                                        <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="14" /></MenuItem.Icon>
-                                    </MenuItem>
-                                </ContextMenu>
-                            </Button.ContextMenu>
-                            <Image Source="pack://application:,,,/BatchStudio;component/Assets/deepmath.png" Width="38" Height="38" RenderOptions.BitmapScalingMode="HighQuality" />
-                        </Button>
+                        <Image Source="pack://application:,,,/BatchStudio;component/Assets/deepmath.png" Width="38" Height="38" RenderOptions.BitmapScalingMode="HighQuality" />
                         <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="DEEPMATH" FontWeight="Bold" FontSize="17" />
                             <TextBlock Text="INTELLIGENT ACCOUNTING SYSTEM" FontSize="8.5" Opacity="0.6" Margin="0,1,0,0" />
@@ -125,17 +98,15 @@
         <!-- ================= Secure mode: lock screen over the whole program ================= -->
         <Grid x:Name="LockScreen" Grid.ColumnSpan="2" Panel.ZIndex="100" Visibility="{Binding IsLocked, Converter={StaticResource BoolToVis}}"
               KeyboardNavigation.TabNavigation="Cycle" KeyboardNavigation.ControlTabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="Cycle"
-              IsVisibleChanged="OnLockVisibleChanged" FlowDirection="LeftToRight">
+              IsVisibleChanged="OnLockVisibleChanged" FlowDirection="LeftToRight"
+              PreviewMouseMove="OnLockMouseMove" MouseLeave="OnLockMouseLeave">
             <Grid.Background>
-                <RadialGradientBrush Center="0.5,0.35" GradientOrigin="0.5,0.3" RadiusX="0.9" RadiusY="0.9">
-                    <GradientStop Color="#1B2A4A" Offset="0" />
-                    <GradientStop Color="#0D1424" Offset="0.55" />
-                    <GradientStop Color="#05080F" Offset="1" />
-                </RadialGradientBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#111A2E" Offset="0" />
+                    <GradientStop Color="#070B14" Offset="1" />
+                </LinearGradientBrush>
             </Grid.Background>
             <ctl:ParticleNetwork x:Name="LockParticles" Tint="White" Opacity="0.9" />
-            <!-- soft glow behind the clock in the accent colour -->
-            <Ellipse x:Name="LockGlow" Width="620" Height="620" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-180,0,0" Opacity="0.25" IsHitTestVisible="False" />
 
             <Grid>
                 <Grid.RowDefinitions>

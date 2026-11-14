@@ -255,6 +255,24 @@
                     </StackPanel>
                     <TextBlock x:Name="ClockDate" Text="" FontSize="15" HorizontalAlignment="Center" Opacity="0.9" Margin="0,-4,0,0" />
                 </StackPanel>
+                <!-- Secure mode: a small lock at the right of the clock and date -->
+                <Button Command="{Binding SecureCommand}" ToolTip="{DynamicResource Secure.Mode}" Cursor="Hand" VerticalAlignment="Center" Margin="12,0,0,0" Focusable="False">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Width="26" Height="26" CornerRadius="13" Background="Transparent">
+                                <TextBlock x:Name="Ic" Style="{StaticResource Icon}" Text="&#xE72E;" FontSize="12" Opacity="0.55"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrandSoftBrush}" />
+                                    <Setter TargetName="Ic" Property="Foreground" Value="{DynamicResource BrandBrush}" />
+                                    <Setter TargetName="Ic" Property="Opacity" Value="1" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
                 </StackPanel>
             </Grid>
 

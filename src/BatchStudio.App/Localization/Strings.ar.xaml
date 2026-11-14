@@ -376,12 +376,11 @@
     <sys:String x:Key="Pwd.SecureCurrentTitle">تغيير كلمة سر الوضع الآمن</sys:String>
     <sys:String x:Key="Pwd.SecureCurrentText">اكتب كلمة السر الحالية أولاً.</sys:String>
     <sys:String x:Key="Secure.Mode">الوضع الآمن</sys:String>
-    <sys:String x:Key="Secure.MenuTip">قائمة DEEPMATH</sys:String>
     <sys:String x:Key="Secure.Locked">DEEPMATH مقفل</sys:String>
     <sys:String x:Key="Secure.Create">إنشاء كلمة سر</sys:String>
     <sys:String x:Key="Secure.Change">تغيير كلمة السر</sys:String>
     <sys:String x:Key="Secure.LockNow">قفل الآن</sys:String>
-    <sys:String x:Key="Secure.Text">يقفل البرنامج كله بكلمة سر لما تبعد عن الجهاز (اضغط شعار DEEPMATH › الوضع الآمن).</sys:String>
+    <sys:String x:Key="Secure.Text">يقفل البرنامج كله بكلمة سر لما تبعد عن الجهاز: من «الوضع الآمن» في القائمة الجانبية (فوق الإعدادات)، أو من القفل الصغير بجوار الساعة في الرئيسية.</sys:String>
     <sys:String x:Key="Bank.Transfer">تحويل</sys:String>
     <sys:String x:Key="Bank.Type">النوع</sys:String>
     <sys:String x:Key="Bank.Type.All">كل الحركات</sys:String>

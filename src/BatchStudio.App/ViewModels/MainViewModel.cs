@@ -148,6 +148,8 @@ public sealed partial class MainViewModel : ObservableObject
         Nav.Add(new NavItem { Key = "Nav.Items", Glyph = "", Page = () => Page("items") });
         Nav.Add(new NavItem { Key = "Nav.Categories", Glyph = "", Page = () => Page("categories") });
         Nav.Add(new NavItem { Key = "Nav.Templates", Glyph = "\uE8F1", Page = () => Templates });
+        // Secure mode: not a page - selecting it locks the program (the page in use stays behind the lock screen)
+        Nav.Add(new NavItem { Key = "Secure.Mode", Glyph = "\uE72E", Page = () => null });
         Nav.Add(new NavItem { Key = "Nav.Settings", Glyph = "", Page = () => SettingsPage });
         LanguageService.Changed += () => { foreach (var n in Nav) n.Refresh(); };
 
@@ -201,9 +203,19 @@ public sealed partial class MainViewModel : ObservableObject
         if (Nav.FirstOrDefault(n => n.Key == key) is { } nav) SelectedNav = nav;
     }
 
-    partial void OnSelectedNavChanged(NavItem? value)
+    partial void OnSelectedNavChanged(NavItem? oldValue, NavItem? value)
     {
         if (value == null) return;
+        if (value.Key == "Secure.Mode")
+        {
+            // back to the item of the page in use, then lock
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                SetProperty(ref _selectedNav, oldValue, nameof(SelectedNav));
+                EnterSecureMode();
+            });
+            return;
+        }
         if (!HasEntity && value.Key != "Nav.Settings") { ShowSetup(); return; }
         CurrentPage = value.Page();
         if (CurrentPage is TemplatesViewModel t) t.Refresh();

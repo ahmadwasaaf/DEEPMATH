@@ -376,12 +376,11 @@
     <sys:String x:Key="Pwd.SecureCurrentTitle">Change the Secure mode password</sys:String>
     <sys:String x:Key="Pwd.SecureCurrentText">Enter the current password first.</sys:String>
     <sys:String x:Key="Secure.Mode">Secure mode</sys:String>
-    <sys:String x:Key="Secure.MenuTip">DEEPMATH menu</sys:String>
     <sys:String x:Key="Secure.Locked">DEEPMATH is locked</sys:String>
     <sys:String x:Key="Secure.Create">Create password</sys:String>
     <sys:String x:Key="Secure.Change">Change password</sys:String>
     <sys:String x:Key="Secure.LockNow">Lock now</sys:String>
-    <sys:String x:Key="Secure.Text">Locks the whole program behind a password when you step away (click the DEEPMATH logo › Secure mode).</sys:String>
+    <sys:String x:Key="Secure.Text">Locks the whole program behind a password when you step away: Secure mode in the side menu (above Settings), or the small lock next to the clock on Home.</sys:String>
     <sys:String x:Key="Bank.Transfer">Transfer</sys:String>
     <sys:String x:Key="Bank.Type">Type</sys:String>
     <sys:String x:Key="Bank.Type.All">All movements</sys:String>
