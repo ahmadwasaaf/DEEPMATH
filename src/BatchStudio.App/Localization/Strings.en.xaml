@@ -399,6 +399,7 @@
     <sys:String x:Key="Secure.Change">Change password</sys:String>
     <sys:String x:Key="Secure.LockNow">Lock now</sys:String>
     <sys:String x:Key="Secure.Text">Locks the whole program behind a password when you step away: Secure mode in the side menu (above Settings), or the small lock next to the clock on Home.</sys:String>
+    <sys:String x:Key="Secure.OnStartup">Lock when the program starts (ask the password at every start)</sys:String>
     <sys:String x:Key="Bank.Transfer">Transfer</sys:String>
     <sys:String x:Key="Bank.Type">Type</sys:String>
     <sys:String x:Key="Bank.Type.All">All movements</sys:String>

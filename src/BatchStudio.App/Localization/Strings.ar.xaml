@@ -399,6 +399,7 @@
     <sys:String x:Key="Secure.Change">تغيير كلمة السر</sys:String>
     <sys:String x:Key="Secure.LockNow">قفل الآن</sys:String>
     <sys:String x:Key="Secure.Text">يقفل البرنامج كله بكلمة سر لما تبعد عن الجهاز: من «الوضع الآمن» في القائمة الجانبية (فوق الإعدادات)، أو من القفل الصغير بجوار الساعة في الرئيسية.</sys:String>
+    <sys:String x:Key="Secure.OnStartup">قفل البرنامج عند التشغيل (طلب كلمة السر في كل مرة يُفتح فيها)</sys:String>
     <sys:String x:Key="Bank.Transfer">تحويل</sys:String>
     <sys:String x:Key="Bank.Type">النوع</sys:String>
     <sys:String x:Key="Bank.Type.All">كل الحركات</sys:String>

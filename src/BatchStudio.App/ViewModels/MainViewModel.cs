@@ -156,6 +156,9 @@ public sealed partial class MainViewModel : ObservableObject
         var active = settings.Active;
         if (active != null && Workspace.FindWorkbook(active.DatabasePath) != null) ActiveEntity = active;
         else ShowSetup();
+
+        // Secure mode survives closing the program (and can be asked at every start)
+        if (HasSecurePassword && (settings.LockedAtExit || settings.LockOnStartup)) IsLocked = true;
     }
 
     private DataSetViewModel? Page(string key) => DataPages.FirstOrDefault(p => p.Session.Definition.Key == key);
@@ -572,6 +575,21 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _lockError = "";
     public bool HasSecurePassword => Settings.SecurePasswordHash.Length > 0;
 
+    /// <summary>The locked state is written at once: closing the program (✕, Alt+F4, Task Manager, a restart) never unlocks it.</summary>
+    partial void OnIsLockedChanged(bool value)
+    {
+        if (Settings.LockedAtExit == value) return;
+        Settings.LockedAtExit = value;
+        SaveSettings();
+    }
+
+    /// <summary>Settings › Secure mode: ask the password every time the program starts.</summary>
+    public bool LockOnStartup
+    {
+        get => Settings.LockOnStartup;
+        set { if (Settings.LockOnStartup == value) return; Settings.LockOnStartup = value; SaveSettings(); OnPropertyChanged(); }
+    }
+
     /// <summary>Logo menu › Secure mode: locks now (creates the password first when there is none yet).</summary>
     [RelayCommand]
     private void EnterSecureMode()
@@ -616,7 +634,7 @@ public sealed partial class MainViewModel : ObservableObject
     public event Action? Settings_SecureChanged;
 
     /// <summary>Screenshot checks only (--page locked): the lock screen without a password.</summary>
-    internal void LockForScreenshot() => IsLocked = true;
+    internal void LockForScreenshot() { IsLocked = true; Settings.LockedAtExit = false; SaveSettings(); }
 
     /// <summary>Lock screen: the password typed.</summary>
     public bool TryUnlockScreen(string password)

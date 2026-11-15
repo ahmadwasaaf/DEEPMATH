@@ -57,6 +57,10 @@ public sealed class AppSettings
     public string SecurePasswordHash { get; set; } = "";
     /// <summary>The Google account that may reset the Secure mode password.</summary>
     public string SecureRecoveryEmail { get; set; } = "";
+    /// <summary>Secure mode was on when the program closed (closing never unlocks it): the next start opens locked.</summary>
+    public bool LockedAtExit { get; set; }
+    /// <summary>Ask the Secure mode password every time the program starts.</summary>
+    public bool LockOnStartup { get; set; }
 
     /// <summary>Accent colour: "auto" (Windows accent) or #RRGGBB.</summary>
     public string Accent { get; set; } = "auto";
