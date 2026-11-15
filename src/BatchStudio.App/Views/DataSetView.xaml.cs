@@ -11,9 +11,15 @@ public partial class DataSetView : UserControl
     public DataSetView()
     {
         InitializeComponent();
-        DataContextChanged += (_, _) => ApplyLayout();
+        DataContextChanged += (_, e) =>
+        {
+            ApplyLayout();
+            if (e.OldValue is DataSetViewModel o) o.NewItemAdded -= OnNewItem;
+            if (e.NewValue is DataSetViewModel n) n.NewItemAdded += OnNewItem;
+        };
+        GridLook.NoCellFrame(ItemsGrid);
         GridLook.NoCellFrame(Grid);
-        ListWidth.Attach(ListSplitter, ListColumn, () => DataContext is DataSetViewModel { CompactGrid: true } vm ? "list." + vm.Session.Definition.Key : null, DefaultListWidth);
+        ListWidth.Attach(ListSplitter, ListColumn, () => DataContext is DataSetViewModel vm && (vm.CompactGrid || vm.IsCategories) ? "list." + vm.Session.Definition.Key : null, DefaultListWidth);
         // the search box keeps its width but never overlaps the toolbar buttons
         SearchHost.SizeChanged += (_, _) => SearchBox.Width = Math.Max(0, Math.Min(300, SearchHost.ActualWidth));
     }
@@ -30,10 +36,45 @@ public partial class DataSetView : UserControl
 
     private const double DefaultListWidth = 330;
 
+    /// <summary>"+ Item": select the new row and start typing its name.</summary>
+    private void OnNewItem(System.Data.DataRow row)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            var view = ItemsGrid.Items.Cast<object>().OfType<DataRowView>().FirstOrDefault(v => v.Row == row);
+            if (view == null) return;
+            ItemsGrid.SelectedItem = view;
+            ItemsGrid.ScrollIntoView(view);
+            ItemsGrid.CurrentCell = new DataGridCellInfo(view, ItemsGrid.Columns[1]);
+            ItemsGrid.Focus();
+            ItemsGrid.BeginEdit();
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    private void OnItemRightDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        var d = e.OriginalSource as DependencyObject;
+        while (d != null && d is not DataGridRow) d = d is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d);
+        if (d is DataGridRow row) ItemsGrid.SelectedItem = row.Item;
+    }
+
+    private void OnDeleteItem(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is DataSetViewModel vm && ItemsGrid.SelectedItem is DataRowView r) vm.DeleteItemCommand.Execute(r);
+    }
+
     /// <summary>Suppliers / Clients: an ID + name list (its width dragged by the user) and a wide details pane.</summary>
     private void ApplyLayout()
     {
-        if (DataContext is DataSetViewModel { CompactGrid: true } vm)
+        if (DataContext is DataSetViewModel { IsCategories: true })
+        {
+            // Categories: the category list on the left, the items of the selected one on the right (wide)
+            ListColumn.Width = new GridLength(ListWidth.Get("list.categories", 380));
+            ListColumn.MinWidth = 240;
+            DetailsColumn.Width = new GridLength(1, GridUnitType.Star);
+            DetailsColumn.MinWidth = 420;
+        }
+        else if (DataContext is DataSetViewModel { CompactGrid: true } vm)
         {
             ListColumn.Width = new GridLength(ListWidth.Get("list." + vm.Session.Definition.Key, DefaultListWidth));
             ListColumn.MinWidth = 220;
@@ -56,6 +97,20 @@ public partial class DataSetView : UserControl
         if (DataContext is DataSetViewModel vm && vm.Table?.Columns[e.PropertyName] is DataColumn col)
         {
             e.Column.Header = col.Caption;
+            // Categories: the name with its number of items on the right
+            if (vm.IsCategories && vm.Table.Columns.IndexOf(col) == 1)
+            {
+                e.Column = new DataGridTemplateColumn
+                {
+                    Header = col.Caption,
+                    CellTemplate = (DataTemplate)FindResource("NameWithBadge"),
+                    SortMemberPath = e.PropertyName,
+                    Width = new DataGridLength(1, DataGridLengthUnitType.Star),
+                    MinWidth = 120,
+                    IsReadOnly = true,
+                };
+                return;
+            }
             if (vm.CompactGrid)
             {
                 int index = vm.Table.Columns.IndexOf(col);

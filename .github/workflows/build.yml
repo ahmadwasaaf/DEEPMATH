@@ -121,6 +121,8 @@ jobs:
           Run 'English' 'Dark' $true 'home-geometry' '53-bg-geometry'
           Run 'English' 'Dark' $true 'home-ledger' '54-bg-ledger'
           Run 'English' 'Dark' $true 'bank-desc' '55-bank-descriptions'
+          Run 'English' 'Dark' $true 'categories' '61-categories'
+          Run 'Arabic' 'Light' $true 'categories' '62-categories-ar'
           Run 'English' 'Dark' $true 'locked' '58-secure-lock'
           Run 'Arabic' 'Light' $true 'locked' '59-secure-lock-ar'
           Run 'English' 'Dark' $true 'home' '60-home-bank-card'

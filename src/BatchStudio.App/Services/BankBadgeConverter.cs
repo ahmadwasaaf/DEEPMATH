@@ -21,6 +21,8 @@ public sealed class BankBadgeConverter : IMultiValueConverter
         int n = 0;
         var item = values.Length > 0 ? values[0] : null;
         if (item is Party p) n = p.BankCount;
+        else if (item is DataRowView cv && values.Length > 2 && values[2] is DataSetViewModel { IsCategories: true } cvm)
+            return cvm.ItemCount(cv.Row) is var k && k > 0 ? k.ToString("N0", CultureInfo.InvariantCulture) : "";
         else if (item is DataRowView rv && values.Length > 2 && values[2] is DataSetViewModel vm) n = vm.BankCount(rv.Row);
         else if (item is string name && CountsByName.TryGetValue(name.Trim(), out var c)) n = c;
         else if (item is ReportParty rp && rp.Id.StartsWith("SUP", StringComparison.OrdinalIgnoreCase)

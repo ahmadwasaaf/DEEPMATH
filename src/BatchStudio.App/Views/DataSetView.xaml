@@ -162,7 +162,104 @@
                       VirtualizingPanel.VirtualizationMode="Recycling" RowHeight="34" />
 
             <Border Grid.Column="2" Style="{StaticResource Card}" Padding="14">
-                <DockPanel>
+                <Grid>
+                <!-- ================= Categories: the selected category and its items ================= -->
+                <DockPanel Visibility="{Binding IsCategories, Converter={StaticResource BoolToVis}}">
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Border DockPanel.Dock="Left" Width="36" Height="36" CornerRadius="18" Background="{DynamicResource BrandSoftBrush}" Margin="0,0,10,0">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8EC;" FontSize="15" Foreground="{DynamicResource BrandBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CategoryTitle}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Style="{StaticResource Muted}" FontSize="12">
+                                <Run Text="{Binding CategoryItemCount, Mode=OneWay, StringFormat=N0}" /><Run Text=" " /><Run Text="{DynamicResource Cat.ItemsWord}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
+                    <!-- the category's own fields (ID, name, status), side by side -->
+                    <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Fields}" Margin="0,0,0,6"
+                                  Visibility="{Binding ShowUncategorized, Converter={StaticResource InverseBoolToVis}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.Resources>
+                            <DataTemplate DataType="{x:Type vm:FieldEditViewModel}">
+                                <StackPanel Margin="0,0,10,6">
+                                    <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="11.5" Margin="0,0,0,3" />
+                                    <TextBox Text="{Binding Value, UpdateSourceTrigger=LostFocus}" Padding="9,6" Visibility="{Binding IsText, Converter={StaticResource BoolToVis}}" />
+                                    <ComboBox ItemsSource="{Binding Options}" Text="{Binding Value, UpdateSourceTrigger=Explicit}" svc:ComboSearch.IsEnabled="True" HorizontalAlignment="Stretch"
+                                              Visibility="{Binding IsChoice, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.Resources>
+                    </ItemsControl>
+                    <!-- items toolbar: search (all items) and + Item -->
+                    <DockPanel DockPanel.Dock="Top" Margin="0,4,0,8">
+                        <Button DockPanel.Dock="Right" Command="{Binding AddItemCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="12,6" Margin="8,0,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="12" Margin="0,0,6,0" />
+                                <TextBlock Text="{DynamicResource Cat.AddItem}" />
+                            </StackPanel>
+                        </Button>
+                        <Grid>
+                            <TextBox x:Name="ItemSearchBox" Text="{Binding ItemSearch, UpdateSourceTrigger=PropertyChanged, Delay=200}" Padding="30,6,8,6" VerticalContentAlignment="Center" />
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE721;" FontSize="12" Opacity="0.6" Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" IsHitTestVisible="False" />
+                            <TextBlock Text="{DynamicResource Cat.SearchItems}" Opacity="0.5" Margin="31,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Text, ElementName=ItemSearchBox}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </DockPanel>
+                    <!-- Uncategorized: items with no category (or one that no longer exists) -->
+                    <Button DockPanel.Dock="Bottom" Command="{Binding ShowUncategorizedItemsCommand}" HorizontalAlignment="Left" Padding="10,4" Margin="0,8,0,0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding UncategorizedCount}" Value="0"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <TextBlock>
+                            <Run Text="{DynamicResource Cat.Uncategorized}" /><Run Text=" · " /><Run Text="{Binding UncategorizedCount, Mode=OneWay, StringFormat=N0}" />
+                        </TextBlock>
+                    </Button>
+                    <DataGrid x:Name="ItemsGrid" ItemsSource="{Binding CategoryItems}" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                              SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal" RowHeight="34"
+                              EnableRowVirtualization="True" VirtualizingPanel.VirtualizationMode="Recycling" PreviewMouseRightButtonDown="OnItemRightDown">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{DynamicResource Cat.DeleteItem}" Click="OnDeleteItem">
+                                    <MenuItem.Icon><TextBlock Style="{StaticResource Icon}" Text="&#xE74D;" FontSize="13" /></MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{DynamicResource Cat.Code}" Binding="{Binding c0}" IsReadOnly="True" Width="90" />
+                            <DataGridTextColumn Header="{DynamicResource Cat.ItemName}" Binding="{Binding c1, UpdateSourceTrigger=LostFocus}" Width="*" MinWidth="160" />
+                            <DataGridTextColumn Header="{DynamicResource Cat.Price}" Binding="{Binding c2, UpdateSourceTrigger=LostFocus}" Width="110" />
+                            <DataGridTemplateColumn Header="{DynamicResource Cat.Category}" Width="170" SortMemberPath="c3">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding c3}" VerticalAlignment="Center" Margin="6,0" /></DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <ComboBox ItemsSource="{Binding DataContext.CategoryChoices, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                  DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding c3, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="{DynamicResource Cat.Status}" Binding="{Binding c4, UpdateSourceTrigger=LostFocus}" Width="90" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+
+                <DockPanel Visibility="{Binding IsCategories, Converter={StaticResource InverseBoolToVis}}">
                     <TextBlock DockPanel.Dock="Top" Text="{DynamicResource Common.Details}" Style="{StaticResource SectionTitle}" />
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding Fields}">
@@ -215,6 +312,7 @@
                         </ItemsControl>
                     </ScrollViewer>
                 </DockPanel>
+                </Grid>
             </Border>
         </Grid>
 

@@ -148,12 +148,177 @@ public sealed partial class DataSetViewModel : ObservableObject
         BadgeVersion++;
         UpdateBankCounts();
         _loading = false;
+        TableRebuilt?.Invoke();
         SelectedRow = (keepSel == null ? null
             : View.Cast<DataRowView>().FirstOrDefault(v => string.Equals(v[ColName(0)] as string, keepSel, StringComparison.OrdinalIgnoreCase)))
             ?? View.Cast<DataRowView>().FirstOrDefault();
     }
 
     private static string ColName(int i) => "c" + i;
+
+    /// <summary>Raised when the sheet is (re)loaded into a new DataTable (the Categories page re-reads the items).</summary>
+    public event Action? TableRebuilt;
+
+    // ---------------------------------------------------------------- Categories page: the items of the selected category
+    public bool IsCategories => Session.Definition.Key == "categories";
+    private DataSetViewModel? ItemsPage => _main.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "items");
+    private bool _itemsHooked;
+    private DataTable? _itemsTable;
+    private Dictionary<string, int> _itemCounts = new(StringComparer.OrdinalIgnoreCase);
+    public const string Uncategorized = "\u0000none";
+
+    /// <summary>The items of the selected category (rows of the Items sheet: editing them edits Items).</summary>
+    [ObservableProperty] private DataView? _categoryItems;
+    [ObservableProperty] private int _categoryItemCount;
+    [ObservableProperty] private string _itemSearch = "";
+    [ObservableProperty] private string _categoryTitle = "";
+    partial void OnItemSearchChanged(string value) => FilterCategoryItems();
+    /// <summary>"Uncategorized" (items with no category, or one that no longer exists) is shown at the end of the list.</summary>
+    [ObservableProperty] private bool _showUncategorized;
+    public int UncategorizedCount => _itemCounts.TryGetValue(Uncategorized, out var n) ? n : 0;
+    partial void OnShowUncategorizedChanged(bool value) { if (value) SelectedRow = null; FilterCategoryItems(); }
+
+    /// <summary>Category choices for an item (ID shown with the name).</summary>
+    public ObservableCollection<CategoryChoice> CategoryChoices { get; } = [];
+
+    private int ItemCol(string caption) =>
+        _itemsTable?.Columns.Cast<DataColumn>().FirstOrDefault(c => string.Equals(c.Caption.Trim(), caption, StringComparison.OrdinalIgnoreCase)) is { } c
+            ? _itemsTable.Columns.IndexOf(c) : -1;
+    private int ItemCategoryCol => ItemCol("Category ID");
+
+    private void HookItems()
+    {
+        if (!IsCategories) return;
+        var items = ItemsPage;
+        if (items == null) return;
+        if (!_itemsHooked) { items.TableRebuilt += OnItemsRebuilt; _itemsHooked = true; }
+        if (!ReferenceEquals(_itemsTable, items.Table)) OnItemsRebuilt();
+    }
+
+    private void OnItemsRebuilt()
+    {
+        var items = ItemsPage;
+        _itemsTable = items?.Table;
+        if (_itemsTable == null) { CategoryItems = null; return; }
+        _itemsTable.RowChanged += (_, e) => { if (e.Action is DataRowAction.Change or DataRowAction.Add) RecountItems(); };
+        _itemsTable.RowDeleted += (_, _) => RecountItems();
+        CategoryItems = new DataView(_itemsTable);
+        RecountItems();
+        FilterCategoryItems();
+    }
+
+    /// <summary>Items per category ID (and how many have none / an unknown one).</summary>
+    private void RecountItems()
+    {
+        var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        int cc = ItemCategoryCol;
+        var known = Table?.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Deleted)
+                         .Select(r => (r[0] as string ?? "").Trim()).Where(x => x.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+        if (_itemsTable != null && cc >= 0)
+            foreach (DataRow r in _itemsTable.Rows)
+            {
+                if (r.RowState == DataRowState.Deleted) continue;
+                var id = (r[cc] as string ?? "").Trim();
+                if (id.Length == 0 || !known.Contains(id)) id = Uncategorized;
+                counts[id] = counts.TryGetValue(id, out var n) ? n + 1 : 1;
+            }
+        _itemCounts = counts;
+        OnPropertyChanged(nameof(UncategorizedCount));
+        BadgeVersion++;
+        CategoryChoices.Clear();
+        if (Table != null)
+            foreach (DataRow r in Table.Rows)
+            {
+                if (r.RowState == DataRowState.Deleted) continue;
+                var id = (r[0] as string ?? "").Trim();
+                if (id.Length > 0) CategoryChoices.Add(new CategoryChoice(id, $"{id} · {(Table.Columns.Count > 1 ? r[1] as string : "")}"));
+            }
+    }
+
+    public int ItemCount(DataRow row) =>
+        IsCategories && _itemCounts.TryGetValue((row[0] as string ?? "").Trim(), out var n) ? n : 0;
+
+    private string SelectedCategoryId => (SelectedRow?[ColName(0)] as string ?? "").Trim();
+
+    /// <summary>The item list: the selected category (or Uncategorized), narrowed by the item search.</summary>
+    private void FilterCategoryItems()
+    {
+        if (CategoryItems == null || _itemsTable == null) return;
+        int cc = ItemCategoryCol;
+        string Esc(string v) => v.Replace("'", "''").Replace("[", "[[]").Replace("%", "[%]").Replace("*", "[*]");
+        var parts = new List<string>();
+        if (cc >= 0)
+        {
+            var col = _itemsTable.Columns[cc].ColumnName;
+            if (ShowUncategorized)
+            {
+                var ids = Table?.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Deleted)
+                                .Select(r => (r[0] as string ?? "").Trim()).Where(x => x.Length > 0).Select(x => $"'{x.Replace("'", "''")}'").ToList() ?? [];
+                parts.Add(ids.Count == 0 ? $"(ISNULL([{col}], '') = '')" : $"(ISNULL([{col}], '') = '' OR [{col}] NOT IN ({string.Join(",", ids)}))");
+                CategoryTitle = Loc.T("Cat.Uncategorized");
+            }
+            else if (SelectedCategoryId.Length > 0 && ItemSearch.Trim().Length == 0)
+            {
+                parts.Add($"[{col}] = '{SelectedCategoryId.Replace("'", "''")}'");
+                CategoryTitle = SelectedRow?[ColName(1)] as string ?? SelectedCategoryId;
+            }
+            else CategoryTitle = ItemSearch.Trim().Length > 0 ? Loc.T("Cat.AllItems") : SelectedRow?[ColName(1)] as string ?? "";
+        }
+        var q = ItemSearch.Trim();
+        if (q.Length > 0)
+        {
+            // the search looks in every item (any category)
+            var esc = Esc(q);
+            var cols = _itemsTable.Columns.Cast<DataColumn>().Select(c => $"[{c.ColumnName}] LIKE '%{esc}%'");
+            parts.Add("(" + string.Join(" OR ", cols) + ")");
+        }
+        try { CategoryItems.RowFilter = string.Join(" AND ", parts); } catch { CategoryItems.RowFilter = ""; }
+        CategoryItemCount = CategoryItems.Count;
+    }
+
+    /// <summary>"+ Item": a new item in the selected category (the next code), selected for typing its name.</summary>
+    [RelayCommand]
+    private void AddItem()
+    {
+        var items = ItemsPage;
+        if (items?.Table == null) return;
+        HookItems();
+        ItemSearch = "";
+        var row = items.Table.NewRow();
+        row[0] = items.ToTableData().NextId(items.Session.Definition.IdPrefix);
+        int cc = ItemCategoryCol;
+        if (cc >= 0 && !ShowUncategorized) row[cc] = SelectedCategoryId;
+        int st = ItemCol("Status");
+        if (st >= 0) row[st] = "Active";
+        items.Table.Rows.Add(row);
+        FilterCategoryItems();
+        NewItemAdded?.Invoke(row);
+    }
+
+    /// <summary>The view selects and edits the new item row.</summary>
+    public event Action<DataRow>? NewItemAdded;
+
+    /// <summary>Moves an item to another category (the item list's Category column).</summary>
+    public void MoveItem(DataRowView item, string categoryId)
+    {
+        int cc = ItemCategoryCol;
+        if (cc < 0) return;
+        item.Row[cc] = categoryId;
+        FilterCategoryItems();
+    }
+
+    [RelayCommand]
+    private void DeleteItem(DataRowView? item)
+    {
+        if (item == null || ItemsPage?.Table == null) return;
+        var name = _itemsTable!.Columns.Count > 1 ? item.Row[1] as string : "";
+        if (!Dialogs.Confirm(Loc.F("Cat.DeleteItemAsk", item.Row[0] as string ?? "", name ?? ""))) return;
+        item.Row.Delete();
+        FilterCategoryItems();
+    }
+
+    [RelayCommand]
+    private void ShowUncategorizedItems() => ShowUncategorized = true;
 
     /// <summary>Shows <see cref="DataSetSession.Current"/> again (after it was replaced in memory).</summary>
     public void ShowCurrent() => BuildTable(Session.Current);
@@ -248,6 +413,12 @@ public sealed partial class DataSetViewModel : ObservableObject
 
     partial void OnSelectedRowChanged(DataRowView? value)
     {
+        if (IsCategories)
+        {
+            if (value != null && ShowUncategorized) { _showUncategorized = false; OnPropertyChanged(nameof(ShowUncategorized)); }
+            HookItems();
+            FilterCategoryItems();
+        }
         Fields.Clear();
         if (value == null || Table == null) return;
         bool suppliers = Session.Definition.Key == "suppliers";
@@ -813,6 +984,8 @@ public sealed partial class DataSetViewModel : ObservableObject
 
     public async Task SaveAsync()
     {
+        // Categories: the items edited here belong to the Items sheet (no page of its own any more)
+        if (IsCategories && ItemsPage is { IsDirty: true } itemsPage) await itemsPage.SaveAsync();
         _autoSave.Stop();
         if (_saving) { _autoSave.Start(); return; }
         var data = ToTableData();
@@ -1141,3 +1314,6 @@ public sealed record HealthLink(string Id, string Name, IRelayCommand Open)
 {
     public string ShortId => System.Text.RegularExpressions.Regex.Replace(Id, @"-0+(\d)", "-$1");
 }
+
+/// <summary>A category in the item list's Category column: its ID, shown with the name.</summary>
+public sealed record CategoryChoice(string Id, string Label);
