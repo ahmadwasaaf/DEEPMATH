@@ -51,9 +51,9 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
     }
 
     /// <summary>
-    /// "Update SUP-004 with these details": the record already saved under this name takes what the form has (newer
-    /// fields win, its old bank paragraph stays as another account). Editing a second copy: the two become one (the
-    /// lower ID stays).
+    /// "Update SUP-004 with these details": a side-by-side review of what differs (the saved values chosen by default);
+    /// only what the user picks changes, a new bank paragraph is added as another account. Theme, ID and name never change.
+    /// Editing a second copy: the two become one (the lower ID stays).
     /// </summary>
     [RelayCommand]
     private async Task UpdateExistingAsync()
@@ -71,8 +71,21 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         var keep = page.RecordValues(keepId);
         var existingName = page.RecordValues(other) is { } ov && ov.Length > 1 ? ov[1] : "";
         if (keep == null) { Error = Loc.F("Inv.PartyExists", existingName); return; }
-        var merged = page.MergeValues(keep, newer);
+        // the differences only, side by side; the saved values stay unless the user picks the form's
+        var rows = page.MergeRows(keep, newer);
         int nameCol = NameColumn(page.Headers);
+        if (rows.Count == 0 && dropId.Length == 0)
+        {
+            _status = Loc.F("Party.NoChanges", keepId);
+            Reset();
+            Closed?.Invoke(existingName);                     // nothing to change: just use the saved record
+            return;
+        }
+        if (rows.Count == 0 && !Dialogs.Confirm(Loc.F("Merge.NoDiff", dropId, keepId))) return;
+        if (rows.Count > 0 && !Views.MergeReviewDialog.Review(Loc.F("Party.ReviewTitle", keepId, existingName), Loc.F("Party.ReviewText", keepId),
+                                                             Loc.F("Party.UpdateExisting", keepId), rows))
+            return;
+        var merged = page.ApplyMerge(keep, rows);
         if (existingName.Length > 0 && nameCol < merged.Length) merged[nameCol] = existingName;   // the name already used by invoices
         var name = nameCol < merged.Length ? merged[nameCol] : existingName;
         IsBusy = true;

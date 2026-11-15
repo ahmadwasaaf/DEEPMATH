@@ -669,55 +669,71 @@ public sealed partial class DataSetViewModel : ObservableObject
         return false;
     }
 
-    // ---------------------------------------------------------------- the same supplier saved twice: merge
+    // ---------------------------------------------------------------- the same supplier saved twice: update / merge
     /// <summary>
-    /// <paramref name="keep"/> (the record that stays) completed with <paramref name="newer"/> (header order): every field
-    /// the newer one has wins; its bank accounts come first (account 1, printed by default) and the kept record's other
-    /// accounts follow (the same paragraph is never listed twice). The name of the kept record stays (invoices use it).
+    /// The differences between a saved record (<paramref name="keep"/>) and incoming details (<paramref name="newer"/>),
+    /// header order: every field the incoming one has and that is not the same (ID and name never change), and every bank
+    /// paragraph not saved yet (taking it adds an account). Nothing is chosen: the saved values stay unless the user picks.
     /// </summary>
-    public string[] MergeValues(string[] keep, string[] newer)
+    public List<Views.MergeRow> MergeRows(string[] keep, string[] newer)
     {
         var headers = Headers;
         bool banks = Session.Definition.Key == "suppliers";
-        var bankCols = banks ? SupplierBanks.Columns(headers) : new List<(int Number, int Column)>();
-        int defCol = banks ? SupplierBanks.DefaultColumn(headers) : -1;
-        var result = new string[headers.Count];
-        for (int i = 0; i < result.Length; i++) result[i] = i < keep.Length ? keep[i] ?? "" : "";
-        for (int i = 2; i < result.Length; i++)
+        var rows = new List<Views.MergeRow>();
+        static string Norm(string? v) => SupplierBanks.Normalize(v);
+        for (int i = 2; i < headers.Count; i++)
         {
             if (banks && SupplierBanks.IsBankHeader(headers, i)) continue;
-            var v = i < newer.Length ? (newer[i] ?? "").Trim() : "";
-            if (v.Length > 0) result[i] = v;
+            var inc = i < newer.Length ? (newer[i] ?? "").Trim() : "";
+            var old = i < keep.Length ? (keep[i] ?? "").Trim() : "";
+            if (inc.Length == 0 || Norm(inc) == Norm(old)) continue;
+            rows.Add(new Views.MergeRow { Header = headers[i], Column = i, Saved = old, Incoming = inc });
         }
-        if (!banks) return result;
-        var texts = new List<string>();
-        void Take(string[] row)
+        if (banks)
         {
-            foreach (var (_, c) in bankCols)
+            var cols = SupplierBanks.Columns(headers);
+            var saved = cols.Select(c => c.Column < keep.Length ? Norm(keep[c.Column]) : "").Where(t => t.Length > 0).ToHashSet();
+            foreach (var (_, c) in cols)
             {
-                var t = c < row.Length ? (row[c] ?? "").Trim() : "";
-                if (t.Length > 0 && texts.All(x => SupplierBanks.Normalize(x) != SupplierBanks.Normalize(t))) texts.Add(t);
+                var t = c < newer.Length ? (newer[c] ?? "").Trim() : "";
+                if (t.Length == 0 || saved.Contains(Norm(t))) continue;
+                saved.Add(Norm(t));
+                rows.Add(new Views.MergeRow { Header = Loc.T("MergeReview.BankHeader"), Column = c, Saved = "", Incoming = t, IsNewBank = true });
             }
         }
-        Take(newer);
-        Take(keep);
-        // enough bank columns for all of them
-        for (int n = 1; n <= texts.Count && n <= SupplierBanks.MaxAccounts; n++)
-            if (bankCols.All(b => b.Number != n)) EnsureColumn(SupplierBanks.HeaderFor(n));
-        headers = Headers;
-        if (result.Length < headers.Count)
-        {
-            int old = result.Length;
-            Array.Resize(ref result, headers.Count);
-            for (int k = old; k < result.Length; k++) result[k] = "";
-        }
-        foreach (var (n, c) in SupplierBanks.Columns(headers)) result[c] = n <= texts.Count ? texts[n - 1] : "";
-        defCol = SupplierBanks.DefaultColumn(headers);
-        if (defCol >= 0) result[defCol] = "";                  // the newest account is printed (account 1)
-        return result;
+        return rows;
     }
 
-    private static int IdNumber(string id) => int.TryParse(new string(id.Where(char.IsDigit).ToArray()), out var n) ? n : int.MaxValue;
+    /// <summary>The saved record with the rows the user took (new bank paragraphs go to the next free account).</summary>
+    public string[] ApplyMerge(string[] keep, IEnumerable<Views.MergeRow> rows)
+    {
+        var result = (string[])keep.Clone();
+        void Fit()
+        {
+            if (result.Length >= Headers.Count) return;
+            int old = result.Length;
+            Array.Resize(ref result, Headers.Count);
+            for (int k = old; k < result.Length; k++) result[k] = "";
+        }
+        Fit();
+        foreach (var r in rows.Where(r => r.TakeIncoming))
+        {
+            if (!r.IsNewBank) { if (r.Column < result.Length) result[r.Column] = r.Incoming; continue; }
+            // the next empty account (the printed account, DEFAULT BANK, does not change)
+            var cols = SupplierBanks.Columns(Headers);
+            var free = cols.FirstOrDefault(c => c.Column < result.Length && (result[c.Column] ?? "").Trim().Length == 0);
+            if (free.Number == 0)
+            {
+                int n = cols.Count == 0 ? 1 : cols.Max(c => c.Number) + 1;
+                if (n > SupplierBanks.MaxAccounts) continue;
+                EnsureColumn(SupplierBanks.HeaderFor(n));
+                Fit();
+                free = SupplierBanks.Columns(Headers).First(c => c.Number == n);
+            }
+            result[free.Column] = r.Incoming;
+        }
+        return result;
+    }
 
     /// <summary>Removes the record with this ID (IDs after it are renumbered, as Delete does).</summary>
     public bool DeleteRecord(string id)
@@ -748,9 +764,15 @@ public sealed partial class DataSetViewModel : ObservableObject
         var drop = RecordValues(m.Drop);
         if (keep == null || drop == null) { MergeOffer = ""; _merge = null; return; }
         var name = keep.Length > 1 ? keep[1] : m.Keep;
-        if (!Dialogs.Confirm(Loc.F("Merge.Ask", m.Drop, m.Keep, name))) return;
-        var merged = MergeValues(keep, drop);
-        UpdateRecord(m.Keep, merged);
+        var rows = MergeRows(keep, drop);
+        if (rows.Count == 0)
+        {
+            if (!Dialogs.Confirm(Loc.F("Merge.NoDiff", m.Drop, m.Keep))) return;
+        }
+        else if (!Views.MergeReviewDialog.Review(Loc.F("Merge.Title", m.Drop, m.Keep), Loc.F("Merge.Text", m.Keep, name, m.Drop),
+                                                 Loc.F("Merge.Offer", m.Drop, m.Keep), rows))
+            return;
+        UpdateRecord(m.Keep, ApplyMerge(keep, rows));
         DeleteRecord(m.Drop);
         MergeOffer = "";
         _merge = null;
@@ -758,6 +780,8 @@ public sealed partial class DataSetViewModel : ObservableObject
         await SaveAsync();
         if (!IsDirty) Status = Loc.F("Merge.Done", m.Drop, m.Keep);
     }
+
+    private static int IdNumber(string id) => int.TryParse(new string(id.Where(char.IsDigit).ToArray()), out var n) ? n : int.MaxValue;
 
     // ---------------------------------------------------------------- commands
     [RelayCommand]
