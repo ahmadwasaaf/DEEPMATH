@@ -669,6 +669,96 @@ public sealed partial class DataSetViewModel : ObservableObject
         return false;
     }
 
+    // ---------------------------------------------------------------- the same supplier saved twice: merge
+    /// <summary>
+    /// <paramref name="keep"/> (the record that stays) completed with <paramref name="newer"/> (header order): every field
+    /// the newer one has wins; its bank accounts come first (account 1, printed by default) and the kept record's other
+    /// accounts follow (the same paragraph is never listed twice). The name of the kept record stays (invoices use it).
+    /// </summary>
+    public string[] MergeValues(string[] keep, string[] newer)
+    {
+        var headers = Headers;
+        bool banks = Session.Definition.Key == "suppliers";
+        var bankCols = banks ? SupplierBanks.Columns(headers) : new List<(int Number, int Column)>();
+        int defCol = banks ? SupplierBanks.DefaultColumn(headers) : -1;
+        var result = new string[headers.Count];
+        for (int i = 0; i < result.Length; i++) result[i] = i < keep.Length ? keep[i] ?? "" : "";
+        for (int i = 2; i < result.Length; i++)
+        {
+            if (banks && SupplierBanks.IsBankHeader(headers, i)) continue;
+            var v = i < newer.Length ? (newer[i] ?? "").Trim() : "";
+            if (v.Length > 0) result[i] = v;
+        }
+        if (!banks) return result;
+        var texts = new List<string>();
+        void Take(string[] row)
+        {
+            foreach (var (_, c) in bankCols)
+            {
+                var t = c < row.Length ? (row[c] ?? "").Trim() : "";
+                if (t.Length > 0 && texts.All(x => SupplierBanks.Normalize(x) != SupplierBanks.Normalize(t))) texts.Add(t);
+            }
+        }
+        Take(newer);
+        Take(keep);
+        // enough bank columns for all of them
+        for (int n = 1; n <= texts.Count && n <= SupplierBanks.MaxAccounts; n++)
+            if (bankCols.All(b => b.Number != n)) EnsureColumn(SupplierBanks.HeaderFor(n));
+        headers = Headers;
+        if (result.Length < headers.Count)
+        {
+            int old = result.Length;
+            Array.Resize(ref result, headers.Count);
+            for (int k = old; k < result.Length; k++) result[k] = "";
+        }
+        foreach (var (n, c) in SupplierBanks.Columns(headers)) result[c] = n <= texts.Count ? texts[n - 1] : "";
+        defCol = SupplierBanks.DefaultColumn(headers);
+        if (defCol >= 0) result[defCol] = "";                  // the newest account is printed (account 1)
+        return result;
+    }
+
+    private static int IdNumber(string id) => int.TryParse(new string(id.Where(char.IsDigit).ToArray()), out var n) ? n : int.MaxValue;
+
+    /// <summary>Removes the record with this ID (IDs after it are renumbered, as Delete does).</summary>
+    public bool DeleteRecord(string id)
+    {
+        if (Table == null) return false;
+        foreach (DataRow r in Table.Rows)
+        {
+            if (r.RowState == DataRowState.Deleted) continue;
+            if (!string.Equals((r[0] as string ?? "").Trim(), id.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+            r.Delete();
+            RenumberIds();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>The same name saved twice: "Merge SUP-058 into SUP-004" next to the status (the older ID stays).</summary>
+    [ObservableProperty] private string _mergeOffer = "";
+    public bool HasMergeOffer => MergeOffer.Length > 0;
+    partial void OnMergeOfferChanged(string value) => OnPropertyChanged(nameof(HasMergeOffer));
+    private (string Keep, string Drop)? _merge;
+
+    [RelayCommand]
+    private async Task MergeDuplicatesAsync()
+    {
+        if (_merge is not { } m) return;
+        var keep = RecordValues(m.Keep);
+        var drop = RecordValues(m.Drop);
+        if (keep == null || drop == null) { MergeOffer = ""; _merge = null; return; }
+        var name = keep.Length > 1 ? keep[1] : m.Keep;
+        if (!Dialogs.Confirm(Loc.F("Merge.Ask", m.Drop, m.Keep, name))) return;
+        var merged = MergeValues(keep, drop);
+        UpdateRecord(m.Keep, merged);
+        DeleteRecord(m.Drop);
+        MergeOffer = "";
+        _merge = null;
+        SelectedRow = View?.Cast<DataRowView>().FirstOrDefault(r => string.Equals(r[ColName(0)] as string, m.Keep, StringComparison.OrdinalIgnoreCase));
+        await SaveAsync();
+        if (!IsDirty) Status = Loc.F("Merge.Done", m.Drop, m.Keep);
+    }
+
     // ---------------------------------------------------------------- commands
     [RelayCommand]
     private void AddRow()
@@ -711,8 +801,13 @@ public sealed partial class DataSetViewModel : ObservableObject
         if (IsPartySheet && FirstDuplicateName() is { } dup)
         {
             Status = Loc.F("Validate.DuplicateName", dup.Name, string.Join(", ", dup.Ids));
+            // offer to merge the newer record into the older one (lowest number stays)
+            var ids = dup.Ids.OrderBy(IdNumber).ToList();
+            if (ids.Count >= 2) { _merge = (ids[0], ids[^1]); MergeOffer = Loc.F("Merge.Offer", ids[^1], ids[0]); }
             return;
         }
+        MergeOffer = "";
+        _merge = null;
         int version = _editVersion;
         int keep = _main.Settings.KeepBackups;
         _saving = true;

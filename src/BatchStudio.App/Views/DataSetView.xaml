@@ -238,7 +238,15 @@
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
-            <TextBlock Text="{Binding Status}" Style="{StaticResource Muted}" VerticalAlignment="Center" />
+            <!-- the same name saved twice: merge the newer record into the older one -->
+            <Button DockPanel.Dock="Right" Command="{Binding MergeDuplicatesCommand}" Style="{DynamicResource AccentButtonStyle}" Padding="12,4" Margin="10,0,0,0"
+                    Visibility="{Binding HasMergeOffer, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xEA3C;" FontSize="12" Margin="0,0,6,0" />
+                    <TextBlock Text="{Binding MergeOffer}" />
+                </StackPanel>
+            </Button>
+            <TextBlock Text="{Binding Status}" Style="{StaticResource Muted}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
         </DockPanel>
         <!-- full check of the list: each finding with the records concerned (click one to open it) -->
         <Border Grid.RowSpan="4" Panel.ZIndex="20" Background="#99000000" CornerRadius="8"

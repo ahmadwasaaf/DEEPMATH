@@ -244,6 +244,12 @@
     <sys:String x:Key="Inv.NewClient">عميل جديد</sys:String>
     <sys:String x:Key="Inv.PartyRequired">الحقلان "{0}" و "{1}" مطلوبان.</sys:String>
     <sys:String x:Key="Inv.PartyExists">"{0}" موجود بالفعل - اختره من القائمة.</sys:String>
+    <sys:String x:Key="Party.UpdateExisting">تحديث {0} بهذه البيانات</sys:String>
+    <sys:String x:Key="Party.ExistsUpdate">&quot;{0}&quot; محفوظ بالفعل باسم {1}. تحديث {1} ببيانات هذا النموذج؟</sys:String>
+    <sys:String x:Key="Party.Updated">تم تحديث {0}: {1}</sys:String>
+    <sys:String x:Key="Merge.Offer">دمج {0} في {1}</sys:String>
+    <sys:String x:Key="Merge.Ask">دمج {0} في {1} ({2})؟&#x0a;&#x0a;{1} يحتفظ برقمه واسمه ويأخذ بيانات {0}، والفقرة البنكية القديمة تبقى كحساب إضافي. ثم يُحذف {0}.</sys:String>
+    <sys:String x:Key="Merge.Done">تم دمج {0} في {1}</sys:String>
     <sys:String x:Key="Inv.PartyIdExists">الكود {0} مستخدم بالفعل.</sys:String>
     <sys:String x:Key="Inv.PartyAdded">تمت إضافة "{0}" واختياره - جاهز لأول فاتورة.</sys:String>
     <sys:String x:Key="Act.Open">فتح الفاتورة</sys:String>

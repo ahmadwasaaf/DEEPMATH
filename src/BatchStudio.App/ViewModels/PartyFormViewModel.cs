@@ -19,6 +19,76 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
     [ObservableProperty] private bool _isOpen;
     public bool IsClients { get; private set; }
 
+    /// <summary>The name typed is already saved (this record's ID): Save offers to update that record instead.</summary>
+    [ObservableProperty] private string _existingId = "";
+    public bool HasExisting => ExistingId.Length > 0;
+    public string UpdateExistingText => Loc.F("Party.UpdateExisting", ExistingId);
+    partial void OnExistingIdChanged(string value) { OnPropertyChanged(nameof(HasExisting)); OnPropertyChanged(nameof(UpdateExistingText)); }
+
+    /// <summary>Error for a name already saved: the message and the "Update SUP-004 with these details" button.</summary>
+    private void NameTaken(DataSetViewModel page, string name, string? exceptId)
+    {
+        var id = page.SameNameId(name, exceptId)
+                 ?? (IsClients ? InvoiceService.Clients(page.Session.Current) : InvoiceService.Suppliers(page.Session.Current))
+                    .Where(p => !string.Equals(p.Id, exceptId, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase))?.Id ?? "";
+        ExistingId = id == "?" ? "" : id;
+        Error = ExistingId.Length > 0 ? Loc.F("Party.ExistsUpdate", name, ExistingId) : Loc.F("Inv.PartyExists", name);
+    }
+
+    /// <summary>The form's values in the sheet's column order (new bank columns added when needed).</summary>
+    private string[] FormValues(DataSetViewModel page)
+    {
+        foreach (var (header, value) in _bankValues)
+            if (value.Trim().Length > 0 || SupplierBanks.IsDefaultHeader(header)) page.EnsureColumn(header);
+        var headers = page.Headers;
+        var values = new string[headers.Count];
+        for (int i = 0; i < values.Length; i++) values[i] = i < _original.Length ? _original[i] ?? "" : "";
+        foreach (var f in Fields.OfType<NewFieldViewModel>()) if (f.Index < values.Length) values[f.Index] = Clean(f.Value);
+        for (int i = 0; i < values.Length; i++)
+            if (_bankValues.TryGetValue(headers[i], out var bank)) values[i] = Clean(bank);
+        return values;
+    }
+
+    /// <summary>
+    /// "Update SUP-004 with these details": the record already saved under this name takes what the form has (newer
+    /// fields win, its old bank paragraph stays as another account). Editing a second copy: the two become one (the
+    /// lower ID stays).
+    /// </summary>
+    [RelayCommand]
+    private async Task UpdateExistingAsync()
+    {
+        var page = Page;
+        if (page == null || IsBusy || ExistingId.Length == 0) return;
+        var other = ExistingId;
+        string keepId = other, dropId = "";
+        if (_editId != null && !string.Equals(_editId, other, StringComparison.OrdinalIgnoreCase))
+        {
+            static int Num(string id) => int.TryParse(new string(id.Where(char.IsDigit).ToArray()), out var n) ? n : int.MaxValue;
+            (keepId, dropId) = Num(_editId) < Num(other) ? (_editId, other) : (other, _editId);
+        }
+        var newer = FormValues(page);
+        var keep = page.RecordValues(keepId);
+        var existingName = page.RecordValues(other) is { } ov && ov.Length > 1 ? ov[1] : "";
+        if (keep == null) { Error = Loc.F("Inv.PartyExists", existingName); return; }
+        var merged = page.MergeValues(keep, newer);
+        int nameCol = NameColumn(page.Headers);
+        if (existingName.Length > 0 && nameCol < merged.Length) merged[nameCol] = existingName;   // the name already used by invoices
+        var name = nameCol < merged.Length ? merged[nameCol] : existingName;
+        IsBusy = true;
+        try
+        {
+            page.UpdateRecord(keepId, merged);
+            if (dropId.Length > 0) page.DeleteRecord(dropId);
+            await page.SaveAsync();
+            _status = page.IsDirty ? page.Status : Loc.F("Party.Updated", keepId, name);
+        }
+        catch (Exception ex) { _status = $"{Loc.T("Status.Error")}: {ex.Message}"; }
+        finally { IsBusy = false; }
+        Reset();
+        Closed?.Invoke(name);
+    }
+
     private readonly Dictionary<string, string> _bankValues = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>Editing an existing record (its ID and values as loaded); null = a new record.</summary>
     private string? _editId;
@@ -174,7 +244,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         var others = (IsClients ? InvoiceService.Clients(page.Session.Current) : InvoiceService.Suppliers(page.Session.Current))
             .Where(p => !string.Equals(p.Id, _editId, StringComparison.OrdinalIgnoreCase));
         if (others.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)) || page.SameNameId(name, _editId) != null)
-        { Error = Loc.F("Inv.PartyExists", name); return; }
+        { NameTaken(page, name, _editId); return; }
 
         IsBusy = true;
         try
@@ -205,6 +275,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         _bankValues.Clear();
         _theme = null;
         Error = "";
+        ExistingId = "";
     }
 
     [RelayCommand]
@@ -213,6 +284,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         var page = Page;
         if (page == null || IsBusy) return;
         Error = "";
+        ExistingId = "";
         if (_editId != null) { await SaveExistingAsync(page); return; }
         var fields = Fields.OfType<NewFieldViewModel>().ToList();
         var headers = page.Headers;
@@ -225,7 +297,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         if (id.Length == 0 || name.Length == 0) { Error = Loc.F("Inv.PartyRequired", headers[0], headers[nameCol]); return; }
         var existing = IsClients ? InvoiceService.Clients(page.Session.Current) : InvoiceService.Suppliers(page.Session.Current);
         if (existing.Any(p => string.Equals(p.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)) || page.SameNameId(name) != null)
-        { Error = Loc.F("Inv.PartyExists", name); return; }
+        { NameTaken(page, name, null); return; }
         if (page.Session.Current.Rows.Any(r => string.Equals(r[0], id, StringComparison.OrdinalIgnoreCase)))
         { Error = Loc.F("Inv.PartyIdExists", id); return; }
 

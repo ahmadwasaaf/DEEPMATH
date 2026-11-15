@@ -244,6 +244,12 @@
     <sys:String x:Key="Inv.NewClient">New client</sys:String>
     <sys:String x:Key="Inv.PartyRequired">"{0}" and "{1}" are required.</sys:String>
     <sys:String x:Key="Inv.PartyExists">"{0}" already exists - choose it from the list.</sys:String>
+    <sys:String x:Key="Party.UpdateExisting">Update {0} with these details</sys:String>
+    <sys:String x:Key="Party.ExistsUpdate">&quot;{0}&quot; is already saved as {1}. Update {1} with the details of this form?</sys:String>
+    <sys:String x:Key="Party.Updated">{0} updated: {1}</sys:String>
+    <sys:String x:Key="Merge.Offer">Merge {0} into {1}</sys:String>
+    <sys:String x:Key="Merge.Ask">Merge {0} into {1} ({2})?&#x0a;&#x0a;{1} keeps its number and name and takes the details of {0}; its old bank paragraph stays as another account. {0} is then removed.</sys:String>
+    <sys:String x:Key="Merge.Done">{0} merged into {1}</sys:String>
     <sys:String x:Key="Inv.PartyIdExists">The ID {0} is already used.</sys:String>
     <sys:String x:Key="Inv.PartyAdded">"{0}" was added and selected - ready for its first invoice.</sys:String>
     <sys:String x:Key="Act.Open">Open Invoice</sys:String>

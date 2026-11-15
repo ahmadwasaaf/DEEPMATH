@@ -331,6 +331,9 @@ public static partial class AnalysisMatcher
         var n = System.Text.RegularExpressions.Regex.Replace(name ?? "",
             @"^\s*(?:beneficiary\s+)?(?:customer|name|company|beneficiary|account\s*name|payee)\s*[:：]\s*", "",
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        // a SWIFT field code read in front of the name ("59A) ...", OCR "590A)", "S594)", "(收款人 59A)")
+        n = System.Text.RegularExpressions.Regex.Replace(n,
+            @"^\s*(?:[\u3400-\u9fff\s]{1,20}?\s*)?(?:\(\s*[^\s()]{0,8}\s+)?[S5]?(?:5[0-9]|7[0-2])[0O]?[A-D4]?\s*\)\s*", "");
         var s = n.ToUpperInvariant().Replace("&", " AND ").Replace("HONG KONG", "HONGKONG");
         var sb = new StringBuilder();
         foreach (var ch in s) sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');

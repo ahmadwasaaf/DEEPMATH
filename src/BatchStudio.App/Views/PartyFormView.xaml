@@ -65,6 +65,14 @@
                 </StackPanel>
             </Button>
             <Button DockPanel.Dock="Right" Command="{Binding CancelCommand}" Content="{DynamicResource Common.Cancel}" Padding="18,9" />
+            <!-- the name is already saved: update that record with what this form has -->
+            <Button DockPanel.Dock="Right" Command="{Binding UpdateExistingCommand}" Padding="16,9" Margin="0,0,8,0"
+                    Visibility="{Binding HasExisting, Converter={StaticResource BoolToVis}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE777;" FontSize="13" Margin="0,0,8,0" />
+                    <TextBlock Text="{Binding UpdateExistingText}" />
+                </StackPanel>
+            </Button>
             <ProgressBar DockPanel.Dock="Bottom" IsIndeterminate="True" Height="3" Margin="0,6,12,0" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
             <TextBlock Text="{Binding Error}" Foreground="{StaticResource BadBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
         </DockPanel>
