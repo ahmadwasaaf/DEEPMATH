@@ -69,10 +69,10 @@ public partial class DataSetView : UserControl
         if (DataContext is DataSetViewModel { IsCategories: true })
         {
             // Categories: the category list on the left, the items of the selected one on the right (wide)
-            ListColumn.Width = new GridLength(ListWidth.Get("list.categories", 380));
-            ListColumn.MinWidth = 240;
+            ListColumn.Width = new GridLength(ListWidth.Get("list.categories", 300));
+            ListColumn.MinWidth = 200;
             DetailsColumn.Width = new GridLength(1, GridUnitType.Star);
-            DetailsColumn.MinWidth = 420;
+            DetailsColumn.MinWidth = 380;
         }
         else if (DataContext is DataSetViewModel { CompactGrid: true } vm)
         {
@@ -97,7 +97,8 @@ public partial class DataSetView : UserControl
         if (DataContext is DataSetViewModel vm && vm.Table?.Columns[e.PropertyName] is DataColumn col)
         {
             e.Column.Header = col.Caption;
-            // Categories: the name with its number of items on the right
+            // Categories: ID and the name with its number of items (the status is edited on the right)
+            if (vm.IsCategories && vm.Table.Columns.IndexOf(col) > 1) { e.Cancel = true; return; }
             if (vm.IsCategories && vm.Table.Columns.IndexOf(col) == 1)
             {
                 e.Column = new DataGridTemplateColumn
