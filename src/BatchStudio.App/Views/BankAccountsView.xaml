@@ -164,14 +164,16 @@
         <!-- cards + statement -->
         <Grid Grid.Row="2" Visibility="{Binding HasAccounts, Converter={StaticResource BoolToVis}}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="270" MinWidth="240" />
+                <ColumnDefinition Width="292" MinWidth="260" />
                 <ColumnDefinition Width="16" />
                 <ColumnDefinition Width="*" MinWidth="420" />
             </Grid.ColumnDefinitions>
 
             <!-- account cards -->
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
-                <ItemsControl ItemsSource="{Binding Cards}">
+            <!-- room around the cards inside the scroll area: their ring, shadow and hover growth are never cut;
+                 the scrollbar sits beside the cards, not over them -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="-8,-8,0,0">
+                <ItemsControl ItemsSource="{Binding Cards}" Margin="8,8,16,4">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type vm:BankCardViewModel}">
                             <Button Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
