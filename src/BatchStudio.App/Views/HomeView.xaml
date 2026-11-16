@@ -604,21 +604,11 @@
                                 <TextBlock Text="{DynamicResource Mail.PrimaryTitle}" FontWeight="SemiBold" FontSize="14" />
                             </DockPanel>
                             <ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                <ItemsControl ItemsSource="{Binding Mail.Items}" HorizontalContentAlignment="Stretch" AlternationCount="2">
+                                <ItemsControl ItemsSource="{Binding Mail.Items}" HorizontalContentAlignment="Stretch" Margin="4,0">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <!-- every other message on a lighter row: each one stands apart -->
-                                            <Border CornerRadius="10" Margin="0,0,0,2">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Background" Value="Transparent" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ContentPresenter}}" Value="0">
-                                                                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
+                                            <!-- each message on its own lighter card, with space between them -->
+                                            <Border CornerRadius="10" Margin="0,0,0,8" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
                                             <Button Command="{Binding DataContext.Mail.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
                                                     Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip="{DynamicResource Mail.Open}">
                                                 <Button.Template>
