@@ -81,8 +81,16 @@ public sealed partial class GmailWatcher : ObservableObject
     /// <summary>The arrow under "N unread": all the messages in a list that opens upward.</summary>
     [ObservableProperty] private bool _isExpanded;
 
+    // the list closes on the mouse-down outside it; a click on the arrow that closed it must not open it again
+    private DateTime _closedAt;
+    partial void OnIsExpandedChanged(bool value) { if (!value) _closedAt = DateTime.UtcNow; }
+
     [RelayCommand]
-    private void ToggleList() => IsExpanded = !IsExpanded;
+    private void ToggleList()
+    {
+        if (!IsExpanded && (DateTime.UtcNow - _closedAt).TotalMilliseconds < 400) return;
+        IsExpanded = !IsExpanded;
+    }
     public string UnreadText => Unread > 0 ? Loc.F("Mail.Unread", Unread) : Loc.T("Mail.AllRead");
 
     /// <summary>New messages (not the ones already unread at start): the Home banner animates, a notification is shown.</summary>

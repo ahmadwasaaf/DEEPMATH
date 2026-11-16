@@ -102,6 +102,22 @@ public partial class PasswordDialog : Window
 
     private void OnCancel(object sender, RoutedEventArgs e) => DialogResult = false;
 
+    // like a Windows PIN: opens as soon as the typed password is right (checked off the screen thread; only the last
+    // keystroke counts); "wrong password" only on Enter / Unlock
+    private int _typed;
+    private async void OnTyped(object sender, RoutedEventArgs e)
+    {
+        if (_create || _check == null) return;
+        if (ErrorText.Visibility == Visibility.Visible) Error("");
+        var pw = First.Password;
+        int n = ++_typed;
+        if (pw.Length < PasswordHash.MinLength) return;
+        var check = _check;
+        bool ok;
+        try { ok = await Task.Run(() => check(pw)); } catch { return; }
+        if (ok && n == _typed && IsVisible && !_create) DialogResult = true;
+    }
+
     private void OnKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Enter) { e.Handled = true; if (_create && sender == First) Second.Focus(); else OnOk(sender, e); }

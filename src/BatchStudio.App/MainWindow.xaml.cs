@@ -95,8 +95,20 @@ public partial class MainWindow : Window
         if (e.Key == Key.Enter) { e.Handled = true; TryUnlockScreen(); }
     }
 
-    private void OnLockPasswordChanged(object sender, RoutedEventArgs e) =>
+    private int _lockTyped;
+
+    /// <summary>Opens as soon as the typed password is right (like a Windows PIN); a wrong one is only reported on Enter.</summary>
+    private async void OnLockPasswordChanged(object sender, RoutedEventArgs e)
+    {
         LockHint.Visibility = LockPassword.Password.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (DataContext is not MainViewModel vm || !vm.IsLocked) return;
+        if (vm.LockError.Length > 0) vm.LockError = "";
+        var pw = LockPassword.Password;
+        int n = ++_lockTyped;
+        if (pw.Length < BatchStudio.Core.Security.PasswordHash.MinLength) return;
+        bool ok = await Task.Run(() => vm.CheckScreenPassword(pw));
+        if (ok && n == _lockTyped && vm.IsLocked) { vm.TryUnlockScreen(pw); LockPassword.Clear(); }
+    }
 
     private async void OnLockForgot(object sender, MouseButtonEventArgs e)
     {

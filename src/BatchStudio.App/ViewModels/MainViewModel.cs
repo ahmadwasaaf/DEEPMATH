@@ -635,6 +635,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Screenshot checks only (--page locked): the lock screen without a password.</summary>
     internal void LockForScreenshot() { IsLocked = true; Settings.LockedAtExit = false; SaveSettings(); }
 
+    /// <summary>Checks the Secure mode password without any change (safe off the screen thread).</summary>
+    public bool CheckScreenPassword(string password) => Core.Security.PasswordHash.Verify(password, Settings.SecurePasswordHash);
+
     /// <summary>Lock screen: the password typed.</summary>
     public bool TryUnlockScreen(string password)
     {

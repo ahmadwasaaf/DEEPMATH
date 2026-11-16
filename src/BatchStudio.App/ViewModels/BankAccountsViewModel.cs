@@ -331,8 +331,18 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     [ObservableProperty] private bool _isNewDescriptionOpen;
     [ObservableProperty] private string _newDescription = "";
 
+    // the popups close on the mouse-down outside them: a click on the icon that closed one must not open it again
+    private DateTime _listClosedAt, _newClosedAt;
+    partial void OnIsDescriptionListOpenChanged(bool value) { if (!value) _listClosedAt = DateTime.UtcNow; }
+    partial void OnIsNewDescriptionOpenChanged(bool value) { if (!value) _newClosedAt = DateTime.UtcNow; }
+
     [RelayCommand]
-    private void ToggleDescriptionList() { IsNewDescriptionOpen = false; IsDescriptionListOpen = !IsDescriptionListOpen; }
+    private void ToggleDescriptionList()
+    {
+        if (!IsDescriptionListOpen && (DateTime.UtcNow - _listClosedAt).TotalMilliseconds < 400) return;
+        IsNewDescriptionOpen = false;
+        IsDescriptionListOpen = !IsDescriptionListOpen;
+    }
 
     [RelayCommand]
     private void UseDescription(string? text)
@@ -345,6 +355,7 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
     [RelayCommand]
     private void OpenNewDescription()
     {
+        if (!IsNewDescriptionOpen && (DateTime.UtcNow - _newClosedAt).TotalMilliseconds < 400) return;
         IsDescriptionListOpen = false;
         NewDescription = EntryDescription.Trim();
         IsNewDescriptionOpen = true;

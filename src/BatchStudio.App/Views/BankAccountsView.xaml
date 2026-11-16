@@ -479,10 +479,10 @@
                                         </TextBlock.Style>
                                     </TextBlock>
                                     <StackPanel x:Name="DescIcons" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0">
-                                        <Button Style="{StaticResource InBoxBtn}" Command="{Binding ToggleDescriptionListCommand}" IsHitTestVisible="{Binding IsDescriptionListOpen, Converter={StaticResource InverseBool}}" ToolTip="{DynamicResource Bank.SavedDescriptions}">
+                                        <Button Style="{StaticResource InBoxBtn}" Command="{Binding ToggleDescriptionListCommand}" ToolTip="{DynamicResource Bank.SavedDescriptions}">
                                             <TextBlock Style="{StaticResource Icon}" Text="&#xE70D;" FontSize="11" />
                                         </Button>
-                                        <Button Style="{StaticResource InBoxBtn}" Command="{Binding OpenNewDescriptionCommand}" IsHitTestVisible="{Binding IsNewDescriptionOpen, Converter={StaticResource InverseBool}}" ToolTip="{DynamicResource Bank.SaveDescriptionTip}" Margin="2,0,0,0">
+                                        <Button Style="{StaticResource InBoxBtn}" Command="{Binding OpenNewDescriptionCommand}" ToolTip="{DynamicResource Bank.SaveDescriptionTip}" Margin="2,0,0,0">
                                             <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" FontSize="11" />
                                         </Button>
                                     </StackPanel>
