@@ -628,7 +628,10 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto" />
                                                         <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
+                                                    <!-- date and time: a little in from the edge, centred on the row's height -->
+                                                    <TextBlock Grid.Column="2" Text="{Binding Time}" Style="{StaticResource Muted}" FontSize="11.5" VerticalAlignment="Center" Margin="16,0,14,0" />
                                                     <!-- unread dot -->
                                                     <Ellipse Width="8" Height="8" Margin="0,6,10,0" VerticalAlignment="Top" Fill="{DynamicResource BrandBrush}">
                                                         <Ellipse.Style>
@@ -650,7 +653,6 @@
                                                             </Style>
                                                         </StackPanel.Style>
                                                         <DockPanel>
-                                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Time}" Style="{StaticResource Muted}" FontSize="11.5" Margin="10,0,0,0" />
                                                             <TextBlock Text="{Binding From}" FontSize="13" TextTrimming="CharacterEllipsis">
                                                                 <TextBlock.Style>
                                                                     <Style TargetType="TextBlock">
