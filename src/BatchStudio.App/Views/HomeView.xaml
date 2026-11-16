@@ -377,8 +377,9 @@
         <Grid Grid.Row="1" x:Name="ParticleArea" Background="Transparent" Margin="-28,0,-28,-20"
               MouseMove="OnParticleAreaMouseMove" MouseLeave="OnParticleAreaMouseLeave">
             <ctl:ParticleNetwork x:Name="Particles" Tint="{DynamicResource TextFillColorPrimaryBrush}" />
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="28,0,28,20">
-                <StackPanel>
+            <!-- the scroll area starts 8 px before the cards (left and top) so a lifted card is never cut at its edges -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="20,-8,28,20">
+                <StackPanel Margin="8,8,0,0">
             <!-- ========== stat cards ========== -->
             <!-- "Needs your attention": only when something is wrong; red, each line opens where the problem is -->
             <Border Style="{StaticResource Card}" Margin="0,0,14,14" BorderBrush="#EF5350" BorderThickness="1"
