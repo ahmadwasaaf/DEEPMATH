@@ -15,10 +15,27 @@
                                 <DataTrigger Binding="{Binding Text, ElementName=Badge}" Value="">
                                     <Setter Property="Visibility" Value="Collapsed" />
                                 </DataTrigger>
+                                <DataTrigger Binding="{Binding DataContext.IsCategories, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                    <Setter Property="ToolTip" Value="{DynamicResource Cat.BadgeTip}" />
+                                </DataTrigger>
+                                <!-- on the selected (blue) row: a light badge -->
+                                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                                    <Setter Property="Background" Value="#40FFFFFF" />
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
-                    <TextBlock x:Name="Badge" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BrandBrush}">
+                    <TextBlock x:Name="Badge" FontSize="11" FontWeight="SemiBold">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource BrandBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="True">
+                                        <Setter Property="Foreground" Value="White" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
                         <TextBlock.Text>
                             <MultiBinding Converter="{StaticResource BankBadge}">
                                 <Binding />

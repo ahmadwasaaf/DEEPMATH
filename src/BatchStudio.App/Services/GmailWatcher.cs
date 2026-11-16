@@ -11,8 +11,8 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace BatchStudio.App.Services;
 
-/// <summary>One email in the Home banner: sender and subject only (the program cannot read the message itself).</summary>
-public sealed class MailItem
+/// <summary>One email in the Home banner: sender, subject and Gmail's short preview (the program cannot read the message itself).</summary>
+public sealed partial class MailItem : ObservableObject
 {
     public required string Id { get; init; }
     public required string ThreadId { get; init; }
@@ -21,6 +21,10 @@ public sealed class MailItem
     public required string Subject { get; init; }
     public required DateTime Received { get; init; }
     public required string Account { get; init; }
+    /// <summary>Gmail's one-line preview of the message.</summary>
+    public string Snippet { get; init; } = "";
+    /// <summary>Still unread in Gmail (read elsewhere: shown dimmer).</summary>
+    [ObservableProperty] private bool _isUnread;
 
     /// <summary>Gmail chooses the signed-in browser account by authuser (a path /u/&lt;email&gt; fails when that account is not open).</summary>
     public string Url => GmailWatcher.InboxUrl(Account) + "/" + ThreadId;
@@ -47,7 +51,9 @@ public sealed partial class GmailWatcher : ObservableObject
 
     private const string Api = "https://gmail.googleapis.com/gmail/v1/users/me/";
     private static readonly TimeSpan Every = TimeSpan.FromSeconds(30);
-    private const int Keep = 15;
+    private const int Keep = 20;
+    /// <summary>Primary only (as Gmail's Primary tab): no Promotions, Updates, Social or Forums.</summary>
+    private const string Primary = "labelIds=INBOX&labelIds=CATEGORY_PERSONAL";
 
     /// <summary>Newest first: the latest unread messages, then everything that arrives while the program runs.</summary>
     public ObservableCollection<MailItem> Items { get; } = [];
@@ -71,6 +77,12 @@ public sealed partial class GmailWatcher : ObservableObject
     public bool HasMany => Items.Count > 1;
     public string Position => Items.Count > 1 ? $"{Index + 1} / {Items.Count}" : "";
     public bool ShowBanner => IsActive && !Dismissed;
+
+    /// <summary>The arrow under "N unread": all the messages in a list that opens upward.</summary>
+    [ObservableProperty] private bool _isExpanded;
+
+    [RelayCommand]
+    private void ToggleList() => IsExpanded = !IsExpanded;
     public string UnreadText => Unread > 0 ? Loc.F("Mail.Unread", Unread) : Loc.T("Mail.AllRead");
 
     /// <summary>New messages (not the ones already unread at start): the Home banner animates, a notification is shown.</summary>
@@ -166,21 +178,22 @@ public sealed partial class GmailWatcher : ObservableObject
             var account = GoogleAccount.Instance.Email;
             if (_historyId == 0)
             {
-                // first round: where the inbox is now, and the latest unread messages (shown, but not announced)
+                // first round: where the inbox is now, and the latest Primary messages, read or not (shown, but not announced)
                 using var profile = await GetAsync("profile", ct);
                 if (profile == null) return;
                 _historyId = ulong.Parse(profile.RootElement.GetProperty("historyId").GetString() ?? "0", CultureInfo.InvariantCulture);
                 var first = new List<MailItem>();
-                using var list = await GetAsync("messages?labelIds=INBOX&labelIds=UNREAD&maxResults=5", ct);
+                using var list = await GetAsync($"messages?{Primary}&maxResults={Keep}", ct);
                 if (list != null && list.RootElement.TryGetProperty("messages", out var msgs))
                     foreach (var m in msgs.EnumerateArray())
                         if (await MessageAsync(m.GetProperty("id").GetString()!, account, ct) is { } item) first.Add(item);
-                await UpdateUnreadAsync(ct);
                 await OnUi(() =>
                 {
+                    Items.Clear();
                     foreach (var i in first.OrderByDescending(x => x.Received)) { if (_seen.Add(i.Id)) Items.Add(i); }
                     Index = 0;
                 });
+                await UpdateUnreadAsync(ct);
                 return;
             }
 
@@ -201,7 +214,9 @@ public sealed partial class GmailWatcher : ObservableObject
                             {
                                 var msg = a.GetProperty("message");
                                 var labels = msg.TryGetProperty("labelIds", out var l) ? l.EnumerateArray().Select(x => x.GetString()).ToList() : [];
-                                if (labels.Contains("INBOX") && labels.Contains("UNREAD") && !labels.Contains("SENT") && !labels.Contains("DRAFT"))
+                                // Primary only: any other category (Promotions, Updates, Social, Forums) is left out
+                                bool other = labels.Any(x => x != null && x.StartsWith("CATEGORY_", StringComparison.Ordinal) && x != "CATEGORY_PERSONAL");
+                                if (labels.Contains("INBOX") && !other && !labels.Contains("SENT") && !labels.Contains("DRAFT"))
                                     added.Add(msg.GetProperty("id").GetString()!);
                             }
                 page = root.TryGetProperty("nextPageToken", out var np) ? np.GetString() : null;
@@ -211,29 +226,40 @@ public sealed partial class GmailWatcher : ObservableObject
             var fresh = new List<MailItem>();
             foreach (var id in added.Distinct())
                 if (!_seen.Contains(id) && await MessageAsync(id, account, ct) is { } item) fresh.Add(item);
+            if (fresh.Count > 0)
+                await OnUi(() =>
+                {
+                    foreach (var i in fresh.OrderBy(x => x.Received))
+                        if (_seen.Add(i.Id)) Items.Insert(0, i);
+                    while (Items.Count > Keep) Items.RemoveAt(Items.Count - 1);
+                    Index = 0;
+                    var news = fresh.Where(f => f.IsUnread).ToList();
+                    if (news.Count > 0) { Dismissed = false; Arrived?.Invoke(news); }   // the notification: new unread only
+                });
             await UpdateUnreadAsync(ct);
-            if (fresh.Count == 0) return;
-            await OnUi(() =>
-            {
-                foreach (var i in fresh.OrderBy(x => x.Received))
-                    if (_seen.Add(i.Id)) Items.Insert(0, i);
-                while (Items.Count > Keep) Items.RemoveAt(Items.Count - 1);
-                Index = 0;
-                Dismissed = false;
-                Arrived?.Invoke(fresh);
-            });
         }
         finally { _checking.Release(); }
     }
 
+    /// <summary>Unread in Primary (the number on the envelope) and which of the listed messages are still unread.</summary>
     private async Task UpdateUnreadAsync(CancellationToken ct)
     {
-        using var label = await GetAsync("labels/INBOX", ct);
-        if (label != null && label.RootElement.TryGetProperty("messagesUnread", out var u))
+        var ids = new HashSet<string>();
+        string? page = null;
+        int pages = 0;
+        do
         {
-            int n = u.GetInt32();
-            await OnUi(() => Unread = n);
-        }
+            using var doc = await GetAsync($"messages?{Primary}&labelIds=UNREAD&maxResults=500" + (page != null ? $"&pageToken={page}" : ""), ct);
+            if (doc == null) return;
+            if (doc.RootElement.TryGetProperty("messages", out var ms))
+                foreach (var m in ms.EnumerateArray()) ids.Add(m.GetProperty("id").GetString()!);
+            page = doc.RootElement.TryGetProperty("nextPageToken", out var np) ? np.GetString() : null;
+        } while (page != null && ++pages < 4);
+        await OnUi(() =>
+        {
+            Unread = ids.Count;
+            foreach (var i in Items) i.IsUnread = ids.Contains(i.Id);
+        });
     }
 
     private async Task<MailItem?> MessageAsync(string id, string account, CancellationToken ct)
@@ -241,6 +267,7 @@ public sealed partial class GmailWatcher : ObservableObject
         using var doc = await GetAsync($"messages/{id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From", ct, allowNotFound: true);
         if (doc == null) return null;
         var r = doc.RootElement;
+        var labelIds = r.TryGetProperty("labelIds", out var li) ? li.EnumerateArray().Select(x => x.GetString()).ToList() : [];
         string subject = "", from = "";
         if (r.TryGetProperty("payload", out var p) && p.TryGetProperty("headers", out var hs))
             foreach (var h in hs.EnumerateArray())
@@ -261,6 +288,8 @@ public sealed partial class GmailWatcher : ObservableObject
             Subject = subject.Trim().Length > 0 ? subject.Trim() : Loc.T("Mail.NoSubject"),
             Received = ms > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(ms).LocalDateTime : DateTime.Now,
             Account = account,
+            Snippet = System.Net.WebUtility.HtmlDecode(r.TryGetProperty("snippet", out var sn) ? sn.GetString() ?? "" : ""),
+            IsUnread = labelIds.Contains("UNREAD"),
         };
     }
 
@@ -338,6 +367,7 @@ public sealed partial class GmailWatcher : ObservableObject
     private void Open(MailItem? item)
     {
         item ??= Current;
+        IsExpanded = false;
         var account = GoogleAccount.Instance.Email;
         Shell.OpenUrl(item?.Url ?? InboxUrl(account));
     }
@@ -349,9 +379,9 @@ public sealed partial class GmailWatcher : ObservableObject
         Dismissed = false;
         Items.Clear();
         var now = DateTime.Now;
-        Items.Add(new MailItem { Id = "1", ThreadId = "1", From = "Shenzhen Logistics", FromEmail = "ops@example.com", Subject = "Shipment MAD-2026-114 has left the port — documents attached", Received = now.AddMinutes(-2), Account = account });
-        Items.Add(new MailItem { Id = "2", ThreadId = "2", From = "شركة البسامي الدولية", FromEmail = "info@example.com", Subject = "تأكيد استلام الفاتورة رقم Mad-2000114", Received = now.AddMinutes(-26), Account = account });
-        Items.Add(new MailItem { Id = "3", ThreadId = "3", From = "SAB", FromEmail = "noreply@example.com", Subject = "Your monthly statement is ready", Received = now.AddHours(-3), Account = account });
+        Items.Add(new MailItem { Id = "1", ThreadId = "1", From = "Shenzhen Logistics", FromEmail = "ops@example.com", Subject = "Shipment MAD-2026-114 has left the port — documents attached", Received = now.AddMinutes(-2), Account = account, IsUnread = true, Snippet = "Dear Sir, please find attached the bill of lading and packing list for shipment MAD-2026-114." });
+        Items.Add(new MailItem { Id = "2", ThreadId = "2", From = "شركة البسامي الدولية", FromEmail = "info@example.com", Subject = "تأكيد استلام الفاتورة رقم Mad-2000114", Received = now.AddMinutes(-26), Account = account, IsUnread = true, Snippet = "نؤكد لكم استلام الفاتورة وسيتم السداد خلال أسبوع." });
+        Items.Add(new MailItem { Id = "3", ThreadId = "3", From = "SAB", FromEmail = "noreply@example.com", Subject = "Your monthly statement is ready", Received = now.AddHours(-3), Account = account, Snippet = "Your statement for October is now available in online banking." });
         Index = 0;
         Unread = 12;
     }

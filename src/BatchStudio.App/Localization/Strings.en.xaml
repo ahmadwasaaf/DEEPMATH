@@ -8,6 +8,7 @@
     <sys:String x:Key="Nav.Items">Items</sys:String>
     <sys:String x:Key="Nav.Categories">Categories</sys:String>
     <sys:String x:Key="Cat.ItemsWord">items</sys:String>
+    <sys:String x:Key="Cat.BadgeTip">Number of items in this category</sys:String>
     <sys:String x:Key="Cat.AddItem">Item</sys:String>
     <sys:String x:Key="Cat.SearchItems">Search all items…</sys:String>
     <sys:String x:Key="Cat.Uncategorized">Uncategorized</sys:String>
@@ -394,6 +395,10 @@
     <sys:String x:Key="Pwd.ResetTitle">Choose a new password</sys:String>
     <sys:String x:Key="Pwd.ResetText">Your Google account was confirmed. Type the new password twice.</sys:String>
     <sys:String x:Key="Pwd.Changed">Password changed</sys:String>
+    <sys:String x:Key="Pwd.ChangeButton">Change password</sys:String>
+    <sys:String x:Key="Pwd.ChangeBankTitle">Change the account password</sys:String>
+    <sys:String x:Key="Pwd.ChangeBankText">Enter the current password of {0}.</sys:String>
+    <sys:String x:Key="Pwd.NewBankText">Type the new password of {0} twice.</sys:String>
     <sys:String x:Key="Pwd.CreateBankTitle">Protect this bank account</sys:String>
     <sys:String x:Key="Pwd.CreateBankText">Create a password for {0}. It is asked once each time the program is opened, and to delete the account.</sys:String>
     <sys:String x:Key="Pwd.OpenBankTitle">Bank account locked</sys:String>
@@ -607,6 +612,8 @@
     <sys:String x:Key="Mail.AllRead">Inbox is up to date</sys:String>
     <sys:String x:Key="Mail.NoSubject">(no subject)</sys:String>
     <sys:String x:Key="Mail.Open">Open in Gmail</sys:String>
+    <sys:String x:Key="Mail.AllMessages">Show all the latest messages</sys:String>
+    <sys:String x:Key="Mail.PrimaryTitle">Inbox · Primary</sys:String>
     <sys:String x:Key="Mail.New">New email</sys:String>
     <sys:String x:Key="Mail.Hide">Hide</sys:String>
     <sys:String x:Key="Mail.Previous">Previous</sys:String>

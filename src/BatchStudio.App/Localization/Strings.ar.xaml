@@ -8,6 +8,7 @@
     <sys:String x:Key="Nav.Items">الأصناف</sys:String>
     <sys:String x:Key="Nav.Categories">التصنيفات</sys:String>
     <sys:String x:Key="Cat.ItemsWord">صنف</sys:String>
+    <sys:String x:Key="Cat.BadgeTip">عدد الأصناف في هذا التصنيف</sys:String>
     <sys:String x:Key="Cat.AddItem">صنف</sys:String>
     <sys:String x:Key="Cat.SearchItems">بحث في كل الأصناف…</sys:String>
     <sys:String x:Key="Cat.Uncategorized">بدون تصنيف</sys:String>
@@ -394,6 +395,10 @@
     <sys:String x:Key="Pwd.ResetTitle">اختر كلمة سر جديدة</sys:String>
     <sys:String x:Key="Pwd.ResetText">تم تأكيد حساب Google. اكتب كلمة السر الجديدة مرتين.</sys:String>
     <sys:String x:Key="Pwd.Changed">تم تغيير كلمة السر</sys:String>
+    <sys:String x:Key="Pwd.ChangeButton">تغيير كلمة السر</sys:String>
+    <sys:String x:Key="Pwd.ChangeBankTitle">تغيير كلمة سر الحساب</sys:String>
+    <sys:String x:Key="Pwd.ChangeBankText">اكتب كلمة السر الحالية لحساب {0}.</sys:String>
+    <sys:String x:Key="Pwd.NewBankText">اكتب كلمة السر الجديدة لحساب {0} مرتين.</sys:String>
     <sys:String x:Key="Pwd.CreateBankTitle">حماية الحساب البنكي</sys:String>
     <sys:String x:Key="Pwd.CreateBankText">أنشئ كلمة سر لحساب {0}. ستُطلب مرة واحدة في كل مرة يُفتح فيها البرنامج، وعند حذف الحساب.</sys:String>
     <sys:String x:Key="Pwd.OpenBankTitle">الحساب البنكي مقفل</sys:String>
@@ -607,6 +612,8 @@
     <sys:String x:Key="Mail.AllRead">لا رسائل جديدة</sys:String>
     <sys:String x:Key="Mail.NoSubject">(بدون عنوان)</sys:String>
     <sys:String x:Key="Mail.Open">فتح في Gmail</sys:String>
+    <sys:String x:Key="Mail.AllMessages">عرض كل الرسائل الأخيرة</sys:String>
+    <sys:String x:Key="Mail.PrimaryTitle">البريد الوارد · الرئيسي</sys:String>
     <sys:String x:Key="Mail.New">بريد جديد</sys:String>
     <sys:String x:Key="Mail.Hide">إخفاء</sys:String>
     <sys:String x:Key="Mail.Previous">السابق</sys:String>

@@ -154,6 +154,7 @@ public sealed partial class BankAccountFormViewModel : ObservableObject
     }
 
     public string Title => Loc.T(Editing == null ? "Bank.AddAccount" : "Bank.EditAccount");
+    public bool IsEditing => Editing != null;
     public IReadOnlyList<string> Currencies => BankBook.Currencies;
 
     [ObservableProperty] private string _bank = "";
@@ -163,6 +164,7 @@ public sealed partial class BankAccountFormViewModel : ObservableObject
     [ObservableProperty] private DateTime? _openingDate = DateTime.Today;
     [ObservableProperty] private string _note = "";
     [ObservableProperty] private string _error = "";
+    [ObservableProperty] private string _info = "";
 }
 
 /// <summary>
@@ -513,6 +515,32 @@ public sealed partial class BankAccountsViewModel(MainViewModel main) : Observab
 
     [RelayCommand]
     private void CloseForm() => Form = null;
+
+    /// <summary>Edit account › Change password: the current one first (or "Forgot password?"), then the new one twice.</summary>
+    [RelayCommand]
+    private void ChangeAccountPassword()
+    {
+        if (Form?.Editing is not { } acc) return;
+        string name = $"{acc.Bank} {acc.ShortNumber}".Trim();
+        string? pw = null;
+        if (acc.PasswordHash.Length > 0)
+        {
+            if (!Views.PasswordDialog.Ask(Loc.T("Pwd.ChangeBankTitle"), Loc.F("Pwd.ChangeBankText", name),
+                                          p => Core.Security.PasswordHash.Verify(p, acc.PasswordHash), PasswordRecovery.For(acc.RecoveryEmail), out var reset))
+                return;
+            pw = reset;                                       // "Forgot password?" already asked for the new one
+        }
+        pw ??= Views.PasswordDialog.Create(Loc.T("Pwd.ResetTitle"), Loc.F("Pwd.NewBankText", name));
+        if (pw == null) return;
+        var old = (acc.PasswordHash, acc.RecoveryEmail);
+        acc.PasswordHash = Core.Security.PasswordHash.Create(pw);
+        if (PasswordRecovery.CurrentEmail.Length > 0) acc.RecoveryEmail = PasswordRecovery.CurrentEmail;
+        if (!Save()) { (acc.PasswordHash, acc.RecoveryEmail) = old; Form.Error = Status; return; }
+        Unlocked.Add(acc.Id);
+        Status = Loc.T("Pwd.Changed");
+        Form.Error = "";
+        Form.Info = Loc.T("Pwd.Changed");
+    }
 
     [RelayCommand]
     private void SaveForm()

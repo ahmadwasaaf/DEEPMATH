@@ -145,7 +145,6 @@ public sealed partial class MainViewModel : ObservableObject
         Nav.Add(new NavItem { Key = "Nav.Bank", Glyph = "\uE825", Page = () => Banks });
         Nav.Add(new NavItem { Key = "Nav.Suppliers", Glyph = "", Page = () => Page("suppliers") });
         Nav.Add(new NavItem { Key = "Nav.Clients", Glyph = "", Page = () => Page("clients") });
-        Nav.Add(new NavItem { Key = "Nav.Items", Glyph = "", Page = () => Page("items") });
         Nav.Add(new NavItem { Key = "Nav.Categories", Glyph = "", Page = () => Page("categories") });
         Nav.Add(new NavItem { Key = "Nav.Templates", Glyph = "\uE8F1", Page = () => Templates });
         // Secure mode: not a page - selecting it locks the program (the page in use stays behind the lock screen)

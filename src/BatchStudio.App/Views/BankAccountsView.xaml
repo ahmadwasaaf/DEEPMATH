@@ -704,7 +704,18 @@
                     <TextBlock Text="{Binding Error}" Foreground="{StaticResource OutBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
                                Visibility="{Binding Error, Converter={StaticResource NonEmptyToVis}}" />
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                    <TextBlock Text="{Binding Info}" Foreground="#22A35A" FontSize="12" Margin="0,4,0,0"
+                               Visibility="{Binding Info, Converter={StaticResource NonEmptyToVis}}" />
+                    <DockPanel Margin="0,16,0,0">
+                    <!-- edit only: change the account's password -->
+                    <Button DockPanel.Dock="Left" Padding="12,7" Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                            Command="{Binding DataContext.ChangeAccountPasswordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE8D7;" FontSize="12" Margin="0,0,8,0" />
+                            <TextBlock Text="{DynamicResource Pwd.ChangeButton}" />
+                        </StackPanel>
+                    </Button>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="{DynamicResource Common.Cancel}" Padding="16,7" Margin="0,0,8,0" IsCancel="True"
                                 Command="{Binding DataContext.CloseFormCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                         <Button Style="{DynamicResource AccentButtonStyle}" Padding="18,7" IsDefault="True"
@@ -715,6 +726,7 @@
                             </StackPanel>
                         </Button>
                     </StackPanel>
+                    </DockPanel>
                 </StackPanel>
             </Border>
         </Grid>

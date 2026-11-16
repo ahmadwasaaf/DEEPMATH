@@ -31,6 +31,8 @@ public partial class App : Application
         // a click on an email notification opens the message in Gmail
         MailToasts.Register();
 
+        DayFirstDates();
+
         var settings = SettingsStore.Load();
         ThemeService.Accent = string.IsNullOrWhiteSpace(settings.Accent) ? "auto" : settings.Accent;
         ThemeService.Apply(settings.Theme);
@@ -68,6 +70,11 @@ public partial class App : Application
             {
                 arg = "home-mail";
                 Dispatcher.BeginInvoke(async () => { await Task.Delay(2500); vm.Home.AccountMenuOpen = true; }, DispatcherPriority.ContextIdle);
+            }
+            if (arg == "home-mail-list")
+            {
+                arg = "home-mail";
+                Dispatcher.BeginInvoke(async () => { await Task.Delay(3000); GmailWatcher.Instance.IsExpanded = true; }, DispatcherPriority.ContextIdle);
             }
             if (arg is "home-mail" or "settings-google")
             {
@@ -243,5 +250,25 @@ public partial class App : Application
         catch { }
         MessageBox.Show(e.Exception.Message, "DEEPMATH", MessageBoxButton.OK, MessageBoxImage.Warning);
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Dates shown and typed as day/month/year (16/11/2026) everywhere (date pickers included), Gregorian, whatever the
+    /// Windows region. Numbers keep the Windows format. Files are not affected (they use their own formats).
+    /// </summary>
+    private static void DayFirstDates()
+    {
+        try
+        {
+            var c = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.CurrentCulture.Clone();
+            if (c.DateTimeFormat.Calendar is not System.Globalization.GregorianCalendar)
+                try { c.DateTimeFormat.Calendar = new System.Globalization.GregorianCalendar(); }
+                catch { c = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.GetCultureInfo("en-GB").Clone(); }
+            c.DateTimeFormat.DateSeparator = "/";
+            c.DateTimeFormat.ShortDatePattern = "dd/MM/yyyy";
+            System.Globalization.CultureInfo.CurrentCulture = c;
+            System.Globalization.CultureInfo.DefaultThreadCurrentCulture = c;
+        }
+        catch { }
     }
 }
