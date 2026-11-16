@@ -577,16 +577,16 @@
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding Mail.UnreadText}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" />
                                 <TextBlock Text="{DynamicResource Mail.PrimaryTitle}" FontWeight="SemiBold" FontSize="14" />
                             </DockPanel>
-                            <ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto">
-                                <ItemsControl ItemsSource="{Binding Mail.Items}">
+                            <ScrollViewer MaxHeight="420" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl ItemsSource="{Binding Mail.Items}" HorizontalContentAlignment="Stretch">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Button Command="{Binding DataContext.Mail.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
                                                     Cursor="Hand" HorizontalContentAlignment="Stretch" ToolTip="{DynamicResource Mail.Open}">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
-                                                        <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="10,8">
-                                                            <ContentPresenter />
+                                                        <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="10,8" HorizontalAlignment="Stretch">
+                                                            <ContentPresenter HorizontalAlignment="Stretch" />
                                                         </Border>
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
