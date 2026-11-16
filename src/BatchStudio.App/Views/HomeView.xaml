@@ -620,7 +620,7 @@
                                                     </Style>
                                                 </Border.Style>
                                             <Button Command="{Binding DataContext.Mail.OpenCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
-                                                    Cursor="Hand" HorizontalContentAlignment="Stretch" ToolTip="{DynamicResource Mail.Open}">
+                                                    Cursor="Hand" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" ToolTip="{DynamicResource Mail.Open}">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
                                                         <Border x:Name="Bd" Background="Transparent" CornerRadius="10" Padding="10,8" HorizontalAlignment="Stretch">
