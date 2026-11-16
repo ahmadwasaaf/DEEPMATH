@@ -633,7 +633,7 @@
                                                     <!-- date and time: a little in from the edge, centred on the row's height -->
                                                     <TextBlock Grid.Column="2" Text="{Binding Time}" Style="{StaticResource Muted}" FontSize="11.5" VerticalAlignment="Center" Margin="16,0,14,0" />
                                                     <!-- unread dot -->
-                                                    <Ellipse Width="8" Height="8" Margin="0,6,10,0" VerticalAlignment="Top" Fill="{DynamicResource BrandBrush}">
+                                                    <Ellipse Width="8" Height="8" Margin="0,0,10,0" VerticalAlignment="Center" Fill="{DynamicResource BrandBrush}">
                                                         <Ellipse.Style>
                                                             <Style TargetType="Ellipse">
                                                                 <Setter Property="Visibility" Value="Hidden" />
