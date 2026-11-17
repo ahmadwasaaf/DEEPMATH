@@ -53,13 +53,13 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
 
     /// <summary>
     /// Remarks that keep a row unticked until a person compared it with the document: a SWIFT / IBAN / IFSC / CNAPS
-    /// that fails its check, two readers reading two accounts, several accounts, and a document whose total or
-    /// currency is not the one paid.
+    /// that fails its check, two readers reading two accounts, several accounts, and an invoice in another currency
+    /// than the account's. (The amount is always the file name's: the document's total is never compared.)
     /// </summary>
     private static readonly HashSet<string> NeedsCheckNotes =
     [
         "swift_corrected", "swift_check", "multiple_accounts", "account_differs", "iban_check_failed", "ifsc_check_failed",
-        "cnaps_check_failed", "swift_iban_country_differs", "amount_differs", "currency_differs",
+        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs",
     ];
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
@@ -189,9 +189,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         if (Match.Note != "Analysis.NoteNothingRead")
             foreach (var n in Result.Notes)
             {
-                if (n == "amount_differs" && Result.DocumentAmount is not null)
-                    list.Add(Loc.F("Analysis.Engine.amount_differs_values", DocTotal(), Result.Amount is decimal fa ? NewInvoiceViewModel.FormatMoney(fa) : "-"));
-                else if (n == "currency_differs" && Result.DocumentCurrency.Length > 0)
+                if (n == "currency_differs" && Result.DocumentCurrency.Length > 0)
                     list.Add(Loc.F("Analysis.Engine.currency_differs_values", Result.DocumentCurrency, AccountCurrency()));
                 else if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
             }
@@ -202,9 +200,6 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
 
     public bool HasRemarks => Remarks.Length > 0;
 
-    /// <summary>"USD 10,000.00": the total written in the document.</summary>
-    private string DocTotal() => Result.DocumentAmount is decimal d
-        ? (Result.DocumentCurrency.Length > 0 ? Result.DocumentCurrency + " " : "") + NewInvoiceViewModel.FormatMoney(d) : "";
 
     /// <summary>The "Currency:" line of the banking details.</summary>
     private string AccountCurrency() =>

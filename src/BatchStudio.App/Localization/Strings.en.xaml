@@ -751,8 +751,6 @@
     <sys:String x:Key="Analysis.Engine.account_unlabelled">Account number without a label</sys:String>
     <sys:String x:Key="Analysis.Engine.account_differs">The two readers found different accounts</sys:String>
     <sys:String x:Key="Analysis.Engine.no_swift">No SWIFT code found</sys:String>
-    <sys:String x:Key="Analysis.Engine.amount_differs">The document's total is not the amount in the file name - check before approving</sys:String>
-    <sys:String x:Key="Analysis.Engine.amount_differs_values">The document's total is {0}, the file name says {1} - check before approving</sys:String>
     <sys:String x:Key="Analysis.Engine.currency_differs">The invoice currency is not the account's currency - check before approving</sys:String>
     <sys:String x:Key="Analysis.Engine.currency_differs_values">The invoice is in {0}, the account is in {1} - check before approving</sys:String>
     <sys:String x:Key="Analysis.Engine.iban_check_failed">The IBAN's check digits are wrong - compare it with the document</sys:String>

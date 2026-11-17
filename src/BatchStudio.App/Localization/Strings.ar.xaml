@@ -751,8 +751,6 @@
     <sys:String x:Key="Analysis.Engine.account_unlabelled">رقم الحساب من غير عنوان جنبه</sys:String>
     <sys:String x:Key="Analysis.Engine.account_differs">القارئين لقوا حسابين مختلفين</sys:String>
     <sys:String x:Key="Analysis.Engine.no_swift">مالقيناش كود SWIFT</sys:String>
-    <sys:String x:Key="Analysis.Engine.amount_differs">إجمالي المستند مش هو المبلغ اللي في اسم الملف - راجع قبل الاعتماد</sys:String>
-    <sys:String x:Key="Analysis.Engine.amount_differs_values">إجمالي المستند {0} واسم الملف {1} - راجع قبل الاعتماد</sys:String>
     <sys:String x:Key="Analysis.Engine.currency_differs">عملة الفاتورة مش هي عملة الحساب - راجع قبل الاعتماد</sys:String>
     <sys:String x:Key="Analysis.Engine.currency_differs_values">الفاتورة بـ {0} والحساب بـ {1} - راجع قبل الاعتماد</sys:String>
     <sys:String x:Key="Analysis.Engine.iban_check_failed">أرقام التحقق في الـ IBAN غلط - قارنه بالمستند</sys:String>
