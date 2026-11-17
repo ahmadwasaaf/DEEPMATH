@@ -335,7 +335,7 @@ public sealed partial class MassInvoiceViewModel
         var failed = new List<string>();
         foreach (var i in items.Distinct())
         {
-            try { written.Add(Path.GetFileName(AnalysisText.Export(i.Result, _engineVersion, desktop))); }
+            try { written.Add(Path.GetFileName(BatchStudio.Core.Analysis.AnalysisText.Export(i.Result, _engineVersion, desktop))); }
             catch (Exception ex) { failed.Add(i.FileName + " — " + ex.Message); }
         }
         ReviewNote = written.Count == 1 ? Loc.F("Analysis.TextSaved", written[0]) : written.Count > 1 ? Loc.F("Analysis.TextsSaved", written.Count) : "";
