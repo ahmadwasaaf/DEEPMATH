@@ -340,6 +340,13 @@ public sealed partial class MassInvoiceViewModel
         var template = TemplateNames.FirstOrDefault(t => string.Equals(t, "INVOICE", StringComparison.OrdinalIgnoreCase)) ?? TemplateNames.FirstOrDefault();
         var row = AnalysisRecords.NewSupplier(headers, "", item.Result, item.SupplierName, AnalysisRecords.CategoryFor(item.Result.Activity, _categories), template);
         for (int i = 1; i < headers.Count; i++) values[headers[i]] = row[i];
+        // the supplier's other documents in this review fill what this one leaves empty (Chinese name, address ...)
+        foreach (var other in ReviewItems.Where(x => x != item && x.Match.Owner == item.Match))
+        {
+            var more = AnalysisRecords.NewSupplier(headers, "", other.Result, item.SupplierName, AnalysisRecords.CategoryFor(other.Result.Activity, _categories), template);
+            for (int i = 1; i < headers.Count; i++)
+                if (values[headers[i]].Length == 0 && more[i].Length > 0 && !SupplierBanks.IsBankHeader(headers, i)) values[headers[i]] = more[i];
+        }
         // the document's other accounts (USD + EUR ...) as accounts 2, 3 ...
         int n = 2;
         foreach (var alt in item.Result.AltBanks) values[SupplierBanks.HeaderFor(n++)] = alt;

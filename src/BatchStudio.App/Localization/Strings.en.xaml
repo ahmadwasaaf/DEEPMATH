@@ -737,7 +737,7 @@
     <sys:String x:Key="Analysis.ConflictShort.beneficiary_mismatch">Invoice issuer is not the account holder</sys:String>
     <sys:String x:Key="Analysis.ConflictShort.ambiguous_swift">SWIFT given in two forms (O / 0)</sys:String>
     <sys:String x:Key="Analysis.ConflictShort.third_party_payment">Third-party payment without authorisation</sys:String>
-    <sys:String x:Key="Analysis.ConflictManual">Not ticked and cannot be approved here: verify it with the supplier through a channel you trust, then enter it yourself</sys:String>
+    <sys:String x:Key="Analysis.ConflictManual">Not ticked: verify it with the supplier through a channel you trust, enter the confirmed bank details below and Save - then it is approved like any other</sys:String>
     <sys:String x:Key="Analysis.Conflict.conflicting_instructions">Conflicting payment instructions: the document directs payment to different accounts</sys:String>
     <sys:String x:Key="Analysis.Conflict.beneficiary_mismatch">Beneficiary mismatch: the invoice issuer is not the holder of the bank account</sys:String>
     <sys:String x:Key="Analysis.Conflict.ambiguous_swift">Ambiguous SWIFT: the document gives it in two forms (O / 0) - it was not guessed</sys:String>

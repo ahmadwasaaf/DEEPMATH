@@ -737,7 +737,7 @@
     <sys:String x:Key="Analysis.ConflictShort.beneficiary_mismatch">اللي أصدر الفاتورة مش صاحب الحساب</sys:String>
     <sys:String x:Key="Analysis.ConflictShort.ambiguous_swift">SWIFT مكتوب بشكلين (O / 0)</sys:String>
     <sys:String x:Key="Analysis.ConflictShort.third_party_payment">دفع لطرف تالت من غير تفويض</sys:String>
-    <sys:String x:Key="Analysis.ConflictManual">مش متعلّم عليه ومينفعش يتعمد من هنا: اتأكد من المورد بطريقة موثوقة، وبعدين دخّله بنفسك</sys:String>
+    <sys:String x:Key="Analysis.ConflictManual">مش متعلم: اتأكد من المورد عن طريق وسيلة موثوقة، واكتب البيانات البنكية المؤكدة تحت واضغط Save - بعدها يتعتمد زي أي مستند</sys:String>
     <sys:String x:Key="Analysis.Conflict.conflicting_instructions">تعليمات دفع متعارضة: المستند بيوجّه الدفع لحسابات مختلفة</sys:String>
     <sys:String x:Key="Analysis.Conflict.beneficiary_mismatch">اختلاف المستفيد: الشركة اللي أصدرت الفاتورة مش هي صاحبة الحساب البنكي</sys:String>
     <sys:String x:Key="Analysis.Conflict.ambiguous_swift">SWIFT ملتبس: المستند كاتبه بشكلين (O / 0) - ومتخمّنش</sys:String>
