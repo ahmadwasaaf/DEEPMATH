@@ -135,6 +135,8 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         }
     }
 
+    public bool HasAccountText => AccountText.Length > 0;
+
     /// <summary>Remarks shown under the status (why it needs a look, what the engine guessed).</summary>
     public string Remarks => string.Join(" · ", RemarkList());
 

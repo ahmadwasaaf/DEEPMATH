@@ -423,8 +423,8 @@
                                     <DataTemplate>
                                         <StackPanel VerticalAlignment="Center" Margin="4,4">
                                             <!-- the name: click opens the supplier's details (known: saved details; new / blocked: what the document says) -->
-                                            <TextBlock Text="{Binding SupplierName}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="4,0,0,0" FlowDirection="LeftToRight" HorizontalAlignment="Left"
-                                                       Cursor="Hand" ToolTip="{DynamicResource Analysis.OpenSupplierTip}">
+                                            <TextBlock Text="{Binding SupplierName}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="4,0" FlowDirection="LeftToRight" HorizontalAlignment="Center"
+                                                       TextAlignment="Center" Cursor="Hand" ToolTip="{DynamicResource Analysis.OpenSupplierTip}">
                                                 <TextBlock.InputBindings>
                                                     <MouseBinding MouseAction="LeftClick" Command="{Binding OpenSupplierCommand}" />
                                                 </TextBlock.InputBindings>
@@ -439,7 +439,9 @@
                                                     </Style>
                                                 </TextBlock.Style>
                                             </TextBlock>
-                                            <TextBlock Text="{Binding AccountText}" Style="{StaticResource Muted}" FontSize="11" Margin="4,2,0,0" FlowDirection="LeftToRight" HorizontalAlignment="Left" />
+                                            <!-- no account read (a blocked document): no empty line, the name stays in the middle of the row -->
+                                            <TextBlock Text="{Binding AccountText}" Style="{StaticResource Muted}" FontSize="11" Margin="4,2,4,0" FlowDirection="LeftToRight" HorizontalAlignment="Center"
+                                                       TextAlignment="Center" Visibility="{Binding HasAccountText, Converter={StaticResource BoolToVis}}" />
                                             <!-- more than one supplier fits: pick the right one -->
                                             <ComboBox ItemsSource="{Binding Candidates}" SelectedItem="{Binding Picked}" DisplayMemberPath="Name" Margin="0,6,0,0"
                                                       HorizontalAlignment="Stretch" FlowDirection="LeftToRight"
