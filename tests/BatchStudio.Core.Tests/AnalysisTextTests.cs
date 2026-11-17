@@ -60,3 +60,15 @@ public class AnalysisCategoryTests
         Assert.Equal("1 Road\nTel: 123456789\nEmail: a@b.com", v[2]);
     }
 }
+
+public class SwiftCompareTests
+{
+    [Fact]
+    public void O_and_zero_are_one_in_the_location_part()
+    {
+        Assert.True(AnalysisMatcher.SameSwift("BHMBHKHOXXX", "BHMBHKH0XXX"));
+        Assert.True(AnalysisMatcher.SameSwift("BEASHKHH", "BEASHKHHXXX"));
+        Assert.False(AnalysisMatcher.SameSwift("BOFAUS3N", "B0FAUS3N"));        // the bank part never
+        Assert.Equal("ICICINBBCTS", AnalysisMatcher.SwiftIn("Beneficiary Name: X\nIntermediary SWIFT: CITIUS33\nSWIFT CODE: ICICINBBCTS"));
+    }
+}

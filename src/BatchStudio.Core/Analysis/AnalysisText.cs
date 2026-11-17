@@ -29,6 +29,7 @@ public static class AnalysisText
         ["ifsc_check_failed"] = "IFSC format is wrong",
         ["cnaps_check_failed"] = "CNAPS is not 12 digits",
         ["swift_iban_country_differs"] = "SWIFT country differs from the IBAN country",
+        ["bank_name_from_saved"] = "Bank name added from the saved suppliers (same SWIFT)",
         ["bank_name_from_text"] = "Bank name read from its label in the text",
         ["currency_differs"] = "The document's currency is not the account's currency",
         ["conflicting_instructions"] = "CONFLICT: contradictory payment instructions",

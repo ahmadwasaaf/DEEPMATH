@@ -50,7 +50,8 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     /// The SWIFT was corrected from what the document shows, or an image leaves O / 0 open in its location / branch part:
     /// financial data is never guessed - not ticked until a person checked it against the document.
     /// </summary>
-    public bool SwiftNeedsCheck => Result.Notes.Any(n => NeedsCheckNotes.Contains(n));
+    public bool SwiftNeedsCheck => Result.Notes.Any(n => NeedsCheckNotes.Contains(n)
+                                                     && !(Match.SwiftConfirmed && n is "swift_check" or "swift_corrected"));
 
     /// <summary>
     /// Remarks that keep a row unticked until a person compared it with the document: a SWIFT / IBAN / IFSC / CNAPS
@@ -187,6 +188,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
             return list.Distinct().ToList();
         }
         if (Match.Note.Length > 0 && !(Match.Note == "Analysis.NoteNoAmount" && Amount != null)) list.Add(Loc.T(Match.Note));
+        if (Match.SwiftConfirmed && Result.Notes.Any(n => n is "swift_check" or "swift_corrected")) list.Add(Loc.T("Analysis.SwiftConfirmed"));
         // the file name is not an amount: what the document's total says, as a hint (the amount is typed by the user)
         if (Result.Amount is not > 0 && Amount == null && Result.DocumentAmount is decimal da && da > 0)
             list.Add(Loc.F("Analysis.DocumentTotalHint", (Result.DocumentCurrency.Length > 0 ? Result.DocumentCurrency + " " : "") + NewInvoiceViewModel.FormatMoney(da)));

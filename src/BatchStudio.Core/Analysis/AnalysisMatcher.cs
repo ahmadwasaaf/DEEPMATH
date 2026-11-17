@@ -20,7 +20,8 @@ public sealed class AnalysisResult
     public string Address { get; init; } = "";
     /// <summary>The supplier's phone / e-mail read in the document ("Tel: ... · Email: ..."), "" when none.</summary>
     public string Contact { get; init; } = "";
-    public string Bank { get; init; } = "";
+    /// <summary>The banking paragraph (completed with the bank's name from the saved suppliers when the document's was not read).</summary>
+    public string Bank { get; set; } = "";
     public string Activity { get; init; } = "";
     /// <summary>The total written in the document ("Total Amount: USD 10,000.00"); null when none was read.</summary>
     public decimal? DocumentAmount { get; init; }
@@ -165,6 +166,11 @@ public sealed class AnalysisMatch
     public AnalysisMatch? Owner { get; set; }
     /// <summary>For a document with <see cref="Owner"/>: its account differs from the owner's (a second account).</summary>
     public bool OtherAccount { get; set; }
+    /// <summary>
+    /// Known by its account, and the SWIFT read is the one saved with that account (O and 0 alike): the SWIFT doubt of an
+    /// image is settled by the supplier's verified details.
+    /// </summary>
+    public bool SwiftConfirmed { get; set; }
 }
 
 /// <summary>
@@ -279,11 +285,80 @@ public static partial class AnalysisMatcher
                 }
             }
 
+            // 3. what the saved suppliers already prove: the SWIFT of the known account, the bank's name by its SWIFT
+            if (m.Status == AnalysisStatus.Matched && m.MatchedBy == "account" && m.Supplier != null
+                && m.Supplier.Banks.FirstOrDefault(b => b.Number == m.BankNumber) is { } saved
+                && SwiftIn(saved.Text) is { Length: > 0 } savedSwift && SwiftIn(r.Bank) is { Length: > 0 } readSwift
+                && SameSwift(savedSwift, readSwift))
+                m.SwiftConfirmed = true;
+            if (r.Bank.Length > 0 && r.AccountIds.Any() && !BankNameLine().IsMatch(r.Bank)
+                && SwiftIn(r.Bank) is { Length: >= 6 } sw && BankNameBySwift(suppliers, sw) is { Length: > 0 } bankName)
+            {
+                var lines = r.Bank.Split('\n').ToList();
+                lines.Insert(lines.Count > 0 && lines[0].StartsWith("Beneficiary Name:", StringComparison.OrdinalIgnoreCase) ? 1 : 0, "Beneficiary Bank: " + bankName);
+                r.Bank = string.Join("\n", lines);
+                if (!r.Notes.Contains("bank_name_from_saved")) r.Notes.Add("bank_name_from_saved");
+            }
+
             // no amount in the file name: the supplier is still recognised; the amount is typed in the review
             if (m.Status != AnalysisStatus.Attention && r.Amount is null or <= 0 && m.Note.Length == 0)
                 m.Note = "Analysis.NoteNoAmount";
         }
         return list;
+    }
+
+    // ------------------------------------------------------------------ SWIFT and bank names
+    [GeneratedRegex(@"(?im)^\s*(?:beneficiary\s*(?:'s\s*)?bank(?:\s*name)?|bank\s*name|name\s+of\s+(?:the\s+)?bank|bank)\s*[:：]")]
+    private static partial Regex BankNameLine();
+
+    [GeneratedRegex(@"(?im)^\s*(?:beneficiary\s*(?:'s\s*)?bank(?:\s*name)?|bank\s*name|name\s+of\s+(?:the\s+)?bank|bank)\s*[:：]\s*(.+)$")]
+    private static partial Regex BankNameValue();
+
+    [GeneratedRegex(@"(?im)^\s*(?!intermediary)[^\n]{0,30}?\b(?:swift|bic)\b[^:：\n]{0,20}[:：]?\s*([A-Z0-9]{4}\s?[A-Z]{2}\s?[A-Z0-9]{2}(?:\s?[A-Z0-9]{3})?)\b")]
+    private static partial Regex SwiftLine();
+
+    /// <summary>The beneficiary bank's SWIFT in a banking paragraph (not an intermediary's), upper case, no spaces.</summary>
+    public static string SwiftIn(string bankText)
+    {
+        foreach (var line in (bankText ?? "").Split('\n'))
+        {
+            if (Regex.IsMatch(line, @"(?i)intermediary|correspondent")) continue;
+            var m = SwiftLine().Match(line);
+            if (m.Success) return m.Groups[1].Value.Replace(" ", "").ToUpperInvariant();
+        }
+        return "";
+    }
+
+    /// <summary>The same SWIFT: 8 letters = 11 with XXX; in the location / branch part (7-11) O and 0 count as one.</summary>
+    public static bool SameSwift(string a, string b)
+    {
+        static string N(string s)
+        {
+            s = Clean(s);
+            if (s.Length == 8) s += "XXX";
+            return s.Length == 11 ? s[..6] + s[6..].Replace('O', '0') : s;
+        }
+        return N(a).Length == 11 && N(a) == N(b);
+    }
+
+    /// <summary>
+    /// The bank's name for a SWIFT (its bank + country part, 6 letters) from the saved suppliers' banking paragraphs;
+    /// "" when no saved paragraph with that SWIFT names its bank.
+    /// </summary>
+    public static string BankNameBySwift(IReadOnlyList<Party> suppliers, string swift)
+    {
+        var key = Clean(swift);
+        if (key.Length < 6) return "";
+        key = key[..6];
+        foreach (var p in suppliers)
+            foreach (var b in p.Banks)
+            {
+                var saved = SwiftIn(b.Text);
+                if (saved.Length < 6 || saved[..6] != key) continue;
+                var name = BankNameValue().Match(b.Text);
+                if (name.Success && name.Groups[1].Value.Trim() is { Length: >= 3 } v) return v;
+            }
+        return "";
     }
 
     // ------------------------------------------------------------------ accounts

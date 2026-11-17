@@ -755,6 +755,9 @@
     <sys:String x:Key="Analysis.Engine.account_unlabelled">Account number without a label</sys:String>
     <sys:String x:Key="Analysis.Engine.account_differs">The two readers found different accounts</sys:String>
     <sys:String x:Key="Analysis.Engine.no_swift">No SWIFT code found</sys:String>
+    <sys:String x:Key="Analysis.SwiftConfirmed">SWIFT checked: the same as the supplier's saved account</sys:String>
+    <sys:String x:Key="Analysis.Engine.bank_name_from_saved">Bank name added from your saved suppliers (same SWIFT)</sys:String>
+    <sys:String x:Key="Analysis.Engine.bank_name_from_text">Bank name read from its label in the document</sys:String>
     <sys:String x:Key="Analysis.Engine.currency_differs">The invoice currency is not the account's currency - check before approving</sys:String>
     <sys:String x:Key="Analysis.Engine.currency_differs_values">The invoice is in {0}, the account is in {1} - check before approving</sys:String>
     <sys:String x:Key="Analysis.Engine.iban_check_failed">The IBAN's check digits are wrong - compare it with the document</sys:String>
