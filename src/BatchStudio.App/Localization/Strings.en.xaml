@@ -704,6 +704,11 @@
     <sys:String x:Key="Analysis.MovedShort">Moved to Rejected files</sys:String>
     <sys:String x:Key="Analysis.PackagedMany">{0} document(s) moved to the Desktop folder "{1}"</sys:String>
     <sys:String x:Key="Analysis.PackageAll">Package All</sys:String>
+    <sys:String x:Key="Analysis.ExportText">Export analysis as text</sys:String>
+    <sys:String x:Key="Analysis.ExportTextTip">Save what the analysis read from this file as a text file on the Desktop</sys:String>
+    <sys:String x:Key="Analysis.TextSaved">Saved on the Desktop: {0}</sys:String>
+    <sys:String x:Key="Analysis.TextsSaved">{0} text files saved on the Desktop</sys:String>
+    <sys:String x:Key="Analysis.TextFailed">Not saved: {0}</sys:String>
     <sys:String x:Key="Analysis.Moved">Moved</sys:String>
     <sys:String x:Key="Analysis.ConflictSaveTip">Save turns on once you change the bank details (edit an account, add one, or make another one the default)</sys:String>
     <sys:String x:Key="Analysis.SupplierName">Supplier name</sys:String>

@@ -34,6 +34,9 @@ public sealed class AnalysisResult
     public List<AnalysisConflict> Conflicts { get; init; } = [];
     public bool HasConflict => Conflicts.Count > 0;
 
+    /// <summary>The engine's own line for this document (kept for the text export: V16 changes and checks).</summary>
+    public string RawJson { get; init; } = "";
+
     public static AnalysisResult? Parse(string jsonLine)
     {
         try
@@ -52,6 +55,7 @@ public sealed class AnalysisResult
             decimal? amount = r.TryGetProperty("amount", out var a) && a.ValueKind == JsonValueKind.Number ? a.GetDecimal() : null;
             return new AnalysisResult
             {
+                RawJson = jsonLine,
                 File = S("file"),
                 FileName = S("name"),
                 Amount = amount,
@@ -103,6 +107,7 @@ public sealed class AnalysisResult
             Seconds = Seconds,
             Notes = Notes.Where(n => n == "test_document").Append("verified_manually").ToList(),
             AltBanks = texts.Skip(1).ToList(),
+            RawJson = RawJson,
         };
     }
 

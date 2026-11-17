@@ -704,6 +704,11 @@
     <sys:String x:Key="Analysis.MovedShort">اتنقل لـ Rejected files</sys:String>
     <sys:String x:Key="Analysis.PackagedMany">اتنقل {0} مستند لمجلد "{1}" على سطح المكتب</sys:String>
     <sys:String x:Key="Analysis.PackageAll">Package All</sys:String>
+    <sys:String x:Key="Analysis.ExportText">تصدير التحليل كملف نصي</sys:String>
+    <sys:String x:Key="Analysis.ExportTextTip">حفظ ما قرأه التحليل من هذا الملف كملف نصي على سطح المكتب</sys:String>
+    <sys:String x:Key="Analysis.TextSaved">تم الحفظ على سطح المكتب: {0}</sys:String>
+    <sys:String x:Key="Analysis.TextsSaved">تم حفظ {0} ملفات نصية على سطح المكتب</sys:String>
+    <sys:String x:Key="Analysis.TextFailed">لم يتم الحفظ: {0}</sys:String>
     <sys:String x:Key="Analysis.Moved">اتنقل</sys:String>
     <sys:String x:Key="Analysis.ConflictSaveTip">زرار الحفظ بيشتغل لما تعدّل البيانات البنكية (تعدّل حساب، أو تضيف حساب، أو تختار حساب تاني افتراضي)</sys:String>
     <sys:String x:Key="Analysis.SupplierName">اسم المورد</sys:String>

@@ -356,6 +356,11 @@
                               EnableRowVirtualization="True" PreviewMouseRightButtonDown="OnReviewRightClick">
                         <DataGrid.ContextMenu>
                             <ContextMenu>
+                                <MenuItem Header="{DynamicResource Analysis.ExportText}" Click="OnExportTextSelected">
+                                    <MenuItem.Icon>
+                                        <TextBlock Style="{StaticResource Icon}" Text="&#xE74A;" FontSize="13" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
                                 <MenuItem Header="{DynamicResource Analysis.PackageAll}" Click="OnPackageSelected">
                                     <MenuItem.Icon>
                                         <TextBlock Style="{StaticResource Icon}" Text="&#xE7B8;" FontSize="13" />
@@ -382,7 +387,25 @@
                                     <DataTemplate>
                                         <!-- click: opens the document; a packaged one shows a small green "Moved" beside its name -->
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0">
-                                            <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Cursor="Hand" MaxWidth="120"
+                                            <!-- a small up arrow: what the analysis read, saved as "<name>.txt" on the Desktop -->
+                                            <Button Command="{Binding ExportTextCommand}" ToolTip="{DynamicResource Analysis.ExportTextTip}" Cursor="Hand" Margin="0,0,4,0" VerticalAlignment="Center">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd" Width="20" Height="20" CornerRadius="5" Background="Transparent">
+                                                            <TextBlock x:Name="Ic" Style="{StaticResource Icon}" Text="&#xE74A;" FontSize="10" Opacity="0.7"
+                                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BrandSoftBrush}" />
+                                                                <Setter TargetName="Ic" Property="Foreground" Value="{DynamicResource BrandBrush}" />
+                                                                <Setter TargetName="Ic" Property="Opacity" Value="1" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                            <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Cursor="Hand" MaxWidth="104"
                                                        Foreground="{DynamicResource BrandBrush}" ToolTip="{DynamicResource Analysis.OpenFile}" FlowDirection="LeftToRight">
                                                 <TextBlock.InputBindings>
                                                     <MouseBinding MouseAction="LeftClick" Command="{Binding OpenFileCommand}" />

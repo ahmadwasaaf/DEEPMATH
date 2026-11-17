@@ -77,6 +77,14 @@ public partial class MassInvoiceView : UserControl
         vm.PackageMany(items);
     }
 
+    /// <summary>Review › right-click › Export as text: the selected rows (or the row right-clicked), one .txt each on the Desktop.</summary>
+    private async void OnExportTextSelected(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MassInvoiceViewModel vm) return;
+        var items = ReviewGrid.SelectedItems.OfType<AnalysisItemViewModel>().ToList();
+        await vm.ExportTextAsync(items);
+    }
+
     /// <summary>Review › Select all: its header cell white (the blue outlined box stands out on it), the box centred.</summary>
     private void OnSelectAllLoaded(object sender, RoutedEventArgs e)
     {

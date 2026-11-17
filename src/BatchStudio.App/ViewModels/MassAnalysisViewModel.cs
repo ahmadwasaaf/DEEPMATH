@@ -220,6 +220,10 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         if (Amount is decimal a) AmountText = NewInvoiceViewModel.FormatMoney(a);
     }
 
+    /// <summary>The small up arrow beside the file name: what the analysis read, as "&lt;name&gt;.txt" on the Desktop.</summary>
+    [RelayCommand]
+    private Task ExportText() => _owner.ExportTextAsync([this]);
+
     [RelayCommand]
     private void OpenFile()
     {
@@ -310,6 +314,32 @@ public sealed partial class MassInvoiceViewModel
         }
         ReviewNote = moved > 0 ? Loc.F("Analysis.PackagedMany", moved, RejectedFolder) : "";
         ReviewError = failed.Count > 0 ? Loc.F("Analysis.PackageFailed", string.Join("; ", failed)) : "";
+    }
+
+    private string? _engineVersion;
+
+    /// <summary>
+    /// Arrow / right-click › Export as text: what the analysis read from each document, one "&lt;name&gt;.txt" per
+    /// document on the Desktop (an existing file is never replaced: " (2)").
+    /// </summary>
+    public async Task ExportTextAsync(IReadOnlyList<AnalysisItemViewModel> items)
+    {
+        if (items.Count == 0) return;
+        if (_engineVersion == null)
+        {
+            try { _engineVersion = await AnalysisRunner.TestAsync(Main.Settings.AnalysisEngineFolder); }
+            catch { _engineVersion = "SMART_EXTRACT"; }
+        }
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        var written = new List<string>();
+        var failed = new List<string>();
+        foreach (var i in items.Distinct())
+        {
+            try { written.Add(Path.GetFileName(AnalysisText.Export(i.Result, _engineVersion, desktop))); }
+            catch (Exception ex) { failed.Add(i.FileName + " — " + ex.Message); }
+        }
+        ReviewNote = written.Count == 1 ? Loc.F("Analysis.TextSaved", written[0]) : written.Count > 1 ? Loc.F("Analysis.TextsSaved", written.Count) : "";
+        ReviewError = failed.Count > 0 ? Loc.F("Analysis.TextFailed", string.Join("; ", failed)) : "";
     }
 
     /// <summary>The Desktop folder Package moves blocked documents to (one folder for every kind of conflict).</summary>
