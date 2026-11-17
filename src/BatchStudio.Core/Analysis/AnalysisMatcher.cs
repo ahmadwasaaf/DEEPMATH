@@ -20,6 +20,10 @@ public sealed class AnalysisResult
     public string Address { get; init; } = "";
     public string Bank { get; init; } = "";
     public string Activity { get; init; } = "";
+    /// <summary>The total written in the document ("Total Amount: USD 10,000.00"); null when none was read.</summary>
+    public decimal? DocumentAmount { get; init; }
+    /// <summary>The currency of that total (USD, EUR ...), "" when not written.</summary>
+    public string DocumentCurrency { get; init; } = "";
     /// <summary>Account no., IBAN, SWIFT ... (letters and digits only, upper case) by kind.</summary>
     public Dictionary<string, List<string>> Ids { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public double Seconds { get; init; }
@@ -66,6 +70,8 @@ public sealed class AnalysisResult
                 Address = S("company_address").Trim(),
                 Bank = S("bank_details").Trim(),
                 Activity = S("activity").Trim(),
+                DocumentAmount = r.TryGetProperty("document_amount", out var da) && da.ValueKind == JsonValueKind.Number ? da.GetDecimal() : null,
+                DocumentCurrency = S("document_currency").Trim(),
                 Ids = ids,
                 Notes = notes,
                 AltBanks = r.TryGetProperty("bank_details_alt", out var ab) && ab.ValueKind == JsonValueKind.Array
@@ -103,6 +109,8 @@ public sealed class AnalysisResult
             Address = Address,
             Bank = first,
             Activity = Activity,
+            DocumentAmount = DocumentAmount,
+            DocumentCurrency = DocumentCurrency,
             Ids = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase) { ["account"] = AnalysisMatcher.AccountIdsIn(first).ToList() },
             Seconds = Seconds,
             Notes = Notes.Where(n => n == "test_document").Append("verified_manually").ToList(),

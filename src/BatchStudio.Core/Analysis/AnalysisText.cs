@@ -29,6 +29,8 @@ public static class AnalysisText
         ["ifsc_check_failed"] = "IFSC format is wrong",
         ["cnaps_check_failed"] = "CNAPS is not 12 digits",
         ["swift_iban_country_differs"] = "SWIFT country differs from the IBAN country",
+        ["amount_differs"] = "The document's total is not the amount in the file name",
+        ["currency_differs"] = "The document's currency is not the account's currency",
         ["conflicting_instructions"] = "CONFLICT: contradictory payment instructions",
         ["beneficiary_mismatch"] = "CONFLICT: invoice issuer is not the account holder",
         ["ambiguous_swift"] = "CONFLICT: SWIFT given two ways",
@@ -49,6 +51,8 @@ public static class AnalysisText
         if (!r.Ok) l.AddRange(["RESULT: NOT READ - " + (r.Error ?? ""), ""]);
         string D(string v) => string.IsNullOrWhiteSpace(v) ? "-" : v;
         l.Add("Amount (from file name): " + (r.Amount is decimal a ? a.ToString("0.##", CultureInfo.InvariantCulture) : "-"));
+        if (r.DocumentAmount is decimal da)
+            l.Add("Total in the document: " + (r.DocumentCurrency.Length > 0 ? r.DocumentCurrency + " " : "") + da.ToString("#,##0.##", CultureInfo.InvariantCulture));
         l.Add("Supplier name: " + D(r.CompanyName));
         l.Add("Chinese / local name: " + D(r.LocalName));
         l.Add("Company address: " + D(r.Address));

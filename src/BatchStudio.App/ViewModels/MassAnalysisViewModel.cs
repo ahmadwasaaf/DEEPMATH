@@ -49,8 +49,18 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     /// The SWIFT was corrected from what the document shows, or an image leaves O / 0 open in its location / branch part:
     /// financial data is never guessed - not ticked until a person checked it against the document.
     /// </summary>
-    public bool SwiftNeedsCheck => Result.Notes.Contains("swift_corrected") || Result.Notes.Contains("swift_check")
-                                   || Result.Notes.Contains("multiple_accounts");
+    public bool SwiftNeedsCheck => Result.Notes.Any(n => NeedsCheckNotes.Contains(n));
+
+    /// <summary>
+    /// Remarks that keep a row unticked until a person compared it with the document: a SWIFT / IBAN / IFSC / CNAPS
+    /// that fails its check, two readers reading two accounts, several accounts, and a document whose total or
+    /// currency is not the one paid.
+    /// </summary>
+    private static readonly HashSet<string> NeedsCheckNotes =
+    [
+        "swift_corrected", "swift_check", "multiple_accounts", "account_differs", "iban_check_failed", "ifsc_check_failed",
+        "cnaps_check_failed", "swift_iban_country_differs", "amount_differs", "currency_differs",
+    ];
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
     public List<Party> Candidates => Match.Candidates;
@@ -178,13 +188,27 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         // nothing read: the engine's own remarks (no account, no SWIFT ...) add nothing
         if (Match.Note != "Analysis.NoteNothingRead")
             foreach (var n in Result.Notes)
-                if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
+            {
+                if (n == "amount_differs" && Result.DocumentAmount is not null)
+                    list.Add(Loc.F("Analysis.Engine.amount_differs_values", DocTotal(), Result.Amount is decimal fa ? NewInvoiceViewModel.FormatMoney(fa) : "-"));
+                else if (n == "currency_differs" && Result.DocumentCurrency.Length > 0)
+                    list.Add(Loc.F("Analysis.Engine.currency_differs_values", Result.DocumentCurrency, AccountCurrency()));
+                else if (Application.Current?.TryFindResource("Analysis.Engine." + n) is string text) list.Add(text);
+            }
         if (Match.Note != "Analysis.NoteNothingRead" && Result.AltBanks.Count > 0)
             list.Add(Loc.F("Analysis.AltAccounts", Result.AltBanks.Count));
         return list.Distinct().ToList();
     }
 
     public bool HasRemarks => Remarks.Length > 0;
+
+    /// <summary>"USD 10,000.00": the total written in the document.</summary>
+    private string DocTotal() => Result.DocumentAmount is decimal d
+        ? (Result.DocumentCurrency.Length > 0 ? Result.DocumentCurrency + " " : "") + NewInvoiceViewModel.FormatMoney(d) : "";
+
+    /// <summary>The "Currency:" line of the banking details.</summary>
+    private string AccountCurrency() =>
+        Regex.Match(Result.Bank, @"(?im)^Currency:\s*([A-Z]{3})") is { Success: true } m ? m.Groups[1].Value : "-";
 
     /// <summary>Everything read, for the tooltip of the supplier.</summary>
     public string Details

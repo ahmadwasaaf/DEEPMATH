@@ -751,6 +751,15 @@
     <sys:String x:Key="Analysis.Engine.account_unlabelled">رقم الحساب من غير عنوان جنبه</sys:String>
     <sys:String x:Key="Analysis.Engine.account_differs">القارئين لقوا حسابين مختلفين</sys:String>
     <sys:String x:Key="Analysis.Engine.no_swift">مالقيناش كود SWIFT</sys:String>
+    <sys:String x:Key="Analysis.Engine.amount_differs">إجمالي المستند مش هو المبلغ اللي في اسم الملف - راجع قبل الاعتماد</sys:String>
+    <sys:String x:Key="Analysis.Engine.amount_differs_values">إجمالي المستند {0} واسم الملف {1} - راجع قبل الاعتماد</sys:String>
+    <sys:String x:Key="Analysis.Engine.currency_differs">عملة الفاتورة مش هي عملة الحساب - راجع قبل الاعتماد</sys:String>
+    <sys:String x:Key="Analysis.Engine.currency_differs_values">الفاتورة بـ {0} والحساب بـ {1} - راجع قبل الاعتماد</sys:String>
+    <sys:String x:Key="Analysis.Engine.iban_check_failed">أرقام التحقق في الـ IBAN غلط - قارنه بالمستند</sys:String>
+    <sys:String x:Key="Analysis.Engine.ifsc_check_failed">كود IFSC مش بالشكل الصحيح - قارنه بالمستند</sys:String>
+    <sys:String x:Key="Analysis.Engine.cnaps_check_failed">كود CNAPS مش 12 رقم - قارنه بالمستند</sys:String>
+    <sys:String x:Key="Analysis.Engine.swift_iban_country_differs">دولة الـ SWIFT مش هي دولة الـ IBAN - راجع البنك</sys:String>
+    <sys:String x:Key="Analysis.Engine.v16_filled">المحرك (V16) كمّل أو صحّح حقل - قارنه بالمستند</sys:String>
 
     <!-- Suppliers / Clients › full check -->
     <sys:String x:Key="Health.Tip">فحص القايمة كلها: حساب على شركتين، نفس الحساب مرتين، بيانات بنك من غير رقم حساب أو SWIFT، أسماء مكررة أو متقاربة، بيانات ناقصة</sys:String>
