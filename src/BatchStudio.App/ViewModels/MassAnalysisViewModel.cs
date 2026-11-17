@@ -23,7 +23,10 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         _owner = owner;
         Match = match;
         No = no;
-        _amountText = match.Result.Amount is > 0 ? NewInvoiceViewModel.FormatMoney(match.Result.Amount.Value) : "";
+        // the amount is the file name's; only a name that is not an amount takes the total written in the document
+        AmountFromDocument = match.Result.Amount is not > 0 && match.Result.DocumentAmount is > 0;
+        _amountText = match.Result.Amount is > 0 ? NewInvoiceViewModel.FormatMoney(match.Result.Amount.Value)
+            : AmountFromDocument ? NewInvoiceViewModel.FormatMoney(match.Result.DocumentAmount!.Value) : "";
         _supplierName = match.Supplier?.Name ?? StripLabel(match.Result.CompanyName);
         _include = IsReady && !IsTestDocument && !SwiftNeedsCheck;
     }
@@ -33,6 +36,9 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         Regex.Replace(name ?? "", @"^\s*(?:beneficiary\s+)?(?:customer|name|company|beneficiary|account\s*name|payee)\s*[:：]\s*", "", RegexOptions.IgnoreCase).Trim();
 
     public int No { get; }
+
+    /// <summary>The file name is not an amount: the amount was taken from the document's total.</summary>
+    public bool AmountFromDocument { get; }
     public string FileName => Result.FileName.Length > 0 ? Result.FileName : Path.GetFileName(Result.File);
 
     [ObservableProperty] private string _amountText;
@@ -183,6 +189,8 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
             return list.Distinct().ToList();
         }
         if (Match.Note.Length > 0 && !(Match.Note == "Analysis.NoteNoAmount" && Amount != null)) list.Add(Loc.T(Match.Note));
+        if (AmountFromDocument && Result.DocumentAmount is decimal da && Amount == da)
+            list.Add(Loc.F("Analysis.AmountFromDocument", (Result.DocumentCurrency.Length > 0 ? Result.DocumentCurrency + " " : "") + NewInvoiceViewModel.FormatMoney(da)));
         if (Match.MatchedBy == "similar" && Match.Supplier != null) list.Add(Loc.F("Analysis.NoteSimilar", Result.CompanyName));
         if (Match.Candidates.Count > 0 && Picked == null) list.Add(Loc.T("Analysis.PickSupplier"));
         // nothing read: the engine's own remarks (no account, no SWIFT ...) add nothing

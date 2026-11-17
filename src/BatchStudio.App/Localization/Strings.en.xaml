@@ -695,6 +695,7 @@
     <sys:String x:Key="Analysis.NoteNoName">No supplier name found.</sys:String>
     <sys:String x:Key="Analysis.NoteNoBankNew">New supplier without bank details.</sys:String>
     <sys:String x:Key="Analysis.NoteNoAmount">The file name is not an amount: type the amount.</sys:String>
+    <sys:String x:Key="Analysis.AmountFromDocument">The file name is not an amount: the document's total was used ({0})</sys:String>
     <sys:String x:Key="Analysis.PickSupplier">Pick the right supplier in the list.</sys:String>
     <sys:String x:Key="Analysis.Saving">Saving the Suppliers sheet ...</sys:String>
     <sys:String x:Key="Analysis.NotSaved">The Suppliers sheet could not be saved yet ({0}). Close the workbook in Excel if it is open, then press Approve all again: nothing will be added twice.</sys:String>
