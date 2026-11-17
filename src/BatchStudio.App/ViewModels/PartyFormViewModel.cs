@@ -102,6 +102,151 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         Closed?.Invoke(name);
     }
 
+    // ------------------------------------------------------------------ Mass Invoice › Review: a document's supplier
+    /// <summary>
+    /// A new supplier read from a document (Review): the form is filled with what the engine read and Save only keeps the
+    /// values (<see cref="ReviewDraft"/>); the supplier is written to the sheet by Approve all.
+    /// </summary>
+    private Func<ReviewDraft, string?>? _draftSave;
+    public bool IsDraft => _draftSave != null;
+    /// <summary>Red line under the title (a blocked document: "Test document · Cannot decide safely ...").</summary>
+    [ObservableProperty] private string _subtitle = "";
+    /// <summary>The conflict in full (red box above the fields).</summary>
+    [ObservableProperty] private string _banner = "";
+    /// <summary>The document's file name (click: opens it); "" outside the review.</summary>
+    [ObservableProperty] private string _fileName = "";
+    /// <summary>Export / Package (new suppliers of the review only).</summary>
+    [ObservableProperty] private bool _showReviewTools;
+    [ObservableProperty] private bool _isPackaged;
+    [ObservableProperty] private string _info = "";
+    public bool HasSubtitle => Subtitle.Length > 0;
+    public bool HasBanner => Banner.Length > 0;
+    public bool HasFileName => FileName.Length > 0;
+    public bool HasInfo => Info.Length > 0;
+    partial void OnInfoChanged(string value) => OnPropertyChanged(nameof(HasInfo));
+    partial void OnSubtitleChanged(string value) => OnPropertyChanged(nameof(HasSubtitle));
+    partial void OnBannerChanged(string value) => OnPropertyChanged(nameof(HasBanner));
+    partial void OnFileNameChanged(string value) => OnPropertyChanged(nameof(HasFileName));
+    private Func<Task<string>>? _export;
+    private Func<string>? _package;
+    private Action? _openFile;
+
+    /// <summary>What the review shows over the form (file, export / package, the conflict).</summary>
+    public void SetReviewHeader(string fileName, string subtitle, string banner, Func<Task<string>>? export, Func<string>? package,
+                                Action? openFile, bool packaged)
+    {
+        FileName = fileName;
+        Subtitle = subtitle;
+        Banner = banner;
+        _export = export;
+        _package = package;
+        _openFile = openFile;
+        ShowReviewTools = export != null;
+        IsPackaged = packaged;
+        Info = "";
+    }
+
+    [RelayCommand]
+    private async Task ExportTextAsync()
+    {
+        if (_export == null) return;
+        Info = await _export();
+    }
+
+    [RelayCommand]
+    private void Package()
+    {
+        if (_package == null || IsPackaged) return;
+        try { Info = _package(); IsPackaged = true; }
+        catch (Exception ex) { Info = Loc.F("Analysis.PackageFailed", ex.Message); }
+    }
+
+    [RelayCommand]
+    private void OpenDocument() => _openFile?.Invoke();
+
+    /// <summary>
+    /// Opens the form filled with a new supplier's values (header → value, from the document) that are not saved yet:
+    /// Save hands them to <paramref name="save"/> (an error text keeps the form open).
+    /// </summary>
+    public bool OpenDraft(IReadOnlyDictionary<string, string> values, string? themeHex, Func<ReviewDraft, string?> save)
+    {
+        IsClients = false;
+        var page = Page;
+        if (page == null) return false;
+        var headers = page.Headers;
+        Fields.Clear();
+        _bankValues.Clear();
+        _theme = null;
+        Error = "";
+        ExistingId = "";
+        _editId = null;
+        _original = [];
+        _draftSave = save;
+        Title = Loc.T("Inv.NewSupplier");
+        string V(string h) => values.TryGetValue(h, out var v) ? v ?? "" : "";
+        int baseCol = SupplierBanks.BaseColumn(headers);
+        foreach (var (h, v) in values)
+            if ((baseCol >= 0 && string.Equals(h, headers[baseCol], StringComparison.OrdinalIgnoreCase))
+                || SupplierBanks.ExtraNumber(h) > 0 || SupplierBanks.IsDefaultHeader(h))
+                _bankValues[h] = v;
+        NewFieldViewModel? templateField = null;
+        bool banksAdded = false;
+        for (int i = 1; i < headers.Count; i++)               // the ID is given by Approve all
+        {
+            var h = headers[i];
+            if (SupplierBanks.IsBankHeader(headers, i))
+            {
+                if (!banksAdded)
+                {
+                    banksAdded = true;
+                    Fields.Add(new BankGroupViewModel(headers.Concat(_bankValues.Keys).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
+                        k => _bankValues.TryGetValue(k, out var bv) ? bv : "", (k, bv) => _bankValues[k] = bv, expanded: true));
+                }
+                continue;
+            }
+            var value = V(h);
+            var options = main.OptionsFor(page.Session.Definition.Key, h, []);
+            if (options != null && value.Length > 0 && !options.Contains(value)) options = [value, .. options];
+            var field = new NewFieldViewModel { Caption = h, Options = options, Value = value, Index = i, IsLong = IsLongField(h) };
+            Fields.Add(field);
+            if (h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))
+            {
+                templateField = field;
+                Fields.Add(_theme = new ThemeFieldViewModel(main, "", value, deferred: true));
+            }
+        }
+        _theme ??= new ThemeFieldViewModel(main, "", "INVOICE", deferred: true);
+        if (!Fields.Contains(_theme)) Fields.Add(_theme);
+        if (!string.IsNullOrEmpty(themeHex)) { _theme.Hex = themeHex; _ = _theme.CommitAsync(); }
+        if (templateField != null)
+        {
+            var theme = _theme;
+            templateField.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(NewFieldViewModel.Value)) _ = theme.UpdateAsync("", templateField.Value);
+            };
+        }
+        IsOpen = true;
+        return true;
+    }
+
+    private void SaveDraft(DataSetViewModel page)
+    {
+        var headers = page.Headers;
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var f in Fields.OfType<NewFieldViewModel>()) if (f.Index < headers.Count) values[headers[f.Index]] = Clean(f.Value);
+        foreach (var (h, v) in _bankValues) values[h] = Clean(v);
+        var name = values.TryGetValue(headers[NameColumn(headers)], out var n) ? n : "";
+        if (name.Length == 0) { Error = Loc.F("Inv.PartyRequired", headers[NameColumn(headers)], headers[NameColumn(headers)]); return; }
+        var template = Fields.OfType<NewFieldViewModel>().FirstOrDefault(f => f.Caption.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase))?.Value ?? "INVOICE";
+        var draft = new ReviewDraft(name, values, _theme, template.Trim().Length > 0 ? template.Trim() : "INVOICE");
+        var error = _draftSave!(draft);
+        if (error != null) { Error = error; return; }
+        _status = "";
+        Reset();
+        Closed?.Invoke(name);
+    }
+
     private readonly Dictionary<string, string> _bankValues = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>Editing an existing record (its ID and values as loaded); null = a new record.</summary>
     private string? _editId;
@@ -127,6 +272,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
     /// <summary>Opens an empty form (same columns as the sheet); category and template are pre-filled when given.</summary>
     public bool Open(bool isClients, string? category, string? template)
     {
+        _draftSave = null;
         IsClients = isClients;
         _editId = null;
         _original = [];
@@ -184,6 +330,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
     /// <summary>Opens an existing supplier / client to check or change its details (Save writes them to the sheet).</summary>
     public bool OpenExisting(bool isClients, string id)
     {
+        _draftSave = null;
         IsClients = isClients;
         var page = Page;
         if (page == null || page.RecordValues(id) is not { } values) return false;
@@ -223,7 +370,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         return true;
     }
 
-    private static int NameColumn(IReadOnlyList<string> headers)
+    internal static int NameColumn(IReadOnlyList<string> headers)
     {
         for (int i = 0; i < headers.Count; i++)
             if (headers[i].Contains("Name", StringComparison.OrdinalIgnoreCase) && !headers[i].Contains("Chinese", StringComparison.OrdinalIgnoreCase)
@@ -289,6 +436,8 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         _theme = null;
         Error = "";
         ExistingId = "";
+        _draftSave = null;
+        SetReviewHeader("", "", "", null, null, null, false);
     }
 
     [RelayCommand]
@@ -298,6 +447,7 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         if (page == null || IsBusy) return;
         Error = "";
         ExistingId = "";
+        if (_draftSave != null) { SaveDraft(page); return; }
         if (_editId != null) { await SaveExistingAsync(page); return; }
         var fields = Fields.OfType<NewFieldViewModel>().ToList();
         var headers = page.Headers;
@@ -342,3 +492,9 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         Closed?.Invoke(name);
     }
 }
+
+/// <summary>
+/// A new supplier checked in the Review form, not saved yet: its values (header → value, bank accounts included), the
+/// theme picked and the template; Approve all writes it.
+/// </summary>
+public sealed record ReviewDraft(string Name, IReadOnlyDictionary<string, string> Values, ThemeFieldViewModel? Theme, string Template);

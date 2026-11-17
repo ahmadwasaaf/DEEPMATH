@@ -22,6 +22,38 @@ public static class AnalysisRecords
                 ?? categories.FirstOrDefault(c => c.Text.Contains("General", StringComparison.OrdinalIgnoreCase)))?.Text;
     }
 
+    /// <summary>
+    /// The category closest to what the document says the supplier does ("Industrial fasteners and maintenance components"
+    /// → a category with "Fasteners" / "Industrial" in its English part); none close: the default (General Trading).
+    /// </summary>
+    public static string? CategoryFor(string? activity, IReadOnlyList<CategoryInfo> categories)
+    {
+        var fallback = CategoryText(categories);
+        if (string.IsNullOrWhiteSpace(activity) || categories.Count == 0) return fallback;
+        static string Stem(string w)
+        {
+            w = w.ToLowerInvariant();
+            if (w.EndsWith("ies") && w.Length > 5) return w[..^3] + "y";
+            if (w.EndsWith("es") && w.Length > 5 && !w.EndsWith("ses")) return w[..^2];
+            if (w.EndsWith('s') && w.Length > 4) return w[..^1];
+            return w;
+        }
+        string[] stop = ["and", "the", "for", "with", "other", "general", "trading", "import", "export", "products", "product",
+                         "goods", "company", "supply", "supplies", "services", "service", "parts", "part", "item", "items"];
+        HashSet<string> Words(string t) => System.Text.RegularExpressions.Regex.Matches(t, "[A-Za-z]{3,}")
+            .Select(m => Stem(m.Value)).Where(w => !stop.Contains(w)).ToHashSet();
+        var want = Words(activity);
+        if (want.Count == 0) return fallback;
+        CategoryInfo? best = null;
+        int bestScore = 0;
+        foreach (var c in categories)
+        {
+            int score = Words(c.Text.Split('|')[0]).Count(want.Contains);
+            if (score > bestScore) { best = c; bestScore = score; }
+        }
+        return best?.Text ?? fallback;
+    }
+
     private static int Find(IReadOnlyList<string> headers, params string[] names)
     {
         foreach (var n in names)
@@ -45,7 +77,8 @@ public static class AnalysisRecords
         if (nameCol < 0) nameCol = 1;
         Set(nameCol, string.IsNullOrWhiteSpace(name) ? r.CompanyName : name);
         Set(Find(headers, "Chinese Name", "Native Name"), r.LocalName);
-        Set(Find(headers, "Company Address", "Address"), r.Address);
+        // the supplier's phone / e-mail go under its address
+        Set(Find(headers, "Company Address", "Address"), r.Contact.Length > 0 ? (r.Address + "\n" + r.Contact.Replace(" · ", "\n")).Trim() : r.Address);
         Set(SupplierBanks.BaseColumn(headers), r.Bank);
         Set(Find(headers, "Category (English | Arabic)", "Category"), category);
         Set(Find(headers, "DEFAULT TEMPLATE", "Template"), template);

@@ -18,6 +18,8 @@ public sealed class AnalysisResult
     public string CompanyName { get; init; } = "";
     public string LocalName { get; init; } = "";
     public string Address { get; init; } = "";
+    /// <summary>The supplier's phone / e-mail read in the document ("Tel: ... · Email: ..."), "" when none.</summary>
+    public string Contact { get; init; } = "";
     public string Bank { get; init; } = "";
     public string Activity { get; init; } = "";
     /// <summary>The total written in the document ("Total Amount: USD 10,000.00"); null when none was read.</summary>
@@ -68,6 +70,7 @@ public sealed class AnalysisResult
                 CompanyName = S("company_name").Trim(),
                 LocalName = S("company_name_local").Trim(),
                 Address = S("company_address").Trim(),
+                Contact = S("contact").Trim(),
                 Bank = S("bank_details").Trim(),
                 Activity = S("activity").Trim(),
                 DocumentAmount = r.TryGetProperty("document_amount", out var da) && da.ValueKind == JsonValueKind.Number ? da.GetDecimal() : null,
@@ -107,6 +110,7 @@ public sealed class AnalysisResult
             CompanyName = (name ?? "").Trim(),
             LocalName = LocalName,
             Address = Address,
+            Contact = Contact,
             Bank = first,
             Activity = Activity,
             DocumentAmount = DocumentAmount,

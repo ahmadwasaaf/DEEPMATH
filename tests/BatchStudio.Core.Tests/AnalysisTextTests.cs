@@ -34,3 +34,29 @@ public class AnalysisTextTests
         Assert.Empty(r.AccountIds);
     }
 }
+
+public class AnalysisCategoryTests
+{
+    private static readonly List<BatchStudio.Core.Invoices.CategoryInfo> Cats =
+    [
+        new("C1", "General Trading - Import & Export | تجارة عامة - استيراد وتصدير السلع", true),
+        new("C2", "Industrial Fasteners & Hardware | مسامير ومعدات صناعية", true),
+        new("C3", "Auto Spare Parts | قطع غيار سيارات", true),
+    ];
+
+    [Fact]
+    public void Closest_category_else_general_trading()
+    {
+        Assert.Equal(Cats[1].Text, AnalysisRecords.CategoryFor("Industrial fasteners and maintenance components", Cats));
+        Assert.Equal(Cats[0].Text, AnalysisRecords.CategoryFor("Precision motion control assemblies", Cats));
+        Assert.Equal(Cats[0].Text, AnalysisRecords.CategoryFor("", Cats));
+    }
+
+    [Fact]
+    public void Contact_goes_under_the_address()
+    {
+        var r = new AnalysisResult { CompanyName = "X", Address = "1 Road", Contact = "Tel: 123456789 · Email: a@b.com" };
+        var v = AnalysisRecords.NewSupplier(["ID", "Supplier Name (English)", "Company Address"], "S1", r, null, null, null);
+        Assert.Equal("1 Road\nTel: 123456789\nEmail: a@b.com", v[2]);
+    }
+}

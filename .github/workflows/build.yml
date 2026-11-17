@@ -102,6 +102,8 @@ jobs:
           Run 'Arabic' 'Light' $true 'mass-analysis' '40-mass-analysis-ar'
           Run 'English' 'Dark' $true 'mass-conflict' '43-mass-conflict'
           Run 'Arabic' 'Dark' $true 'mass-conflict' '44-mass-conflict-ar'
+          Run 'English' 'Dark' $true 'mass-newsupplier' '45-mass-newsupplier'
+          Run 'Arabic' 'Dark' $true 'mass-newsupplier' '46-mass-newsupplier-ar'
           Run 'English' 'Dark' $true 'suppliers-health' '41-suppliers-health'
           Run 'Arabic' 'Dark' $true 'suppliers-health' '42-suppliers-health-ar'
           Run 'English' 'Dark' $true 'newinvoice-preview' '39-template-preview'

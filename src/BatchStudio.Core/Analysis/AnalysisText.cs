@@ -29,6 +29,7 @@ public static class AnalysisText
         ["ifsc_check_failed"] = "IFSC format is wrong",
         ["cnaps_check_failed"] = "CNAPS is not 12 digits",
         ["swift_iban_country_differs"] = "SWIFT country differs from the IBAN country",
+        ["bank_name_from_text"] = "Bank name read from its label in the text",
         ["currency_differs"] = "The document's currency is not the account's currency",
         ["conflicting_instructions"] = "CONFLICT: contradictory payment instructions",
         ["beneficiary_mismatch"] = "CONFLICT: invoice issuer is not the account holder",
@@ -55,6 +56,7 @@ public static class AnalysisText
         l.Add("Supplier name: " + D(r.CompanyName));
         l.Add("Chinese / local name: " + D(r.LocalName));
         l.Add("Company address: " + D(r.Address));
+        l.Add("Contact: " + D(r.Contact));
         l.Add("Activity: " + D(r.Activity));
         l.Add("");
         l.Add("--- Banking details ---");

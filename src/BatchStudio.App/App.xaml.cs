@@ -158,7 +158,8 @@ public partial class App : Application
             bool massParty = arg == "mass-newparty";
             bool massDetails = arg == "mass-details";
             bool massConflict = arg == "mass-conflict";
-            bool massReview = arg == "mass-analysis" || massConflict;
+            bool massNewSupplier = arg == "mass-newsupplier";
+            bool massReview = arg == "mass-analysis" || massConflict || massNewSupplier;
             if (massParty || massDetails || massReview) arg = "mass";
             bool lockShot = arg == "locked";
             if (lockShot) arg = "home";
@@ -178,6 +179,7 @@ public partial class App : Application
             if (massDetails) vm.Mass.OpenDetailsFor(vm.Mass.Rows[0]);
             if (massReview) vm.Mass.ShowSampleReview();
             if (massConflict) vm.Mass.OpenSampleConflict();
+            if (massNewSupplier) vm.Mass.OpenSampleNewSupplier();
             if (arg == "mass" && !massParty && !massDetails && !massReview) vm.Mass.SelectedRowIndex = 1;
             if (arg == "newinvoice-details")
             {

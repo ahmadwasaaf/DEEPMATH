@@ -165,9 +165,12 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowShortRemarks));
     }
 
-    /// <summary>"View conflict details": the conflict window (details, copy, package, the right bank accounts).</summary>
+    /// <summary>The supplier's name clicked: its details (known: the saved supplier; new or blocked: what the document says).</summary>
     [RelayCommand]
-    private void ViewConflict() => _owner.OpenConflict(this);
+    private void OpenSupplier() => _owner.OpenSupplier(this);
+
+    /// <summary>A new supplier checked in the Review form (written by Approve all); null = what the engine read.</summary>
+    public ReviewDraft? Draft { get; set; }
 
     private List<string> RemarkList()
     {
@@ -245,7 +248,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
 
     /// <summary>The small up arrow beside the file name: what the analysis read, as "&lt;name&gt;.txt" on the Desktop.</summary>
     [RelayCommand]
-    private Task ExportText() => _owner.ExportTextAsync([this]);
+    private async Task ExportText() => await _owner.ExportTextAsync([this]);
 
     [RelayCommand]
     private void OpenFile()
@@ -271,10 +274,21 @@ public sealed partial class MassInvoiceViewModel
     public bool IsReviewShown => IsReviewing && !ReviewHidden;
     public bool IsReviewMinimized => IsReviewing && ReviewHidden;
     public string RestoreText => Loc.F("Analysis.Restore", ReviewItems.Count);
-    /// <summary>The conflict window of a blocked document (null = closed).</summary>
-    [NotifyPropertyChangedFor(nameof(HasConflictEditor))]
-    [ObservableProperty] private ConflictEditorViewModel? _conflictEditor;
-    public bool HasConflictEditor => ConflictEditor != null;
+    /// <summary>The supplier form of a review row (its name clicked): known supplier, new supplier or blocked document.</summary>
+    [ObservableProperty] private bool _isReviewFormOpen;
+    private PartyFormViewModel? _reviewForm;
+    private AnalysisItemViewModel? _reviewFormItem;
+
+    public PartyFormViewModel ReviewForm
+    {
+        get
+        {
+            if (_reviewForm != null) return _reviewForm;
+            _reviewForm = new PartyFormViewModel(main);
+            _reviewForm.Closed += OnReviewFormClosed;
+            return _reviewForm;
+        }
+    }
 
     [RelayCommand]
     private void MinimizeReview() => ReviewHidden = true;
@@ -282,24 +296,114 @@ public sealed partial class MassInvoiceViewModel
     [RelayCommand]
     private void RestoreReview() => ReviewHidden = false;
 
-    internal void OpenConflict(AnalysisItemViewModel item) => ConflictEditor = new ConflictEditorViewModel(this, item);
+    /// <summary>
+    /// A review row's supplier name clicked. Known supplier: its saved details (Save writes them at once). New supplier or
+    /// blocked document: the supplier form filled with what the engine read, with the export arrow and Package; Save keeps
+    /// the checked values for Approve all (a blocked document is matched again with the bank details entered).
+    /// </summary>
+    internal void OpenSupplier(AnalysisItemViewModel item)
+    {
+        if (IsBusy) return;
+        Refresh();
+        var form = ReviewForm;
+        // a further document of a new supplier: that supplier's first document holds its details
+        var target = !item.HasConflict && item.Match.Status == AnalysisStatus.NewSupplier && item.Match.Owner is { } owner
+            ? ReviewItems.FirstOrDefault(x => x.Match == owner) ?? item : item;
+        void Open() { if (File.Exists(item.FilePath)) item.OpenFileCommand.Execute(null); }
+        bool known = !item.HasConflict && item.Match.Supplier is { Id.Length: > 0 }
+                     && item.Match.Status is AnalysisStatus.Matched or AnalysisStatus.NewAccount;
+        if (known)
+        {
+            if (!form.OpenExisting(false, item.Match.Supplier!.Id)) return;
+            form.SetReviewHeader(item.FileName, "", "", null, null, Open, false);
+        }
+        else
+        {
+            var values = target.Draft?.Values ?? DocumentValues(target);
+            if (!form.OpenDraft(values, target.Draft?.Theme?.Hex, d => SaveDraft(target, d))) return;
+            form.SetReviewHeader(item.FileName, item.HasConflict ? item.StatusText : "", item.HasConflict ? item.ConflictDetails : "",
+                async () => await ExportTextAsync([item]) ?? "", () => Loc.F("Analysis.Packaged", PackageFile(item)), Open, item.MovedTo != null);
+        }
+        _reviewFormItem = item;
+        IsReviewFormOpen = true;
+    }
+
+    /// <summary>What a new supplier's form starts with: the engine's reading in the sheet's columns (header → value).</summary>
+    private Dictionary<string, string> DocumentValues(AnalysisItemViewModel item)
+    {
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var page = Main.DataPages.FirstOrDefault(p => p.Session.Definition.Key == "suppliers");
+        if (page == null) return values;
+        var headers = page.Headers;
+        var template = TemplateNames.FirstOrDefault(t => string.Equals(t, "INVOICE", StringComparison.OrdinalIgnoreCase)) ?? TemplateNames.FirstOrDefault();
+        var row = AnalysisRecords.NewSupplier(headers, "", item.Result, item.SupplierName, AnalysisRecords.CategoryFor(item.Result.Activity, _categories), template);
+        for (int i = 1; i < headers.Count; i++) values[headers[i]] = row[i];
+        // the document's other accounts (USD + EUR ...) as accounts 2, 3 ...
+        int n = 2;
+        foreach (var alt in item.Result.AltBanks) values[SupplierBanks.HeaderFor(n++)] = alt;
+        return values;
+    }
+
+    /// <summary>The bank paragraphs of a form's values: account 1 first, then 2, 3 ... (empty ones left out).</summary>
+    private static List<string> DraftBanks(ReviewDraft d) =>
+        d.Values.Where(kv => kv.Key.StartsWith(SupplierBanks.BaseHeader, StringComparison.OrdinalIgnoreCase) && kv.Value.Trim().Length > 0)
+            .OrderBy(kv => SupplierBanks.ExtraNumber(kv.Key)).Select(kv => kv.Value.Trim()).ToList();
+
+    /// <summary>Save in the form of a new supplier / blocked document; an error text keeps the form open.</summary>
+    private string? SaveDraft(AnalysisItemViewModel item, ReviewDraft d)
+    {
+        var banks = DraftBanks(d);
+        if (item.HasConflict)
+        {
+            if (banks.Count == 0) return Loc.T("Analysis.ConflictNoBank");
+            static string Norm(string t) => string.Join("\n", (t ?? "").Replace("\r", "").Split('\n')
+                .Select(l => string.Join(" ", l.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))).Where(l => l.Length > 0));
+            var read = new[] { item.Result.Bank }.Concat(item.Result.AltBanks).Select(Norm).Where(t => t.Length > 0).ToList();
+            if (banks.Select(Norm).SequenceEqual(read)) return Loc.T("Analysis.ConflictUnchanged");
+            if (!Dialogs.Confirm(Loc.T("Analysis.ConflictConfirm"))) return "";
+            var fresh = ResolveConflict(item, d.Name, banks);
+            if (fresh != null && fresh.Match.Status == AnalysisStatus.NewSupplier && fresh.Match.Owner == null) fresh.Draft = d;
+            return null;
+        }
+        if (FindParty(d.Name) is { } known) return Loc.F("Analysis.DraftNameTaken", d.Name, known.Id);
+        item.Draft = d;
+        item.SupplierName = d.Name;
+        foreach (var other in ReviewItems.Where(x => x.Match.Owner == item.Match)) other.SupplierName = d.Name;
+        ReviewNote = Loc.F("Analysis.DraftSaved", d.Name);
+        return null;
+    }
+
+    private void OnReviewFormClosed(string? name)
+    {
+        IsReviewFormOpen = false;
+        var item = _reviewFormItem;
+        _reviewFormItem = null;
+        if (name == null || item == null) return;
+        // a known supplier edited: its new name on the rows of the review
+        if (item.Draft == null && !item.HasConflict && item.Match.Supplier is { } sup && ReviewItems.Contains(item))
+        {
+            Refresh();
+            foreach (var x in ReviewItems.Where(x => x.Match.Supplier?.Id == sup.Id)) x.SupplierName = name;
+            if (ReviewForm.LastStatus.Length > 0) ReviewNote = ReviewForm.LastStatus;
+        }
+    }
 
     /// <summary>
     /// The conflict window's Save (on the user's responsibility, after checking with the supplier): the document is matched
     /// again with the name and bank accounts entered, and leaves the blocked state.
     /// </summary>
-    internal void ResolveConflict(AnalysisItemViewModel item, string name, IReadOnlyList<string> banks)
+    internal AnalysisItemViewModel? ResolveConflict(AnalysisItemViewModel item, string name, IReadOnlyList<string> banks)
     {
         int index = ReviewItems.IndexOf(item);
-        if (index < 0) return;
+        if (index < 0) return null;
         Refresh();
         var result = item.Result.Verified(item.FilePath, name, banks);
         var match = AnalysisMatcher.Match([result], _parties)[0];
         var fresh = new AnalysisItemViewModel(this, match, item.No) { MovedTo = item.MovedTo };
         fresh.Include = fresh.IsReady;
         ReviewItems[index] = fresh;
-        ConflictEditor = null;
         RecountReview();
+        return fresh;
     }
 
     /// <summary>
@@ -345,9 +449,9 @@ public sealed partial class MassInvoiceViewModel
     /// Arrow / right-click › Export as text: what the analysis read from each document, one "&lt;name&gt;.txt" per
     /// document on the Desktop (an existing file is never replaced: " (2)").
     /// </summary>
-    public async Task ExportTextAsync(IReadOnlyList<AnalysisItemViewModel> items)
+    public async Task<string?> ExportTextAsync(IReadOnlyList<AnalysisItemViewModel> items)
     {
-        if (items.Count == 0) return;
+        if (items.Count == 0) return null;
         if (_engineVersion == null)
         {
             try { _engineVersion = await AnalysisRunner.TestAsync(Main.Settings.AnalysisEngineFolder); }
@@ -363,6 +467,7 @@ public sealed partial class MassInvoiceViewModel
         }
         ReviewNote = written.Count == 1 ? Loc.F("Analysis.TextSaved", written[0]) : written.Count > 1 ? Loc.F("Analysis.TextsSaved", written.Count) : "";
         ReviewError = failed.Count > 0 ? Loc.F("Analysis.TextFailed", string.Join("; ", failed)) : "";
+        return ReviewError.Length > 0 ? ReviewError : ReviewNote;
     }
 
     /// <summary>The Desktop folder Package moves blocked documents to (one folder for every kind of conflict).</summary>
@@ -489,7 +594,13 @@ public sealed partial class MassInvoiceViewModel
     /// <summary>Screenshots: the conflict window of the sample's blocked document.</summary>
     public void OpenSampleConflict()
     {
-        if (ReviewItems.FirstOrDefault(i => i.HasConflict) is { } blocked) OpenConflict(blocked);
+        if (ReviewItems.FirstOrDefault(i => i.HasConflict) is { } blocked) OpenSupplier(blocked);
+    }
+
+    /// <summary>Screenshots: the supplier form of the sample's first new supplier (filled from its document).</summary>
+    public void OpenSampleNewSupplier()
+    {
+        if (ReviewItems.FirstOrDefault(i => i.IsNewSupplier) is { } fresh) OpenSupplier(fresh);
     }
 
     public void ShowSampleReview()
@@ -507,7 +618,15 @@ public sealed partial class MassInvoiceViewModel
         [
             Doc("30,000.pdf", known?.Name ?? "DEMO SUPPLIER", knownAcc, "DEMOCNSH", 30000m),
             Doc("12,500.jpeg", known?.Name ?? "DEMO SUPPLIER", "62220000999911", "DEMOCNSH", 12500m),
-            Doc("48,000.png", "YI WU SHI FENG IMPORT AND EXPORT CO., LIMITED", "NRA99505535358555891509", "ZJTLCNBHXXX", 48000m),
+            new AnalysisResult
+            {
+                File = @"C:\Docs\48,000.png", FileName = "48,000.png", Amount = 48000m, Ok = true,
+                CompanyName = "YI WU SHI FENG IMPORT AND EXPORT CO., LIMITED", LocalName = "义乌市宏进出口有限公司",
+                Address = "Room 1206, Block B, 66 Chouzhou North Road, Yiwu, Zhejiang, China", Contact = "Tel: 0086-579-00000000 · Email: sales@yiwufeng.com",
+                Activity = "Industrial fasteners and maintenance components",
+                Bank = "Beneficiary Name: YI WU SHI FENG IMPORT AND EXPORT CO., LIMITED\nBeneficiary Bank: ZHEJIANG TAILONG COMMERCIAL BANK\nAccount Number: NRA99505535358555891509\nSWIFT CODE: ZJTLCNBHXXX\nCurrency: USD",
+                Ids = new(StringComparer.OrdinalIgnoreCase) { ["account"] = ["NRA99505535358555891509"], ["swift"] = ["ZJTLCNBHXXX"] },
+            },
             Doc("7,250.docx", "YI WU SHI FENG IMPORT AND EXPORT CO., LIMITED", "NRA99505535358555891509", "ZJTLCNBHXXX", 7250m),
             Doc("TEST 36.jpeg", "ORION STAR EXPORTS LLP", "3383757556", "KKBKINBBXXX", null, "name_from_signature"),
             Doc("scan.pdf", "", "", "", 9000m),
@@ -526,7 +645,7 @@ public sealed partial class MassInvoiceViewModel
         ReviewNote = "";
         IsReviewing = false;
         ReviewHidden = false;
-        ConflictEditor = null;
+        if (IsReviewFormOpen) ReviewForm.CancelCommand.Execute(null);
         ReviewItems.Clear();
         OnPropertyChanged(nameof(RestoreText));
     }
@@ -560,6 +679,7 @@ public sealed partial class MassInvoiceViewModel
             var created = new Dictionary<AnalysisMatch, (string Id, string Name)>();      // owner match → new record
             var addedAccounts = new Dictionary<(string Id, string Account), int>();         // account written in this approval
             int newSuppliers = 0, newAccounts = 0;
+            var themes = new List<(ReviewDraft Draft, string Name)>();       // themes picked in the forms, written once saved
 
             string? AccountKey(AnalysisItemViewModel i) => i.Result.AccountIds.FirstOrDefault();
 
@@ -598,7 +718,22 @@ public sealed partial class MassInvoiceViewModel
                 if (page.SameNameId(name) is { Length: > 0 } pendingId)
                     return (pendingId, page.RecordValues(pendingId) is { } rv && rv.Length > 1 ? rv[1] : name);
                 var id = page.NextId();
-                page.AddRecord(AnalysisRecords.NewSupplier(page.Headers, id, i.Result, name, category, template));
+                if (i.Draft is { } d)
+                {
+                    // checked in the form: its values as they are (bank accounts 2, 3 ... get their columns)
+                    foreach (var (h, v) in d.Values)
+                        if (v.Trim().Length > 0 && SupplierBanks.ExtraNumber(h) > 0) page.EnsureColumn(h);
+                    var headers = page.Headers;
+                    var values = new string[headers.Count];
+                    for (int c = 0; c < values.Length; c++) values[c] = d.Values.TryGetValue(headers[c], out var v) ? v : "";
+                    values[0] = id;
+                    values[PartyFormViewModel.NameColumn(headers)] = name;
+                    page.AddRecord(values);
+                    if (d.Theme != null) themes.Add((d, name));
+                }
+                else
+                    page.AddRecord(AnalysisRecords.NewSupplier(page.Headers, id, i.Result, name,
+                        AnalysisRecords.CategoryFor(i.Result.Activity, _categories) ?? category, template));
                 newSuppliers++;
                 return (id, name);
             }
@@ -663,6 +798,8 @@ public sealed partial class MassInvoiceViewModel
                 }
                 ReviewError = "";
             }
+            foreach (var (d, n) in themes)
+                try { await d.Theme!.FlushAsync(n, d.Template); } catch { }
             Refresh();
 
             int k = 0;

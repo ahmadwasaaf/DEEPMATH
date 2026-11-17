@@ -725,9 +725,12 @@
     <sys:String x:Key="Analysis.ConflictFix">بعد ما تتأكد من المورد بطريقة موثوقة، دخّل الاسم والبيانات البنكية الصحيحة تحت (+ بتضيف حساب كمان). الحفظ قرارك.</sys:String>
     <sys:String x:Key="Analysis.ConflictNoName">اكتب اسم المورد.</sys:String>
     <sys:String x:Key="Analysis.ConflictNoBank">دخّل حساب بنكي واحد على الأقل.</sys:String>
+    <sys:String x:Key="Analysis.OpenSupplierTip">اضغط: بيانات المورد (راجع، صحح، احفظ)</sys:String>
+    <sys:String x:Key="Analysis.ConflictUnchanged">اكتب البيانات البنكية اللي المورد أكدها (اللي في الخانة لسه هي نفسها اللي المستند متعارض فيها).</sys:String>
+    <sys:String x:Key="Analysis.DraftNameTaken">"{0}" متسجل بالفعل ({1}): استخدم اسم تاني، أو اقفل الشاشة واختار المورد ده.</sys:String>
+    <sys:String x:Key="Analysis.DraftSaved">{0}: البيانات اتحفظت - المورد هيتضاف مع Approve all.</sys:String>
     <sys:String x:Key="Analysis.ConflictConfirm">تحفظ البيانات دي على إنك اتأكدت منها مع المورد؟&#10;&#10;المستند هيخرج من حالة الإيقاف ويتعامل زي أي مستند.</sys:String>
     <sys:String x:Key="Analysis.Engine.verified_manually">التعارض اتحل بمعرفتك (البيانات اتدخلت يدوي)</sys:String>
-    <sys:String x:Key="Analysis.ViewConflict">عرض تفاصيل التعارض</sys:String>
     <sys:String x:Key="Analysis.HideConflict">إخفاء التفاصيل</sys:String>
     <sys:String x:Key="Analysis.SummaryBlocked">{0} متوقف (تحقق يدوي)</sys:String>
     <sys:String x:Key="Analysis.ConflictShort.conflicting_instructions">تعليمات دفع متعارضة</sys:String>

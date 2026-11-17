@@ -14,6 +14,12 @@ public partial class MassInvoiceView : UserControl
         // Esc closes the new supplier / client form
         PreviewKeyDown += (_, e) =>
         {
+            if (e.Key == System.Windows.Input.Key.Escape && DataContext is MassInvoiceViewModel { IsReviewFormOpen: true } fv)
+            {
+                fv.ReviewForm.CancelCommand.Execute(null);
+                e.Handled = true;
+                return;
+            }
             if (e.Key == System.Windows.Input.Key.Escape && DataContext is MassInvoiceViewModel { IsReviewing: true, IsBusy: false } rv && !rv.IsAddingParty)
             {
                 rv.CloseReviewCommand.Execute(null);
