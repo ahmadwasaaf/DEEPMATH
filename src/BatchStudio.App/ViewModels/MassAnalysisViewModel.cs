@@ -214,6 +214,26 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     private string AccountCurrency() =>
         Regex.Match(Result.Bank, @"(?im)^Currency:\s*([A-Z]{3})") is { Success: true } m ? m.Groups[1].Value : "-";
 
+    /// <summary>The row as the Review shows it, for the text export (status, supplier, account, amount, remarks in full).</summary>
+    public List<string> ReviewLines()
+    {
+        var l = new List<string>
+        {
+            "Status: " + StatusText,
+            "Supplier: " + SupplierName + (Match.Supplier is { Id.Length: > 0 } s ? $" ({s.Id})" : Draft != null ? " (new - checked in the form)" : ""),
+            "Account: " + (AccountText.Length > 0 ? AccountText : "-"),
+            "Amount: " + (AmountText.Length > 0 ? AmountText : "-"),
+            "Ticked: " + (Include ? "yes" : "no"),
+        };
+        var remarks = RemarkList();
+        if (remarks.Count > 0)
+        {
+            l.Add(HasConflict ? "Conflict (as in the red box):" : "Remarks:");
+            l.AddRange(remarks.Select(r => "• " + r));
+        }
+        return l;
+    }
+
     /// <summary>Everything read, for the tooltip of the supplier.</summary>
     public string Details
     {
@@ -471,7 +491,7 @@ public sealed partial class MassInvoiceViewModel
         var failed = new List<string>();
         foreach (var i in items.Distinct())
         {
-            try { written.Add(Path.GetFileName(BatchStudio.Core.Analysis.AnalysisText.Export(i.Result, _engineVersion, desktop))); }
+            try { written.Add(Path.GetFileName(BatchStudio.Core.Analysis.AnalysisText.Export(i.Result, _engineVersion, desktop, i.ReviewLines()))); }
             catch (Exception ex) { failed.Add(i.FileName + " — " + ex.Message); }
         }
         ReviewNote = written.Count == 1 ? Loc.F("Analysis.TextSaved", written[0]) : written.Count > 1 ? Loc.F("Analysis.TextsSaved", written.Count) : "";

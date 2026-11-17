@@ -39,7 +39,9 @@ public static class AnalysisText
         ["verified_manually"] = "Banking details corrected by hand in DEEPMATH",
     };
 
-    public static string TextOf(AnalysisResult r, string version, DateTime now)
+    /// <param name="review">What DEEPMATH's Review shows for this document (status, account, remarks, the conflict in full);
+    /// null outside the review.</param>
+    public static string TextOf(AnalysisResult r, string version, DateTime now, IReadOnlyList<string>? review = null)
     {
         var l = new List<string>
         {
@@ -92,13 +94,33 @@ public static class AnalysisText
                 }
             }
             catch (JsonException) { }
+        if (review is { Count: > 0 })
+        {
+            l.Add(""); l.Add("--- What DEEPMATH shows in Review ---");
+            l.AddRange(review);
+        }
         l.Add("");
         l.Add("Time: " + r.Seconds.ToString("0.##", CultureInfo.InvariantCulture) + "s");
-        return string.Join("\r\n", l) + "\r\n";
+        // the engine's answer exactly as it came (every key, even the ones no line above shows)
+        if (r.RawJson.Length > 0)
+        {
+            l.Add(""); l.Add("--- Engine output (as returned) ---");
+            try
+            {
+                using var doc = JsonDocument.Parse(r.RawJson);
+                l.Add(JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                }));
+            }
+            catch (JsonException) { l.Add(r.RawJson); }
+        }
+        return string.Join("\r\n", l).Replace("\r\n", "\n").Replace("\n", "\r\n") + "\r\n";
     }
 
     /// <summary>Writes "&lt;document name&gt;.txt" in <paramref name="folder"/> (" (2)" when taken); returns its path.</summary>
-    public static string Export(AnalysisResult r, string version, string folder)
+    public static string Export(AnalysisResult r, string version, string folder, IReadOnlyList<string>? review = null)
     {
         Directory.CreateDirectory(folder);
         var stem = Path.GetFileNameWithoutExtension(r.FileName.Length > 0 ? r.FileName : r.File);
@@ -106,7 +128,7 @@ public static class AnalysisText
         if (stem.Length == 0) stem = "document";
         var path = Path.Combine(folder, stem + ".txt");
         for (int i = 2; File.Exists(path); i++) path = Path.Combine(folder, $"{stem} ({i}).txt");
-        File.WriteAllText(path, TextOf(r, version, DateTime.Now), new UTF8Encoding(true));
+        File.WriteAllText(path, TextOf(r, version, DateTime.Now, review), new UTF8Encoding(true));
         return path;
     }
 }

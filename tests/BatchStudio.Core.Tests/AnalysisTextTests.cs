@@ -17,7 +17,12 @@ public class AnalysisTextTests
         Assert.Contains("account: 123", t);
         Assert.Contains("- Check against the document before approving", t);
         Assert.Contains("--- What V16 did ---\r\n- swift ABCDCNBJ from extra OCR\r\n- check swift: ok", t);
-        Assert.EndsWith("Time: 3.2s\r\n", t);
+        Assert.Contains("Time: 3.2s\r\n", t);
+        Assert.Contains("--- Engine output (as returned) ---", t);
+        Assert.Contains("\"company_address\": \"Yiwu\"", t);
+        Assert.DoesNotContain("--- What DEEPMATH shows in Review ---", t);
+        var withReview = AnalysisText.TextOf(r, "v", DateTime.Now, ["Status: Known supplier"]);
+        Assert.Contains("--- What DEEPMATH shows in Review ---\r\nStatus: Known supplier", withReview);
     }
 
     [Fact]
