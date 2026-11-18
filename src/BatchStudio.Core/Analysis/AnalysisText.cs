@@ -22,7 +22,8 @@ public static class AnalysisText
         ["swift_check"] = "Check against the document before approving",
         ["swift_corrected"] = "SWIFT corrected from the document: check it",
         ["multiple_accounts"] = "Several accounts: check which one",
-        ["future_account"] = "A future account is also given",
+        ["future_account"] = "A future-dated account is kept as a further account (use it from its date)",
+        ["swift_glyph_checked"] = "SWIFT look-alike characters (O / 0, S / 5) decided from the image",
         ["v16_extra_ocr"] = "V16 read a field with its extra OCR",
         ["v16_filled"] = "V16 filled a field V15 left empty or corrected one",
         ["iban_check_failed"] = "IBAN check digits are wrong",
@@ -72,6 +73,16 @@ public static class AnalysisText
             foreach (var (k, v) in r.Ids) l.Add($"{k}: {string.Join(", ", v)}");
         }
         foreach (var c in r.Conflicts) { l.Add(""); l.Add($"CONFLICT {c.Code}: {c.Detail}"); }
+        if (r.Candidates.Count > 0)
+        {
+            l.Add(""); l.Add("--- Unverified bank candidates (never chosen automatically) ---");
+            l.AddRange(r.Candidates.Select(c => "- " + c));
+        }
+        if (r.TransactionNotes.Count > 0)
+        {
+            l.Add(""); l.Add("--- This payment only (not saved with the supplier) ---");
+            l.AddRange(r.TransactionNotes.Select(t => "- " + t));
+        }
         if (r.Notes.Count > 0)
         {
             l.Add(""); l.Add("--- Remarks ---");

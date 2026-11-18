@@ -77,3 +77,19 @@ public class SwiftCompareTests
         Assert.Equal("ICICINBBCTS", AnalysisMatcher.SwiftIn("Beneficiary Name: X\nIntermediary SWIFT: CITIUS33\nSWIFT CODE: ICICINBBCTS"));
     }
 }
+
+public class CandidateTests
+{
+    [Fact]
+    public void Candidates_and_payment_notes_are_read_and_written_apart()
+    {
+        var line = """{"file":"x.pdf","name":"x.pdf","ok":true,"company_name":"V","bank_details":"Beneficiary Name: V","conflicts":[{"code":"conflicting_instructions","detail":"A / B"}],"bank_candidates":[{"account":"HK-EUR-1","currency":"EUR","swift":"VTPBHKHHXXX","bank":"T BANK","where":"Instruction A"}],"transaction_instructions":["Mandatory payment reference: PO-1"]}""";
+        var r = AnalysisResult.Parse(line)!;
+        Assert.Single(r.Candidates);
+        Assert.Equal("HK-EUR-1 · EUR · VTPBHKHHXXX · T BANK - Instruction A", r.Candidates[0].ToString());
+        var t = AnalysisText.TextOf(r, "v", DateTime.Now);
+        Assert.Contains("--- Unverified bank candidates (never chosen automatically) ---\r\n- HK-EUR-1", t);
+        Assert.Contains("--- This payment only (not saved with the supplier) ---\r\n- Mandatory payment reference: PO-1", t);
+        Assert.DoesNotContain("PO-1", r.Bank);
+    }
+}

@@ -191,6 +191,10 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         }
         if (Match.Note.Length > 0 && !(Match.Note == "Analysis.NoteNoAmount" && Amount != null)) list.Add(Loc.T(Match.Note));
         if (Match.SwiftConfirmed && Result.Notes.Any(n => n is "swift_check" or "swift_corrected")) list.Add(Loc.T("Analysis.SwiftConfirmed"));
+        // a blocked document: what it names, not verified (copied by the user once confirmed with the supplier)
+        foreach (var c in Result.Candidates) list.Add(Loc.F("Analysis.Candidate", c.ToString()));
+        // this payment only (a reference to quote ...): never saved with the supplier
+        foreach (var t in Result.TransactionNotes) list.Add(Loc.F("Analysis.TxNote", t));
         // the file name is not an amount: what the document's total says, as a hint (the amount is typed by the user)
         if (Result.Amount is not > 0 && Amount == null && Result.DocumentAmount is decimal da && da > 0)
             list.Add(Loc.F("Analysis.DocumentTotalHint", (Result.DocumentCurrency.Length > 0 ? Result.DocumentCurrency + " " : "") + NewInvoiceViewModel.FormatMoney(da)));

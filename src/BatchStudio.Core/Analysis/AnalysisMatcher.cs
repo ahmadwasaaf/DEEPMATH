@@ -41,6 +41,15 @@ public sealed class AnalysisResult
     public List<AnalysisConflict> Conflicts { get; init; } = [];
     public bool HasConflict => Conflicts.Count > 0;
 
+    /// <summary>
+    /// A blocked document's accounts / SWIFTs as written in it (with currency, SWIFT, bank and where): UNVERIFIED - shown
+    /// to the user, never put in the banking details and never chosen automatically.
+    /// </summary>
+    public List<BankCandidate> Candidates { get; init; } = [];
+
+    /// <summary>What the document says about this payment only (references to quote ...): shown, never saved with the supplier.</summary>
+    public List<string> TransactionNotes { get; init; } = [];
+
     /// <summary>The engine's own line for this document (kept for the text export: V16 changes and checks).</summary>
     public string RawJson { get; init; } = "";
 
@@ -88,6 +97,16 @@ public sealed class AnalysisResult
                             x.TryGetProperty("detail", out var d) && d.ValueKind == JsonValueKind.String ? d.GetString() ?? "" : ""))
                         .Where(x => x.Code.Length > 0).ToList()
                     : [],
+                Candidates = r.TryGetProperty("bank_candidates", out var bc) && bc.ValueKind == JsonValueKind.Array
+                    ? bc.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.Object).Select(x =>
+                    {
+                        string P(string k) => x.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? (v.GetString() ?? "").Trim() : "";
+                        return new BankCandidate(P("account"), P("currency"), P("swift"), P("bank"), P("where"));
+                    }).Where(c => c.Account.Length > 0 || c.Swift.Length > 0).ToList()
+                    : [],
+                TransactionNotes = r.TryGetProperty("transaction_instructions", out var ti) && ti.ValueKind == JsonValueKind.Array
+                    ? ti.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => (x.GetString() ?? "").Trim()).Where(x => x.Length > 0).ToList()
+                    : [],
                 Seconds = r.TryGetProperty("seconds", out var sec) && sec.ValueKind == JsonValueKind.Number ? sec.GetDouble() : 0,
             };
         }
@@ -120,6 +139,7 @@ public sealed class AnalysisResult
             Seconds = Seconds,
             Notes = Notes.Where(n => n == "test_document").Append("verified_manually").ToList(),
             AltBanks = texts.Skip(1).ToList(),
+            TransactionNotes = TransactionNotes,
             RawJson = RawJson,
         };
     }
@@ -127,6 +147,13 @@ public sealed class AnalysisResult
     /// <summary>Account numbers and IBANs: what identifies the account money is paid to.</summary>
     public IEnumerable<string> AccountIds =>
         Ids.Where(kv => kv.Key is "account" or "iban").SelectMany(kv => kv.Value).Where(v => v.Length >= 6);
+}
+
+/// <summary>An account / SWIFT a blocked document names (not verified): "HK-EUR-5018-7742 · EUR · VTPBHKHHXXX · bank · where".</summary>
+public sealed record BankCandidate(string Account, string Currency, string Swift, string Bank, string Where)
+{
+    public override string ToString() =>
+        string.Join(" · ", new[] { Account, Currency, Swift, Bank }.Where(v => v.Length > 0)) + (Where.Length > 0 ? " - " + Where : "");
 }
 
 /// <summary>One contradiction found in a document: its kind (conflicting_instructions ...) and what contradicts (accounts, names).</summary>
