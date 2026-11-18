@@ -23,6 +23,8 @@ public sealed class AnalysisResult
     /// <summary>The banking paragraph (completed with the bank's name from the saved suppliers when the document's was not read).</summary>
     public string Bank { get; set; } = "";
     public string Activity { get; init; } = "";
+    /// <summary>The trade category the document states ("Business Category: ..."), "" when it says none.</summary>
+    public string BusinessCategory { get; init; } = "";
     /// <summary>The total written in the document ("Total Amount: USD 10,000.00"); null when none was read.</summary>
     public decimal? DocumentAmount { get; init; }
     /// <summary>The currency of that total (USD, EUR ...), "" when not written.</summary>
@@ -83,6 +85,7 @@ public sealed class AnalysisResult
                 Contact = S("contact").Trim(),
                 Bank = S("bank_details").Trim(),
                 Activity = S("activity").Trim(),
+                BusinessCategory = S("business_category").Trim(),
                 DocumentAmount = r.TryGetProperty("document_amount", out var da) && da.ValueKind == JsonValueKind.Number ? da.GetDecimal() : null,
                 DocumentCurrency = S("document_currency").Trim(),
                 Ids = ids,
@@ -133,6 +136,7 @@ public sealed class AnalysisResult
             Contact = Contact,
             Bank = first,
             Activity = Activity,
+            BusinessCategory = BusinessCategory,
             DocumentAmount = DocumentAmount,
             DocumentCurrency = DocumentCurrency,
             Ids = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase) { ["account"] = AnalysisMatcher.AccountIdsIn(first).ToList() },

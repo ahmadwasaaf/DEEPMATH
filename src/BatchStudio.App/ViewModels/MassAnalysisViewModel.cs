@@ -351,6 +351,7 @@ public sealed partial class MassInvoiceViewModel
             if (!form.OpenDraft(values, target.Draft?.Theme?.Hex, d => SaveDraft(target, d))) return;
             form.SetReviewHeader(item.FileName, item.HasConflict ? item.StatusText : "", item.HasConflict ? item.ConflictDetails : "",
                 async () => await ExportTextAsync([item]) ?? "", () => Loc.F("Analysis.Packaged", PackageFile(item)), Open, item.MovedTo != null);
+            if (target.Draft == null && CategoryIsDefault(target.Result)) form.Info = Loc.T("Analysis.CategoryDefault");
         }
         _reviewFormItem = item;
         IsReviewFormOpen = true;
@@ -364,12 +365,12 @@ public sealed partial class MassInvoiceViewModel
         if (page == null) return values;
         var headers = page.Headers;
         var template = TemplateNames.FirstOrDefault(t => string.Equals(t, "INVOICE", StringComparison.OrdinalIgnoreCase)) ?? TemplateNames.FirstOrDefault();
-        var row = AnalysisRecords.NewSupplier(headers, "", item.Result, item.SupplierName, AnalysisRecords.CategoryFor(item.Result.Activity, _categories), template);
+        var row = AnalysisRecords.NewSupplier(headers, "", item.Result, item.SupplierName, CategoryOf(item.Result), template);
         for (int i = 1; i < headers.Count; i++) values[headers[i]] = row[i];
         // the supplier's other documents in this review fill what this one leaves empty (Chinese name, address ...)
         foreach (var other in ReviewItems.Where(x => x != item && x.Match.Owner == item.Match))
         {
-            var more = AnalysisRecords.NewSupplier(headers, "", other.Result, item.SupplierName, AnalysisRecords.CategoryFor(other.Result.Activity, _categories), template);
+            var more = AnalysisRecords.NewSupplier(headers, "", other.Result, item.SupplierName, CategoryOf(other.Result), template);
             for (int i = 1; i < headers.Count; i++)
                 if (values[headers[i]].Length == 0 && more[i].Length > 0 && !SupplierBanks.IsBankHeader(headers, i)) values[headers[i]] = more[i];
         }
@@ -378,6 +379,16 @@ public sealed partial class MassInvoiceViewModel
         foreach (var alt in item.Result.AltBanks) values[SupplierBanks.HeaderFor(n++)] = alt;
         return values;
     }
+
+    /// <summary>The category for a new supplier: the one the document states, else the closest to its activity, else the default.</summary>
+    private string? CategoryOf(AnalysisResult r) =>
+        AnalysisRecords.CategoryFor(r.BusinessCategory.Length > 0 ? r.BusinessCategory : FirstSentence(r.Activity), _categories);
+
+    /// <summary>The activity's first sentence (later ones may say what the supplier does NOT do).</summary>
+    private static string FirstSentence(string t) => Regex.Split(t ?? "", @"(?<=[.;])\s+")[0];
+
+    /// <summary>Nothing in the document says what the supplier does: the category is the default one (said in the form).</summary>
+    private static bool CategoryIsDefault(AnalysisResult r) => r.BusinessCategory.Length == 0 && r.Activity.Length == 0;
 
     /// <summary>The bank paragraphs of a form's values: account 1 first, then 2, 3 ... (empty ones left out).</summary>
     private static List<string> DraftBanks(ReviewDraft d) =>
@@ -768,7 +779,7 @@ public sealed partial class MassInvoiceViewModel
                 }
                 else
                     page.AddRecord(AnalysisRecords.NewSupplier(page.Headers, id, i.Result, name,
-                        AnalysisRecords.CategoryFor(i.Result.Activity, _categories) ?? category, template));
+                        CategoryOf(i.Result) ?? category, template));
                 newSuppliers++;
                 return (id, name);
             }

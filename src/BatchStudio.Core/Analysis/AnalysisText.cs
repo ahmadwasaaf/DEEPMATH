@@ -61,6 +61,7 @@ public static class AnalysisText
         l.Add("Chinese / local name: " + D(r.LocalName));
         l.Add("Company address: " + D(r.Address));
         l.Add("Contact: " + D(r.Contact));
+        l.Add("Business category: " + D(r.BusinessCategory));
         l.Add("Activity: " + D(r.Activity));
         l.Add("");
         l.Add("--- Banking details ---");
