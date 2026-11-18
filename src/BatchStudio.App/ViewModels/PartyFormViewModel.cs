@@ -165,6 +165,23 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
     private void OpenDocument() => _openFile?.Invoke();
 
     /// <summary>
+    /// Review, known supplier: the document's new account as the next "Banking Details N", filled with what the engine read
+    /// and selected (the radio), every account open to compare. Save writes it with the supplier. Returns its number.
+    /// </summary>
+    public int? AddReviewAccount(string bankText)
+    {
+        if (Fields.OfType<BankGroupViewModel>().FirstOrDefault() is not { } banks) return null;
+        int before = banks.Accounts.Count;
+        banks.AddCommand.Execute(null);
+        if (banks.Accounts.Count == before) return null;          // no free account column
+        var added = banks.Accounts[^1];
+        added.Value = bankText.Replace("\r\n", "\n").Trim();
+        added.IsDefault = true;
+        foreach (var a in banks.Accounts) a.IsCollapsed = false;
+        return added.Number;
+    }
+
+    /// <summary>
     /// Opens the form filled with a new supplier's values (header → value, from the document) that are not saved yet:
     /// Save hands them to <paramref name="save"/> (an error text keeps the form open).
     /// </summary>

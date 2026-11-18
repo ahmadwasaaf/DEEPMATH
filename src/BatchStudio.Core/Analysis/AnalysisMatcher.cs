@@ -167,7 +167,7 @@ public enum AnalysisStatus
 {
     /// <summary>Known supplier, the account in the document is one of its accounts.</summary>
     Matched,
-    /// <summary>Known supplier, the document has an account it does not have yet (added as Banking Details N, used for this invoice only).</summary>
+    /// <summary>Known supplier, the document has an account it does not have yet (Approve all adds it as Banking Details N; the default account stays).</summary>
     NewAccount,
     /// <summary>The supplier is not in the Suppliers list: it is added.</summary>
     NewSupplier,
@@ -288,7 +288,18 @@ public static partial class AnalysisMatcher
                     m.Supplier = scored[0].Party;
                     m.MatchedBy = scored[0].Score >= 0.999 ? "name" : "similar";
                     if (r.Bank.Length > 0 && r.AccountIds.Any())
+                    {
                         m.Status = AnalysisStatus.NewAccount;
+                        // the number read is part of one of its saved accounts (same SWIFT): a misread, not a new account
+                        if (NearSavedAccount(m.Supplier, r) is int near)
+                        {
+                            m.Status = AnalysisStatus.Matched;
+                            m.BankNumber = near;
+                            m.MatchedBy = "near";
+                            m.Note = "Analysis.NoteAccountMisread";
+                            if (!r.Notes.Contains("account_misread")) r.Notes.Add("account_misread");
+                        }
+                    }
                     else
                     {
                         // no account in the document: the supplier's default account
@@ -423,6 +434,27 @@ public static partial class AnalysisMatcher
             }
         }
         return ids;
+    }
+
+    /// <summary>
+    /// The saved account of a supplier that the account read is part of, or holds (at least 6 letters / digits, not equal):
+    /// "JSD100152" read for the saved "083JSD100152". When both name a SWIFT it must be the same. null = none.
+    /// </summary>
+    public static int? NearSavedAccount(Party supplier, AnalysisResult r)
+    {
+        var readSwift = SwiftIn(r.Bank);
+        foreach (var b in supplier.Banks.Where(b => b.Text.Trim().Length > 0))
+        {
+            var savedSwift = SwiftIn(b.Text);
+            if (readSwift.Length > 0 && savedSwift.Length > 0 && !SameSwift(readSwift, savedSwift)) continue;
+            foreach (var k in AccountIdsIn(b.Text).Select(Clean))
+                foreach (var a in r.AccountIds.Select(Clean))
+                {
+                    if (a == k || Math.Min(a.Length, k.Length) < 6) continue;
+                    if (k.Contains(a, StringComparison.Ordinal) || a.Contains(k, StringComparison.Ordinal)) return b.Number;
+                }
+        }
+        return null;
     }
 
     public static string Clean(string s) => new string((s ?? "").Where(char.IsAsciiLetterOrDigit).ToArray()).ToUpperInvariant();

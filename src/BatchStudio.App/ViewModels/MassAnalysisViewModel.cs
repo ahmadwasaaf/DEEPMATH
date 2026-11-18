@@ -61,7 +61,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     private static readonly HashSet<string> NeedsCheckNotes =
     [
         "swift_corrected", "swift_check", "multiple_accounts", "account_differs", "iban_check_failed", "ifsc_check_failed",
-        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs",
+        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs", "account_misread",
     ];
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
@@ -80,9 +80,14 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         var hit = value.Banks.Where(b => b.Text.Trim().Length > 0).FirstOrDefault(b =>
             Result.AccountIds.Any(a => AnalysisMatcher.AccountIdsIn(b.Text).Any(k => AnalysisMatcher.SameAccount(a, k))));
         if (hit != null) { Match.Status = AnalysisStatus.Matched; Match.BankNumber = hit.Number; }
+        else if (Result.AccountIds.Any() && Result.Bank.Length > 0 && AnalysisMatcher.NearSavedAccount(value, Result) is int near)
+        { Match.Status = AnalysisStatus.Matched; Match.BankNumber = near; }
         else if (Result.AccountIds.Any() && Result.Bank.Length > 0) { Match.Status = AnalysisStatus.NewAccount; Match.BankNumber = null; }
         else { Match.Status = AnalysisStatus.Matched; Match.BankNumber = null; }
-        Match.Note = Result.Amount is null or <= 0 ? "Analysis.NoteNoAmount" : "";
+        Match.Note = Match.Status == AnalysisStatus.Matched && hit == null && Match.BankNumber != null ? "Analysis.NoteAccountMisread"
+                   : Result.Amount is null or <= 0 ? "Analysis.NoteNoAmount" : "";
+        if (Match.Note == "Analysis.NoteAccountMisread") { if (!Result.Notes.Contains("account_misread")) Result.Notes.Add("account_misread"); }
+        else Result.Notes.Remove("account_misread");
         SupplierName = value.Name;
         OnPropertyChanged(nameof(State));
         OnPropertyChanged(nameof(StatusText));
@@ -91,6 +96,30 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         Changed();
     }
     public bool CanEditName => IsNewSupplier;
+
+    /// <summary>
+    /// The document's new account was checked in the Review form and saved with the supplier (or removed there): this
+    /// invoice uses that saved account (null = the supplier's default account), nothing more is added by Approve all.
+    /// </summary>
+    internal void UseSavedAccount(Party supplier, int? bank)
+    {
+        Match.Supplier = supplier;
+        Match.Status = AnalysisStatus.Matched;
+        Match.BankNumber = bank;
+        Match.MatchedBy = "review";
+        if (Match.Note == "Analysis.NoteAccountMisread") Match.Note = "";
+        Result.Notes.Remove("account_misread");
+        Match.SwiftConfirmed = true;
+        SupplierName = supplier.Name;
+        OnPropertyChanged(nameof(State));
+        OnPropertyChanged(nameof(StatusText));
+        OnPropertyChanged(nameof(Remarks));
+        OnPropertyChanged(nameof(ShortRemarks));
+        OnPropertyChanged(nameof(HasRemarks));
+        OnPropertyChanged(nameof(ShowShortRemarks));
+        OnPropertyChanged(nameof(SwiftNeedsCheck));
+        Changed();
+    }
 
     public decimal? Amount =>
         decimal.TryParse(AmountText.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var a) && a > 0 ? a : null;
@@ -306,6 +335,8 @@ public sealed partial class MassInvoiceViewModel
     [ObservableProperty] private bool _isReviewFormOpen;
     private PartyFormViewModel? _reviewForm;
     private AnalysisItemViewModel? _reviewFormItem;
+    /// <summary>The account number the document's new account got in the Review form of a known supplier (null = none).</summary>
+    private int? _reviewAccount;
 
     public PartyFormViewModel ReviewForm
     {
@@ -343,7 +374,22 @@ public sealed partial class MassInvoiceViewModel
         if (known)
         {
             if (!form.OpenExisting(false, item.Match.Supplier!.Id)) return;
-            form.SetReviewHeader(item.FileName, "", "", null, null, Open, false);
+            _reviewAccount = null;
+            if (item.Match.Status == AnalysisStatus.NewAccount && item.Result.Bank.Trim().Length > 0)
+            {
+                // the document's new account: shown as the next "Banking Details N", selected, to check before Save
+                _reviewAccount = form.AddReviewAccount(item.Result.Bank);
+                form.SetReviewHeader(item.FileName, "", "", async () => await ExportTextAsync([item]) ?? "",
+                    () => Loc.F("Analysis.Packaged", PackageFile(item)), Open, item.MovedTo != null);
+                if (_reviewAccount != null) form.Info = Loc.F("Analysis.NewAccountInForm", _reviewAccount.Value);
+            }
+            else if (item.Match.Note == "Analysis.NoteAccountMisread" && item.Match.BankNumber is int near)
+            {
+                form.SetReviewHeader(item.FileName, "", "", async () => await ExportTextAsync([item]) ?? "",
+                    () => Loc.F("Analysis.Packaged", PackageFile(item)), Open, item.MovedTo != null);
+                form.Info = Loc.F("Analysis.MisreadInForm", item.Result.AccountIds.FirstOrDefault() ?? "", near);
+            }
+            else form.SetReviewHeader(item.FileName, "", "", null, null, Open, false);
         }
         else
         {
@@ -424,6 +470,8 @@ public sealed partial class MassInvoiceViewModel
         IsReviewFormOpen = false;
         var item = _reviewFormItem;
         _reviewFormItem = null;
+        var added = _reviewAccount;
+        _reviewAccount = null;
         if (name == null || item == null) return;
         // a known supplier edited: its new name on the rows of the review
         if (item.Draft == null && !item.HasConflict && item.Match.Supplier is { } sup && ReviewItems.Contains(item))
@@ -431,6 +479,10 @@ public sealed partial class MassInvoiceViewModel
             Refresh();
             foreach (var x in ReviewItems.Where(x => x.Match.Supplier?.Id == sup.Id)) x.SupplierName = name;
             if (ReviewForm.LastStatus.Length > 0) ReviewNote = ReviewForm.LastStatus;
+            // its new account was checked and saved there: this invoice uses that account (kept empty / removed: the default)
+            if (added is int n && item.Match.Status == AnalysisStatus.NewAccount
+                && _parties.FirstOrDefault(p => string.Equals(p.Id, sup.Id, StringComparison.OrdinalIgnoreCase)) is { } saved)
+                item.UseSavedAccount(saved, saved.Banks.Any(b => b.Number == n && b.Text.Trim().Length > 0) ? n : null);
         }
     }
 

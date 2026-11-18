@@ -684,13 +684,16 @@
     <sys:String x:Key="Analysis.Applied">{0} rows filled from the documents ({1} new supplier(s), {2} new account(s) saved). Check them, then Generate.</sys:String>
     <sys:String x:Key="Analysis.StMatched">Known supplier</sys:String>
     <sys:String x:Key="Analysis.StMatchedN">Known supplier · account {0}</sys:String>
-    <sys:String x:Key="Analysis.StNewAccount">Known supplier · new account (this invoice only)</sys:String>
+    <sys:String x:Key="Analysis.StNewAccount">Known supplier · new account (added to the supplier)</sys:String>
     <sys:String x:Key="Analysis.StNewSupplier">New supplier (will be added)</sys:String>
     <sys:String x:Key="Analysis.StSameNew">New supplier (same as above)</sys:String>
     <sys:String x:Key="Analysis.StSameNewOther">New supplier (above) · another account</sys:String>
     <sys:String x:Key="Analysis.StAttention">Needs a look</sys:String>
     <sys:String x:Key="Analysis.NoteNothingRead">Nothing could be read from this document.</sys:String>
     <sys:String x:Key="Analysis.NoteTwoSuppliers">More than one supplier has this account / name.</sys:String>
+    <sys:String x:Key="Analysis.NoteAccountMisread">The account read is part of one of the supplier's saved accounts (same SWIFT): most likely misread. The saved account is used; check it against the document.</sys:String>
+    <sys:String x:Key="Analysis.NewAccountInForm">The document's new account is added below as Banking Details {0} and selected. Check it against the document, then Save (Cancel adds nothing).</sys:String>
+    <sys:String x:Key="Analysis.MisreadInForm">The document reads the account as {0}; it is part of saved account {1} (same SWIFT), so account {1} is used and nothing new is added.</sys:String>
     <sys:String x:Key="Analysis.NoteNoBank">No bank details in the document: the supplier's default account is used.</sys:String>
     <sys:String x:Key="Analysis.NoteNoName">No supplier name found.</sys:String>
     <sys:String x:Key="Analysis.NoteNoBankNew">New supplier without bank details.</sys:String>

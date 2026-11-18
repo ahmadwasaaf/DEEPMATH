@@ -684,13 +684,16 @@
     <sys:String x:Key="Analysis.Applied">اتملى {0} صف من المستندات (اتحفظ {1} مورد جديد و {2} حساب جديد). راجعهم وبعدين Generate.</sys:String>
     <sys:String x:Key="Analysis.StMatched">مورد معروف</sys:String>
     <sys:String x:Key="Analysis.StMatchedN">مورد معروف · حساب {0}</sys:String>
-    <sys:String x:Key="Analysis.StNewAccount">مورد معروف · حساب جديد (للفاتورة دي بس)</sys:String>
+    <sys:String x:Key="Analysis.StNewAccount">مورد معروف · حساب جديد (هيتضاف للمورد)</sys:String>
     <sys:String x:Key="Analysis.StNewSupplier">مورد جديد (هيتضاف)</sys:String>
     <sys:String x:Key="Analysis.StSameNew">مورد جديد (نفس اللي فوق)</sys:String>
     <sys:String x:Key="Analysis.StSameNewOther">مورد جديد (اللي فوق) · حساب تاني</sys:String>
     <sys:String x:Key="Analysis.StAttention">محتاج مراجعة</sys:String>
     <sys:String x:Key="Analysis.NoteNothingRead">ماقدرناش نقرا حاجة من المستند ده.</sys:String>
     <sys:String x:Key="Analysis.NoteTwoSuppliers">أكتر من مورد عليه نفس الحساب / الاسم.</sys:String>
+    <sys:String x:Key="Analysis.NoteAccountMisread">الرقم المقروء جزء من حساب محفوظ للمورد (نفس الـ SWIFT): غالبًا اتقرا غلط. هيتستخدم الحساب المحفوظ، راجعه مع المستند.</sys:String>
+    <sys:String x:Key="Analysis.NewAccountInForm">الحساب الجديد اللي في المستند اتضاف تحت كـ Banking Details {0} والاختيار عليه. راجعه مع المستند وبعدين Save (لو Cancel مش هيتضاف حاجة).</sys:String>
+    <sys:String x:Key="Analysis.MisreadInForm">الحساب في المستند اتقرا {0}، وده جزء من الحساب المحفوظ رقم {1} (نفس الـ SWIFT)، فهيتستخدم الحساب {1} ومش هيتضاف حساب جديد.</sys:String>
     <sys:String x:Key="Analysis.NoteNoBank">مفيش بيانات بنك في المستند: هيتستخدم الحساب الافتراضي للمورد.</sys:String>
     <sys:String x:Key="Analysis.NoteNoName">مالقيناش اسم المورد.</sys:String>
     <sys:String x:Key="Analysis.NoteNoBankNew">مورد جديد من غير بيانات بنك.</sys:String>
