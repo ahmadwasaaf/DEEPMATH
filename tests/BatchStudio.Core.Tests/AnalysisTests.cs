@@ -203,7 +203,7 @@ public class AnalysisTests
         Assert.Equal("SUP-099", v[0]);
         Assert.Equal(doc.CompanyName, v[1]);
         Assert.Equal("义乌", v[2]);
-        Assert.Equal("502, UNIT 1", v[3]);
+        Assert.Equal("Company Address: 502, UNIT 1", v[3]);
         Assert.Equal(doc.Bank, v[4]);
         Assert.StartsWith("General Trading", v[5]);
         Assert.Equal("INVOICE", v[6]);
