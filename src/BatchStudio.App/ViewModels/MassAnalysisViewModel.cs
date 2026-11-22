@@ -61,7 +61,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     private static readonly HashSet<string> NeedsCheckNotes =
     [
         "swift_corrected", "swift_check", "multiple_accounts", "account_differs", "iban_check_failed", "ifsc_check_failed",
-        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs", "account_misread",
+        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs", "account_misread", "intermediary_swift_known",
     ];
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
@@ -398,6 +398,8 @@ public sealed partial class MassInvoiceViewModel
             form.SetReviewHeader(item.FileName, item.HasConflict ? item.StatusText : "", item.HasConflict ? item.ConflictDetails : "",
                 async () => await ExportTextAsync([item]) ?? "", () => Loc.F("Analysis.Packaged", PackageFile(item)), Open, item.MovedTo != null);
             if (target.Draft == null && CategoryIsDefault(target.Result)) form.Info = Loc.T("Analysis.CategoryDefault");
+            else if (target.Draft == null && target.Result.Notes.Contains("category_from_name"))
+                form.Info = Loc.F("Analysis.CategoryFromName", target.Result.BusinessCategory);
         }
         _reviewFormItem = item;
         IsReviewFormOpen = true;

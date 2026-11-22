@@ -62,7 +62,15 @@ public class AnalysisCategoryTests
     {
         var r = new AnalysisResult { CompanyName = "X", Address = "1 Road", Contact = "Tel: 123456789 · Email: a@b.com" };
         var v = AnalysisRecords.NewSupplier(["ID", "Supplier Name (English)", "Company Address"], "S1", r, null, null, null);
-        Assert.Equal("1 Road\nTel: 123456789\nEmail: a@b.com", v[2]);
+        Assert.Equal("Company Address: 1 Road\nTel: 123456789\nEmail: a@b.com", v[2]);
+    }
+
+    [Fact]
+    public void Company_address_label_written_once()
+    {
+        var r = new AnalysisResult { CompanyName = "X", Address = "Company Address: 2 Road" };
+        var v = AnalysisRecords.NewSupplier(["ID", "Supplier Name (English)", "Company Address"], "S1", r, null, null, null);
+        Assert.Equal("Company Address: 2 Road", v[2]);
     }
 }
 

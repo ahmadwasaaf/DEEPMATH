@@ -78,7 +78,10 @@ public static class AnalysisRecords
         Set(nameCol, string.IsNullOrWhiteSpace(name) ? r.CompanyName : name);
         Set(Find(headers, "Chinese Name", "Native Name"), r.LocalName);
         // the supplier's phone / e-mail go under its address
-        Set(Find(headers, "Company Address", "Address"), r.Contact.Length > 0 ? (r.Address + "\n" + r.Contact.Replace(" · ", "\n")).Trim() : r.Address);
+        // the approved format: "Company Address: ..." (as the details checked with ChatGPT are written)
+        var address = r.Address.Trim().Length == 0 || r.Address.TrimStart().StartsWith("Company Address", StringComparison.OrdinalIgnoreCase)
+            ? r.Address : "Company Address: " + r.Address.Trim();
+        Set(Find(headers, "Company Address", "Address"), r.Contact.Length > 0 ? (address + "\n" + r.Contact.Replace(" · ", "\n")).Trim() : address);
         Set(SupplierBanks.BaseColumn(headers), r.Bank);
         Set(Find(headers, "Category (English | Arabic)", "Category"), category);
         Set(Find(headers, "DEFAULT TEMPLATE", "Template"), template);

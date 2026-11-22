@@ -81,7 +81,8 @@ public static class BankAccountPdf
                     app.Calculate();
                     Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(job.PdfPath))!);
                     // the sheet's print area on one page (Type pdf, standard quality, doc properties, IgnorePrintAreas = false)
-                    ws.ExportAsFixedFormat(0, job.PdfPath, 0, true, false);
+                    using (PdfPrinter.Use((object)app))
+                        ws.ExportAsFixedFormat(0, job.PdfPath, 0, true, false);
                 }
                 catch (Exception ex) when (jobs.Count > 1) { failed.Add((job, ex.Message)); }
             }

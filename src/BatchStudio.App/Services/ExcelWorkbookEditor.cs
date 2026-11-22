@@ -95,7 +95,8 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
             if (string.Equals((string)ws.Name, sheetName, StringComparison.OrdinalIgnoreCase))
             {
                 Retry(() => { _app.Calculate(); });
-                Retry(() => { ws.ExportAsFixedFormat(0, pdfPath); });   // 0 = xlTypePDF
+                using (PdfPrinter.Use((object)_app))                    // Arabic text keeps its colour in the PDF
+                    Retry(() => { ws.ExportAsFixedFormat(0, pdfPath); });   // 0 = xlTypePDF
                 return;
             }
         throw new InvalidOperationException($"Sheet \"{sheetName}\" was not found in the workbook.");

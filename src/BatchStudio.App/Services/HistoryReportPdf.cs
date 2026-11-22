@@ -37,7 +37,8 @@ public static class HistoryReportPdf
             ws.PageSetup.PrintArea = plan.PrintArea;
             app.Calculate();
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(pdfPath))!);
-            ws.ExportAsFixedFormat(0, pdfPath, 0, true, false);
+            using (PdfPrinter.Use((object)app))
+                ws.ExportAsFixedFormat(0, pdfPath, 0, true, false);
             wb.Close(false);
             wb = null;
         }

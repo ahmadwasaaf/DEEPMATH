@@ -337,7 +337,10 @@ public static partial class AnalysisMatcher
                 && SwiftIn(r.Bank) is { Length: >= 6 } sw && BankNameBySwift(suppliers, sw) is { Length: > 0 } bankName)
             {
                 var lines = r.Bank.Split('\n').ToList();
-                lines.Insert(lines.Count > 0 && lines[0].StartsWith("Beneficiary Name:", StringComparison.OrdinalIgnoreCase) ? 1 : 0, "Beneficiary Bank: " + bankName);
+                // the approved format: after the account number (else after the name)
+                int acc = lines.FindIndex(l => l.StartsWith("Account Number", StringComparison.OrdinalIgnoreCase) || l.StartsWith("IBAN:", StringComparison.OrdinalIgnoreCase));
+                int at = acc >= 0 ? acc + 1 : lines.Count > 0 && lines[0].StartsWith("Beneficiary Name:", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+                lines.Insert(at, "Beneficiary Bank: " + bankName);
                 r.Bank = string.Join("\n", lines);
                 if (!r.Notes.Contains("bank_name_from_saved")) r.Notes.Add("bank_name_from_saved");
             }

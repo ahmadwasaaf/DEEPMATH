@@ -732,6 +732,7 @@
     <sys:String x:Key="Analysis.ConflictUnchanged">Enter the bank details confirmed by the supplier (they are still the ones the document contradicts).</sys:String>
     <sys:String x:Key="Analysis.DraftNameTaken">"{0}" is already saved ({1}): use another name, or close this form and pick that supplier.</sys:String>
     <sys:String x:Key="Analysis.DraftSaved">{0}: details kept - the supplier is added with Approve all.</sys:String>
+    <sys:String x:Key="Analysis.CategoryFromName">Category: from the company name ({0}) - the document does not say what the supplier does</sys:String>
     <sys:String x:Key="Analysis.CategoryDefault">Category: the default one - the document does not say what the supplier does</sys:String>
     <sys:String x:Key="Analysis.ConflictConfirm">Save these details as checked with the supplier?&#10;&#10;The document leaves the blocked state and is handled like any other.</sys:String>
     <sys:String x:Key="Analysis.Engine.verified_manually">Conflict resolved by you (details entered manually)</sys:String>
@@ -764,6 +765,8 @@
     <sys:String x:Key="Analysis.Engine.swift_glyph_checked">Image: the SWIFT's look-alike characters (O / 0, S / 5) were decided from the image</sys:String>
     <sys:String x:Key="Analysis.SwiftConfirmed">SWIFT checked: the same as the supplier's saved account</sys:String>
     <sys:String x:Key="Analysis.Engine.bank_name_from_saved">Bank name added from your saved suppliers (same SWIFT)</sys:String>
+    <sys:String x:Key="Analysis.Engine.intermediary_swift_known">Intermediary SWIFT corrected to a well-known correspondent bank's code (one look-alike character) - compare it with the document</sys:String>
+    <sys:String x:Key="Analysis.Engine.category_from_name">Category taken from the company name - the document does not say what the supplier does</sys:String>
     <sys:String x:Key="Analysis.Engine.bank_name_from_text">Bank name read from its label in the document</sys:String>
     <sys:String x:Key="Analysis.Engine.currency_differs">The invoice currency is not the account's currency - check before approving</sys:String>
     <sys:String x:Key="Analysis.Engine.currency_differs_values">The invoice is in {0}, the account is in {1} - check before approving</sys:String>

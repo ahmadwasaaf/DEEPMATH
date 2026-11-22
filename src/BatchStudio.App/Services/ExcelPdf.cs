@@ -30,6 +30,7 @@ public static class ExcelPdf
                 wb = app.Workbooks.Open(xlsxPath, 0, true, m, m, m, m, m, m, m, m, m, m, m, 1);
             }
             try { app.CalculateFull(); } catch { }   // SUBTOTAL / totals reflect hidden rows
+            using var printer = PdfPrinter.Use((object)app);   // Arabic text keeps its colour in the PDF
             if (invoiceSheets != null && (int)wb.Sheets.Count > 1)
             {
                 dynamic? target = null;
