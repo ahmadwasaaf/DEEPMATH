@@ -136,6 +136,7 @@ jobs:
           if (Test-Path $st) { $i = 0; Get-ChildItem $st -Filter *.pdf | ForEach-Object { $i++; Copy-Item $_.FullName "shots\statement-$i.pdf" } }
 
       - name: Upload screenshots
+        continue-on-error: true   # artifact storage quota: the release / screenshots branch still get them
         if: always() && hashFiles('shots/*.png') != ''
         uses: actions/upload-artifact@v4
         with:
@@ -175,6 +176,7 @@ jobs:
           "version=$ver" >> $env:GITHUB_OUTPUT
 
       - name: Upload installer
+        continue-on-error: true   # artifact storage quota: the release / screenshots branch still get them
         if: hashFiles('out/*.exe') != ''
         uses: actions/upload-artifact@v4
         with:
