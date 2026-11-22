@@ -765,6 +765,7 @@
     <sys:String x:Key="Analysis.Engine.swift_glyph_checked">صورة: الحروف المتشابهة في السويفت (O / 0 و S / 5) اتحددت من الصورة نفسها</sys:String>
     <sys:String x:Key="Analysis.SwiftConfirmed">السويفت اتأكد: نفس اللي في حساب المورد المتسجل</sys:String>
     <sys:String x:Key="Analysis.Engine.bank_name_from_saved">اسم البنك اتضاف من الموردين المتسجلين (نفس السويفت)</sys:String>
+    <sys:String x:Key="Analysis.Engine.amount_from_name_text">المبلغ اتاخد من نص اسم الملف (الاسم مش مبلغ بس) - راجعه قبل الاعتماد</sys:String>
     <sys:String x:Key="Analysis.Engine.intermediary_swift_known">سويفت البنك الوسيط اتصحح لكود بنك وسيط معروف (حرف شبه التاني) - راجعه مع المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.category_from_name">التصنيف اتاخد من اسم الشركة - المستند ما قالش المورد بيشتغل في إيه</sys:String>
     <sys:String x:Key="Analysis.Engine.bank_name_from_text">اسم البنك اتقرا من عنوانه في المستند</sys:String>

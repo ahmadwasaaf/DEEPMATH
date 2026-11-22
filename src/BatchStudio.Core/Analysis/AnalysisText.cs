@@ -31,6 +31,7 @@ public static class AnalysisText
         ["cnaps_check_failed"] = "CNAPS is not 12 digits",
         ["swift_iban_country_differs"] = "SWIFT country differs from the IBAN country",
         ["bank_name_from_saved"] = "Bank name added from the saved suppliers (same SWIFT)",
+        ["amount_from_name_text"] = "Amount taken from the text of the file name (the name is not only an amount): check it",
         ["intermediary_swift_known"] = "Intermediary SWIFT corrected to a well-known correspondent bank's code: check it",
         ["category_from_name"] = "Category taken from the company name (the document does not say what the supplier does)",
         ["account_misread"] = "The account read is part of a saved account of the supplier (same SWIFT): most likely misread; the saved account is used",

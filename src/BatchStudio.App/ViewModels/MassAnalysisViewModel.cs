@@ -61,7 +61,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     private static readonly HashSet<string> NeedsCheckNotes =
     [
         "swift_corrected", "swift_check", "multiple_accounts", "account_differs", "iban_check_failed", "ifsc_check_failed",
-        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs", "account_misread", "intermediary_swift_known",
+        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs", "account_misread", "intermediary_swift_known", "amount_from_name_text",
     ];
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>

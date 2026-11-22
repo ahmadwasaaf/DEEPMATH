@@ -359,7 +359,7 @@ public static partial class AnalysisMatcher
     [GeneratedRegex(@"(?im)^\s*(?:beneficiary\s*(?:'s\s*)?bank(?:\s*name)?|bank\s*name|name\s+of\s+(?:the\s+)?bank|bank)\s*[:：]\s*(.+)$")]
     private static partial Regex BankNameValue();
 
-    [GeneratedRegex(@"(?im)^\s*(?!intermediary)[^\n]{0,30}?\b(?:swift|bic)\b[^:：\n]{0,20}[:：]?\s*([A-Z0-9]{4}\s?[A-Z]{2}\s?[A-Z0-9]{2}(?:\s?[A-Z0-9]{3})?)\b")]
+    [GeneratedRegex(@"(?im)^\s*(?!intermediary|correspondent)[^\n]{0,30}?\b(?:swift|bic)\b[^:：\n]{0,20}[:：]?\s*([A-Z0-9]{4}\s?[A-Z]{2}\s?[A-Z0-9]{2}(?:\s?[A-Z0-9]{3})?)\b")]
     private static partial Regex SwiftLine();
 
     /// <summary>The beneficiary bank's SWIFT in a banking paragraph (not an intermediary's), upper case, no spaces.</summary>
@@ -419,7 +419,7 @@ public static partial class AnalysisMatcher
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var line in (bankText ?? "").Split('\n'))
         {
-            if (Regex.IsMatch(line, @"(?i)^\s*(?:intermediary|swift|bic|routing|aba|ifsc|cnaps|sort\s*code|bank\s*code|branch|phone|tel|fax|mobile)"))
+            if (Regex.IsMatch(line, @"(?i)^\s*(?:intermediary|correspondent|swift|bic|routing|aba|ifsc|cnaps|sort\s*code|bank\s*code|branch|phone|tel|fax|mobile)"))
                 continue;
             var lm = LabeledAccount().Match(line);
             if (lm.Success)
