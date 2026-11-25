@@ -16,6 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Google sign-in client (from the repository secrets)
+        shell: pwsh
+        env:
+          GOOGLE_ID: ${{ secrets.DEEPMATH_GOOGLE_CLIENT_ID }}
+          GOOGLE_SECRET: ${{ secrets.DEEPMATH_GOOGLE_CLIENT_SECRET }}
+        run: |
+          $f = 'src/BatchStudio.App/Services/GoogleClient.cs'
+          if ($env:GOOGLE_ID -and $env:GOOGLE_SECRET) {
+            $t = (Get-Content $f -Raw).Replace('DEEPMATH_GOOGLE_CLIENT_ID', $env:GOOGLE_ID).Replace('DEEPMATH_GOOGLE_CLIENT_SECRET', $env:GOOGLE_SECRET)
+            [IO.File]::WriteAllText((Resolve-Path $f), $t)
+          } else { Write-Host "::warning::DEEPMATH_GOOGLE_CLIENT_ID / _SECRET are not set: Sign in with Google will not work in this build" }
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'

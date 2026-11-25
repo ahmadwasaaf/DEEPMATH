@@ -4,6 +4,7 @@ namespace BatchStudio.App.Services;
 /// DEEPMATH's OAuth client (Google Cloud project "DEEPMATH", client type Desktop app). For installed apps Google does
 /// not treat the secret as confidential (it ships inside every desktop app); the sign-in is protected by PKCE and the
 /// loopback redirect, and the user's tokens stay encrypted on the user's computer.
+/// The values are written in by the build (repository secrets DEEPMATH_GOOGLE_CLIENT_ID / _SECRET), never kept in the code.
 /// </summary>
 internal static class GoogleClient
 {
