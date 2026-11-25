@@ -61,7 +61,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     private static readonly HashSet<string> NeedsCheckNotes =
     [
         "swift_corrected", "swift_check", "multiple_accounts", "account_differs", "iban_check_failed", "ifsc_check_failed",
-        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs", "account_misread", "intermediary_swift_known", "amount_from_name_text",
+        "cnaps_check_failed", "swift_iban_country_differs", "currency_differs", "account_misread", "intermediary_swift_known", "amount_from_name_text", "account_other_bank",
     ];
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>
@@ -225,7 +225,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
         // this payment only (a reference to quote ...): never saved with the supplier
         foreach (var t in Result.TransactionNotes) list.Add(Loc.F("Analysis.TxNote", t));
         // the file name is not an amount: what the document's total says, as a hint (the amount is typed by the user)
-        if (Result.Amount is not > 0 && Amount == null && Result.DocumentAmount is decimal da && da > 0)
+        if (((Result.Amount is not > 0 && Amount == null) || Result.Notes.Contains("amount_from_name_text")) && Result.DocumentAmount is decimal da && da > 0)
             list.Add(Loc.F("Analysis.DocumentTotalHint", (Result.DocumentCurrency.Length > 0 ? Result.DocumentCurrency + " " : "") + NewInvoiceViewModel.FormatMoney(da)));
         if (Match.MatchedBy == "similar" && Match.Supplier != null) list.Add(Loc.F("Analysis.NoteSimilar", Result.CompanyName));
         if (Match.Candidates.Count > 0 && Picked == null) list.Add(Loc.T("Analysis.PickSupplier"));
@@ -874,11 +874,30 @@ public sealed partial class MassInvoiceViewModel
                     foreach (var alt in i.Result.AltBanks)
                         AddBank(sid, alt, AnalysisMatcher.AccountIdsIn(alt).ToList());
 
-            if (newSuppliers > 0 || newAccounts > 0 || page.IsDirty)
+            // the theme colours picked in the forms go into the same workbook save as the suppliers (one Excel round)
+            var timing = System.Diagnostics.Stopwatch.StartNew();
+            var steps = new List<string>();
+            var inSave = new List<(ReviewDraft Draft, string Name)>();
+            foreach (var (d, n) in themes)
+                if (d.Theme?.PickedColor() is int rgb && BatchStudio.Core.Workbook.ThemeMemory.Supports(d.Template))
+                {
+                    var (sup, tpl, col) = (n, d.Template, rgb);
+                    page.Session.PendingEdits.Add(ed => BatchStudio.Core.Workbook.ThemeMemory.Assign(ed, sup, tpl, col));
+                    inSave.Add((d, n));
+                }
+            var clock = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            clock.Tick += (_, _) =>
             {
+                if (!IsBusy) { clock.Stop(); return; }     // ended (also by an error): never writes over its message
+                ReviewError = Loc.F("Analysis.SavingSeconds", (int)timing.Elapsed.TotalSeconds);
+            };
+            if (newSuppliers > 0 || newAccounts > 0 || page.IsDirty || inSave.Count > 0)
+            {
+                if (inSave.Count > 0 && !page.IsDirty) page.ForceSave();
                 // the Suppliers sheet must be saved before the rows use the new suppliers / accounts.
                 // A save already running (auto-save) or Excel busy: wait for it, then save again (up to ~90 s).
-                ReviewError = Loc.T("Analysis.Saving");
+                ReviewError = Loc.F("Analysis.SavingSeconds", 0);
+                clock.Start();
                 var until = DateTime.Now.AddSeconds(90);
                 while (true)
                 {
@@ -886,21 +905,31 @@ public sealed partial class MassInvoiceViewModel
                     if (!page.IsDirty) break;
                     if (page.Status.StartsWith(Loc.T("Status.Error"), StringComparison.Ordinal) || page.Status == Loc.T("Validate.MissingId"))
                     {
+                        clock.Stop();
+                        page.Session.PendingEdits.Clear();
                         ReviewError = page.Status;
                         return;
                     }
                     if (DateTime.Now > until)
                     {
+                        clock.Stop();
+                        page.Session.PendingEdits.Clear();
                         ReviewError = Loc.F("Analysis.NotSaved", page.Status);
                         return;
                     }
                     await Task.Delay(700);
                 }
+                clock.Stop();
                 ReviewError = "";
+                steps.Add($"save suppliers{(inSave.Count > 0 ? " + " + inSave.Count + " theme(s)" : "")}: {timing.Elapsed.TotalSeconds:0.0}s");
             }
-            foreach (var (d, n) in themes)
+            foreach (var (d, n) in inSave) d.Theme!.MarkSaved(n, d.Template);
+            foreach (var (d, n) in themes.Where(t => !inSave.Contains(t)))
                 try { await d.Theme!.FlushAsync(n, d.Template); } catch { }
+            var t0 = timing.Elapsed;
             Refresh();
+            steps.Add($"refresh: {(timing.Elapsed - t0).TotalSeconds:0.0}s");
+            ApproveTiming.Write(chosen.Count, newSuppliers, newAccounts, steps, timing.Elapsed);
 
             int k = 0;
             foreach (var i in chosen)

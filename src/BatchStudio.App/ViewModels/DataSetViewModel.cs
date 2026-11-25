@@ -344,6 +344,9 @@ public sealed partial class DataSetViewModel : ObservableObject
         return t;
     }
 
+    /// <summary>Saves on the next save even though no cell changed (further workbook edits are queued on the session).</summary>
+    internal void ForceSave() => IsDirty = true;
+
     private void MarkDirty()
     {
         if (_loading) return;
@@ -1270,6 +1273,23 @@ public sealed partial class ThemeFieldViewModel : ObservableObject
         _saved = Supported && Supplier.Length > 0 ? _main.ThemeFor(Supplier, Template) : null;
         Hex = _saved is { } v ? BatchStudio.Core.Workbook.ThemeMemory.ToHex(v) : "";
         Status = "";
+    }
+
+    /// <summary>The colour picked in the form (not written yet), null when none.</summary>
+    public int? PickedColor()
+    {
+        if (BatchStudio.Core.Workbook.ThemeMemory.TryParseHex(Hex, out var typed)) return typed;
+        return _hasPending ? _pending : null;
+    }
+
+    /// <summary>The picked colour was written with the supplier (same workbook save): the field shows it as saved.</summary>
+    public void MarkSaved(string supplier, string template)
+    {
+        Supplier = supplier.Trim();
+        Template = template.Trim().Length > 0 ? template.Trim() : "INVOICE";
+        _saved = PickedColor();
+        _hasPending = false;
+        Status = Loc.T("Theme.Saved");
     }
 
     /// <summary>New supplier saved: writes the colour picked in the form (if any) for this supplier and template.</summary>

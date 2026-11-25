@@ -299,6 +299,13 @@ public static partial class AnalysisMatcher
                             m.Note = "Analysis.NoteAccountMisread";
                             if (!r.Notes.Contains("account_misread")) r.Notes.Add("account_misread");
                         }
+                        // a known name with an account at a bank it never used (another SWIFT bank code): the classic impostor
+                        // pattern - always checked with the supplier before approving
+                        else if (OtherBank(m.Supplier, r))
+                        {
+                            m.Note = "Analysis.NoteOtherBank";
+                            if (!r.Notes.Contains("account_other_bank")) r.Notes.Add("account_other_bank");
+                        }
                     }
                     else
                     {
@@ -458,6 +465,18 @@ public static partial class AnalysisMatcher
                 }
         }
         return null;
+    }
+
+    /// <summary>
+    /// The account read is at a bank none of the supplier's saved accounts uses: its SWIFT bank code (first 4 letters + country)
+    /// differs from every saved SWIFT. False when either side has no SWIFT.
+    /// </summary>
+    public static bool OtherBank(Party supplier, AnalysisResult r)
+    {
+        var read = SwiftIn(r.Bank);
+        if (read.Length < 6) return false;
+        var saved = supplier.Banks.Where(b => b.Text.Trim().Length > 0).Select(b => SwiftIn(b.Text)).Where(s => s.Length >= 6).ToList();
+        return saved.Count > 0 && saved.All(s => !string.Equals(s[..6], read[..6], StringComparison.OrdinalIgnoreCase));
     }
 
     public static string Clean(string s) => new string((s ?? "").Where(char.IsAsciiLetterOrDigit).ToArray()).ToUpperInvariant();

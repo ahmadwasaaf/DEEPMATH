@@ -700,6 +700,7 @@
     <sys:String x:Key="Analysis.NoteNoAmount">The file name is not an amount: type the amount.</sys:String>
     <sys:String x:Key="Analysis.DocumentTotalHint">The document's total is {0}: type the amount if it is right</sys:String>
     <sys:String x:Key="Analysis.PickSupplier">Pick the right supplier in the list.</sys:String>
+    <sys:String x:Key="Analysis.SavingSeconds">Saving the new suppliers and accounts in the workbook (Excel) ... {0} s</sys:String>
     <sys:String x:Key="Analysis.Saving">Saving the Suppliers sheet ...</sys:String>
     <sys:String x:Key="Analysis.NotSaved">The Suppliers sheet could not be saved yet ({0}). Close the workbook in Excel if it is open, then press Approve all again: nothing will be added twice.</sys:String>
     <sys:String x:Key="Analysis.SelectAll">Select all / none</sys:String>
@@ -765,6 +766,7 @@
     <sys:String x:Key="Analysis.Engine.swift_glyph_checked">Image: the SWIFT's look-alike characters (O / 0, S / 5) were decided from the image</sys:String>
     <sys:String x:Key="Analysis.SwiftConfirmed">SWIFT checked: the same as the supplier's saved account</sys:String>
     <sys:String x:Key="Analysis.Engine.bank_name_from_saved">Bank name added from your saved suppliers (same SWIFT)</sys:String>
+    <sys:String x:Key="Analysis.NoteOtherBank">Known supplier, but this account is at a bank none of its saved accounts uses - a common impostor pattern. Confirm the change with the supplier through a channel you trust before approving.</sys:String>
     <sys:String x:Key="Analysis.Engine.amount_from_name_text">Amount taken from the text of the file name (the name is not only an amount) - check it before approving</sys:String>
     <sys:String x:Key="Analysis.Engine.intermediary_swift_known">Intermediary SWIFT corrected to a well-known correspondent bank's code (one look-alike character) - compare it with the document</sys:String>
     <sys:String x:Key="Analysis.Engine.category_from_name">Category taken from the company name - the document does not say what the supplier does</sys:String>

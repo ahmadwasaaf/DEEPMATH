@@ -700,6 +700,7 @@
     <sys:String x:Key="Analysis.NoteNoAmount">اسم الملف مش مبلغ: اكتب المبلغ.</sys:String>
     <sys:String x:Key="Analysis.DocumentTotalHint">إجمالي المستند {0}: اكتب المبلغ بنفسك لو هو ده الصح</sys:String>
     <sys:String x:Key="Analysis.PickSupplier">اختار المورد الصح من القائمة.</sys:String>
+    <sys:String x:Key="Analysis.SavingSeconds">بيحفظ الموردين والحسابات الجديدة في ملف الإكسيل ... {0} ث</sys:String>
     <sys:String x:Key="Analysis.Saving">جاري حفظ شيت الموردين ...</sys:String>
     <sys:String x:Key="Analysis.NotSaved">لسه ماقدرناش نحفظ شيت الموردين ({0}). اقفل ملف الإكسيل لو مفتوح، وبعدين اضغط اعتماد الكل تاني: مفيش حاجة هتتضاف مرتين.</sys:String>
     <sys:String x:Key="Analysis.SelectAll">تحديد الكل / إلغاء التحديد</sys:String>
@@ -765,6 +766,7 @@
     <sys:String x:Key="Analysis.Engine.swift_glyph_checked">صورة: الحروف المتشابهة في السويفت (O / 0 و S / 5) اتحددت من الصورة نفسها</sys:String>
     <sys:String x:Key="Analysis.SwiftConfirmed">السويفت اتأكد: نفس اللي في حساب المورد المتسجل</sys:String>
     <sys:String x:Key="Analysis.Engine.bank_name_from_saved">اسم البنك اتضاف من الموردين المتسجلين (نفس السويفت)</sys:String>
+    <sys:String x:Key="Analysis.NoteOtherBank">مورد معروف، بس الحساب ده في بنك عمره ما استخدمه قبل كده - ودي طريقة احتيال مشهورة. أكّد التغيير مع المورد من مصدر موثوق قبل الاعتماد.</sys:String>
     <sys:String x:Key="Analysis.Engine.amount_from_name_text">المبلغ اتاخد من نص اسم الملف (الاسم مش مبلغ بس) - راجعه قبل الاعتماد</sys:String>
     <sys:String x:Key="Analysis.Engine.intermediary_swift_known">سويفت البنك الوسيط اتصحح لكود بنك وسيط معروف (حرف شبه التاني) - راجعه مع المستند</sys:String>
     <sys:String x:Key="Analysis.Engine.category_from_name">التصنيف اتاخد من اسم الشركة - المستند ما قالش المورد بيشتغل في إيه</sys:String>

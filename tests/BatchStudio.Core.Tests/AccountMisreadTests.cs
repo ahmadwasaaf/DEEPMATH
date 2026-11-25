@@ -34,6 +34,22 @@ public class AccountMisreadTests
     }
 
     [Fact]
+    public void New_account_at_another_bank_is_flagged()
+    {
+        var m = AnalysisMatcher.Match([Read("555777999111", "HZBKCN2X")], [Garbin()])[0];
+        Assert.Equal(AnalysisStatus.NewAccount, m.Status);
+        Assert.Equal("Analysis.NoteOtherBank", m.Note);
+        Assert.Contains("account_other_bank", m.Result.Notes);
+    }
+
+    [Fact]
+    public void New_account_at_the_same_bank_is_not_flagged()
+    {
+        var m = AnalysisMatcher.Match([Read("555777999111", "KOEXKRSE")], [Garbin()])[0];
+        Assert.DoesNotContain("account_other_bank", m.Result.Notes);
+    }
+
+    [Fact]
     public void A_different_number_stays_a_new_account()
     {
         var m = AnalysisMatcher.Match([Read("555777999111", "KOEXKRSE")], [Garbin()])[0];

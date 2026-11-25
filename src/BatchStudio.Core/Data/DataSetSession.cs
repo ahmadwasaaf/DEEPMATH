@@ -60,6 +60,12 @@ public sealed class DataSetSession
     /// <summary>Replaces the working copy (called by the UI after edits).</summary>
     public void SetCurrent(TableData table) => Current = table;
 
+    /// <summary>
+    /// Further changes written in the same workbook save as this sheet (one Excel round instead of one per change) -
+    /// e.g. the theme colours picked for the new suppliers of a Mass Invoice approval. Cleared once saved.
+    /// </summary>
+    public List<Action<Workbook.IWorkbookEditor>> PendingEdits { get; } = [];
+
     /// <summary>Backs up the file, then writes the working copy. Throws <see cref="FileLockedException"/> if Excel has it open.</summary>
     public void Save(int keepBackups = 30)
     {
@@ -70,7 +76,13 @@ public sealed class DataSetSession
             if (Workspace != null)
             {
                 var table = Current;
-                Workspace.Change(ed => Workbook.TableWriter.Save(ed.Sheet(Definition.SheetName), table), keepBackups);
+                var extra = PendingEdits.ToList();
+                Workspace.Change(ed =>
+                {
+                    Workbook.TableWriter.Save(ed.Sheet(Definition.SheetName), table);
+                    foreach (var e in extra) e(ed);
+                }, keepBackups);
+                PendingEdits.RemoveAll(extra.Contains);
             }
             else
             {
