@@ -575,12 +575,12 @@ public sealed partial class DataSetViewModel : ObservableObject
     /// A supplier's bank account as a PDF on the Desktop ("Bank Account" sheet): its name, Chinese name and theme colour,
     /// "NAME Bank Account.pdf" (account 1) / "NAME Bank Account 3.pdf" (Banking Details 3), "(2)" when the name is taken.
     /// </summary>
-    private async Task ExportBankAsync(Func<string, string> get, IReadOnlyList<string> headers, BankAccountViewModel account)
+    private async Task<string?> ExportBankAsync(Func<string, string> get, IReadOnlyList<string> headers, BankAccountViewModel account)
     {
         var book = Session.Workspace?.WorkbookPath;
-        if (book == null || !File.Exists(book)) { Dialogs.Error(Loc.T("BankPdf.NoWorkbook")); return; }
+        if (book == null || !File.Exists(book)) { Dialogs.Error(Loc.T("BankPdf.NoWorkbook")); return null; }
         string name = headers.Count > 1 ? get(headers[1]).Trim() : "";
-        if (name.Length == 0) { Dialogs.Error(Loc.T("BankPdf.NoName")); return; }
+        if (name.Length == 0) { Dialogs.Error(Loc.T("BankPdf.NoName")); return null; }
         string native = headers.FirstOrDefault(h => h.Contains("Chinese", StringComparison.OrdinalIgnoreCase)) is { } nh ? get(nh) : "";
         string template = headers.FirstOrDefault(h => h.Contains("TEMPLATE", StringComparison.OrdinalIgnoreCase)) is { } th ? get(th).Trim() : "";
         int? theme = _main.ThemeFor(name, template.Length > 0 ? template : "INVOICE");
@@ -604,13 +604,18 @@ public sealed partial class DataSetViewModel : ObservableObject
                 if (error != null) throw error;
             });
             Status = Loc.F("BankPdf.Done", Path.GetFileName(pdf));
+            return Status;
         }
         catch (Exception ex)
         {
             Status = "";
             Dialogs.Error(Loc.F("BankPdf.Failed", ex.Message));
+            return null;
         }
     }
+
+    /// <summary>The same Desktop PDF from a supplier form (Mass Invoice / New Invoice / review): returns the done message.</summary>
+    public Task<string?> ExportBankPdfAsync(Func<string, string> get, BankAccountViewModel account) => ExportBankAsync(get, Headers, account);
 
     /// <summary>Column for this header, added to the table when new (written to the sheet on save). Returns its name.</summary>
     public string EnsureColumn(string header)

@@ -30,18 +30,20 @@ public static class ExcelPdf
                 wb = app.Workbooks.Open(xlsxPath, 0, true, m, m, m, m, m, m, m, m, m, m, m, 1);
             }
             try { app.CalculateFull(); } catch { }   // SUBTOTAL / totals reflect hidden rows
-            using var printer = PdfPrinter.Use((object)app);   // Arabic text keeps its colour in the PDF
+            dynamic? target = null;
             if (invoiceSheets != null && (int)wb.Sheets.Count > 1)
             {
-                dynamic? target = null;
                 foreach (dynamic sh in wb.Worksheets)
                 {
                     if ((int)sh.Visible != -1) continue;
                     if (invoiceSheets.Any(n => string.Equals(n?.Trim(), ((string)sh.Name).Trim(), StringComparison.OrdinalIgnoreCase))) { target = sh; break; }
                 }
                 target ??= wb.ActiveSheet;
-                target.ExportAsFixedFormat(0, pdf);
             }
+            string sheetName = "";
+            try { sheetName = (string)(target ?? wb.ActiveSheet).Name; } catch { }
+            using var printer = PdfPrinter.Use((object)app, sheetName);   // Arabic text keeps its colour in the PDF
+            if (target != null) target.ExportAsFixedFormat(0, pdf);
             else wb.ExportAsFixedFormat(0, pdf); // 0 = xlTypePDF
             wb.Close(false);
             return pdf;

@@ -370,8 +370,15 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
                 {
                     for (int j = 0; j < headers.Count && j < values.Length; j++)
                         if (SupplierBanks.IsBankHeader(headers, j)) _bankValues[headers[j]] = values[j];
-                    Fields.Add(new BankGroupViewModel(headers, k => _bankValues.TryGetValue(k, out var v) ? v : "",
-                        (k, v) => _bankValues[k] = v, expanded: false));
+                    var group = new BankGroupViewModel(headers, k => _bankValues.TryGetValue(k, out var v) ? v : "",
+                        (k, v) => _bankValues[k] = v, expanded: false);
+                    // the PDF icon of the Suppliers page: this account as a PDF on the Desktop (name / Chinese name / template as edited here)
+                    group.Exporter = async acc =>
+                    {
+                        var done = await page.ExportBankPdfAsync(FormValue, acc);
+                        if (done != null) Info = done;
+                    };
+                    Fields.Add(group);
                 }
                 continue;
             }
@@ -385,6 +392,16 @@ public sealed partial class PartyFormViewModel(MainViewModel main) : ObservableO
         if (suppliers && _theme == null) Fields.Add(_theme = new ThemeFieldViewModel(main, Title, "INVOICE"));
         IsOpen = true;
         return true;
+    }
+
+    /// <summary>A field as it is now in the form (edited value), else the saved one.</summary>
+    private string FormValue(string header)
+    {
+        if (Fields.OfType<NewFieldViewModel>().FirstOrDefault(f => string.Equals(f.Caption, header, StringComparison.OrdinalIgnoreCase)) is { } f) return f.Value ?? "";
+        if (_bankValues.TryGetValue(header, out var b)) return b;
+        var headers = Page?.Headers;
+        int i = headers == null ? -1 : headers.FindIndex(h => string.Equals(h, header, StringComparison.OrdinalIgnoreCase));
+        return i >= 0 && i < _original.Length ? _original[i] : "";
     }
 
     internal static int NameColumn(IReadOnlyList<string> headers)

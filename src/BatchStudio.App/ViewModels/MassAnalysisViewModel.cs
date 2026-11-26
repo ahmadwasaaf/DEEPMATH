@@ -51,7 +51,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     /// financial data is never guessed - not ticked until a person checked it against the document.
     /// </summary>
     public bool SwiftNeedsCheck => Result.Notes.Any(n => NeedsCheckNotes.Contains(n)
-                                                     && !(Match.SwiftConfirmed && n is "swift_check" or "swift_corrected"));
+                                                     && !(Match.SwiftConfirmed && n is "swift_check" or "swift_corrected" or "v16_filled"));
 
     /// <summary>
     /// Remarks that keep a row unticked until a person compared it with the document: a SWIFT / IBAN / IFSC / CNAPS
@@ -62,6 +62,7 @@ public sealed partial class AnalysisItemViewModel : ObservableObject
     [
         "swift_corrected", "swift_check", "multiple_accounts", "account_differs", "iban_check_failed", "ifsc_check_failed",
         "cnaps_check_failed", "swift_iban_country_differs", "currency_differs", "account_misread", "intermediary_swift_known", "amount_from_name_text", "account_other_bank",
+        "v16_filled",   // a field the engine filled or corrected: unticked until checked (no longer via swift_check)
     ];
 
     /// <summary>More than one supplier fits: the user picks the right one in the review.</summary>

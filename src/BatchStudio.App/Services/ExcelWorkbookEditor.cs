@@ -95,7 +95,7 @@ public sealed class ExcelWorkbookEditor : IWorkbookEditor
             if (string.Equals((string)ws.Name, sheetName, StringComparison.OrdinalIgnoreCase))
             {
                 Retry(() => { _app.Calculate(); });
-                using (PdfPrinter.Use((object)_app))                    // Arabic text keeps its colour in the PDF
+                using (PdfPrinter.Use((object)_app, sheetName))         // Arabic text keeps its colour in the PDF
                     Retry(() => { ws.ExportAsFixedFormat(0, pdfPath); });   // 0 = xlTypePDF
                 return;
             }
